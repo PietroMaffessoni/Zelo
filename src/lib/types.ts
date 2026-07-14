@@ -5,6 +5,8 @@
 
 export type Papel = 'morador' | 'sindico' | 'admin' | 'porteiro';
 export type MembershipStatus = 'ativo' | 'pendente' | 'inativo';
+export type Vinculo = 'proprietario' | 'inquilino' | 'dependente';
+export type EspeciePet = 'cachorro' | 'gato' | 'outro';
 
 export type ChamadoStatus = 'aberto' | 'em_andamento' | 'resolvido' | 'cancelado';
 export type Prioridade = 'baixa' | 'media' | 'alta';
@@ -30,6 +32,10 @@ export type SolicitacaoCategoria =
 
 export type AchadoStatus = 'guardado' | 'devolvido';
 
+export type VisitanteStatus = 'ativa' | 'utilizada' | 'expirada' | 'cancelada';
+export type EncomendaStatus = 'aguardando_retirada' | 'retirada';
+export type TipoVeiculo = 'carro' | 'moto' | 'outro';
+
 export type Condominio = {
   id: string;
   nome: string;
@@ -38,6 +44,7 @@ export type Condominio = {
   endereco: string | null;
   cnpj: string | null;
   codigo_convite: string;
+  codigo_portaria: string | null;
   criado_por: string | null;
   created_at: string;
 };
@@ -55,6 +62,8 @@ export type Unidade = {
   condominio_id: string;
   bloco: string | null;
   numero: string;
+  fracao_ideal: number | null;
+  observacoes: string | null;
   created_at: string;
 };
 
@@ -65,11 +74,34 @@ export type Membership = {
   unidade_id: string | null;
   papel: Papel;
   status: MembershipStatus;
+  vinculo: Vinculo;
   created_at: string;
   // joins opcionais
   profile?: Profile | null;
   unidade?: Unidade | null;
   condominio?: Condominio | null;
+};
+
+export type Dependente = {
+  id: string;
+  condominio_id: string;
+  unidade_id: string;
+  nome: string;
+  parentesco: string | null;
+  data_nascimento: string | null;
+  created_at: string;
+};
+
+export type Pet = {
+  id: string;
+  condominio_id: string;
+  unidade_id: string;
+  nome: string;
+  especie: EspeciePet;
+  raca: string | null;
+  foto_url: string | null;
+  observacoes: string | null;
+  created_at: string;
 };
 
 export type Comunicado = {
@@ -174,6 +206,70 @@ export type Solicitacao = {
   created_at: string;
   updated_at: string;
   morador?: Profile | null;
+};
+
+export type VisitanteAutorizado = {
+  id: string;
+  condominio_id: string;
+  unidade_id: string;
+  autorizado_por: string;
+  nome_visitante: string;
+  documento: string | null;
+  observacao: string | null;
+  data_inicio: string;
+  data_fim: string | null;
+  status: VisitanteStatus;
+  created_at: string;
+  unidade?: Unidade | null;
+};
+
+export type RegistroVisitante = {
+  id: string;
+  condominio_id: string;
+  unidade_id: string;
+  autorizacao_id: string | null;
+  nome_visitante: string;
+  documento: string | null;
+  registrado_por: string;
+  entrada: string;
+  saida: string | null;
+  observacao: string | null;
+  created_at: string;
+};
+
+export type Encomenda = {
+  id: string;
+  condominio_id: string;
+  unidade_id: string;
+  descricao: string;
+  remetente: string | null;
+  foto_url: string | null;
+  registrado_por: string;
+  status: EncomendaStatus;
+  retirado_por_nome: string | null;
+  retirado_em: string | null;
+  created_at: string;
+  unidade?: Unidade | null;
+};
+
+export type Veiculo = {
+  id: string;
+  condominio_id: string;
+  unidade_id: string;
+  proprietario_id: string | null;
+  placa: string;
+  modelo: string | null;
+  cor: string | null;
+  tipo: TipoVeiculo;
+  vaga: string | null;
+  created_at: string;
+  unidade?: Unidade | null;
+};
+
+export type UnidadeDetalhe = Unidade & {
+  moradores: Membership[];
+  dependentes: Dependente[];
+  pets: Pet[];
 };
 
 export const isGestor = (papel?: Papel | null) =>

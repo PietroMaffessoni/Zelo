@@ -8,6 +8,7 @@ import { isGestor } from '@/lib/types';
 export default function TabsLayout() {
   const { papel } = useAuth();
   const gestor = isGestor(papel);
+  const porteiro = papel === 'porteiro';
 
   return (
     <Tabs
@@ -28,9 +29,9 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="inicio"
         options={{
-          title: gestor ? 'Painel' : 'Início',
+          title: gestor ? 'Painel' : porteiro ? 'Portaria' : 'Início',
           tabBarIcon: ({ color, size }) => (
-            <Ionicons name={gestor ? 'grid-outline' : 'home-outline'} size={size} color={color} />
+            <Ionicons name={gestor ? 'grid-outline' : porteiro ? 'shield-checkmark-outline' : 'home-outline'} size={size} color={color} />
           ),
         }}
       />
@@ -38,6 +39,7 @@ export default function TabsLayout() {
         name="chamados"
         options={{
           title: 'Chamados',
+          href: porteiro ? null : undefined,
           tabBarIcon: ({ color, size }) => <Ionicons name="construct-outline" size={size} color={color} />,
         }}
       />
@@ -45,7 +47,16 @@ export default function TabsLayout() {
         name="reservas"
         options={{
           title: 'Reservas',
+          href: porteiro ? null : undefined,
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
+        }}
+      />
+      <Tabs.Screen
+        name="portaria"
+        options={{
+          title: 'Portaria',
+          href: gestor || porteiro ? undefined : null,
+          tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline" size={size} color={color} />,
         }}
       />
       <Tabs.Screen

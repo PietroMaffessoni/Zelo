@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { fontSize, palette, radius, spacing } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
@@ -37,7 +37,7 @@ export function Input({ label, error, hint, icon, senha, style, ...rest }: Input
           <Ionicons name={icon} size={18} color={palette.textSubtle} style={{ marginRight: spacing.sm }} />
         ) : null}
         <TextInput
-          style={[styles.input, style]}
+          style={[styles.input, Platform.OS === 'web' && (webNoOutline as object), style]}
           placeholderTextColor={palette.textSubtle}
           onFocus={() => setFocado(true)}
           onBlur={() => setFocado(false)}
@@ -66,6 +66,9 @@ export function Input({ label, error, hint, icon, senha, style, ...rest }: Input
     </View>
   );
 }
+
+// react-native-web deixa o <input> com o outline padrão do navegador (borda preta) ao focar
+const webNoOutline = { outlineStyle: 'none', outlineWidth: 0 };
 
 const styles = StyleSheet.create({
   campo: {

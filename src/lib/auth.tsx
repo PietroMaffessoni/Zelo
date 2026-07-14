@@ -3,7 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { Membership, Papel, Profile } from '@/lib/types';
+import type { Membership, Papel, Profile, Vinculo } from '@/lib/types';
 
 const CHAVE_CONDOMINIO = 'condoos.condominio_atual';
 
@@ -31,7 +31,9 @@ type AuthState = {
     codigo: string;
     bloco?: string;
     numero?: string;
+    vinculo?: Vinculo;
   }) => Promise<{ error?: string; condominioId?: string }>;
+  entrarComoPorteiro: (codigo: string) => Promise<{ error?: string; condominioId?: string }>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -150,11 +152,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   );
 
   const entrarCondominio: AuthState['entrarCondominio'] = useCallback(
-    async ({ codigo, bloco, numero }) => {
+    async ({ codigo, bloco, numero, vinculo }) => {
       const { data, error } = await supabase.rpc('entrar_condominio', {
         p_codigo: codigo.trim().toUpperCase(),
         p_bloco: bloco?.trim() || null,
         p_numero: numero?.trim() || null,
+        p_vinculo: vinculo ?? 'proprietario',
+      });
+      if (error) return { error: traduzErro(error.message) };
+      const cid = (data as { condominio_id: string } | null)?.condominio_id;
+      await recarregar();
+      if (cid) await selecionarCondominio(cid);
+      return { condominioId: cid };
+    },
+    [recarregar, selecionarCondominio],
+  );
+
+  const entrarComoPorteiro: AuthState['entrarComoPorteiro'] = useCallback(
+    async (codigo) => {
+      const { data, error } = await supabase.rpc('entrar_como_porteiro', {
+        p_codigo: codigo.trim().toUpperCase(),
       });
       if (error) return { error: traduzErro(error.message) };
       const cid = (data as { condominio_id: string } | null)?.condominio_id;
@@ -186,6 +203,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     recarregar,
     criarCondominio,
     entrarCondominio,
+    entrarComoPorteiro,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -1,16 +1,27 @@
 import { useRouter } from 'expo-router';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AppHeader, AppText, Avatar, Badge, Card, Divider, ListItem, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { gerarCodigoPortaria } from '@/lib/db';
 import { papelLabel } from '@/lib/labels';
 import { isGestor as ehGestor } from '@/lib/types';
 
 export default function Mais() {
   const router = useRouter();
-  const { profile, papel, membershipAtual, memberships, signOut } = useAuth();
+  const { profile, papel, membershipAtual, memberships, condominioId, recarregar, signOut } = useAuth();
   const gestor = ehGestor(papel);
+  const [gerandoCodigo, setGerandoCodigo] = useState(false);
+
+  async function gerarCodigoDaPortaria() {
+    if (!condominioId) return;
+    setGerandoCodigo(true);
+    await gerarCodigoPortaria(condominioId);
+    await recarregar();
+    setGerandoCodigo(false);
+  }
 
   return (
     <Screen>
@@ -41,6 +52,14 @@ export default function Mais() {
         <ListItem icon="documents-outline" iconTone="info" title="Central do morador" subtitle="Solicitações à administração" onPress={() => router.push('/(app)/central')} />
         <Divider />
         <ListItem icon="cube-outline" iconTone="warning" title="Achados e perdidos" subtitle="Objetos encontrados no condomínio" onPress={() => router.push('/(app)/achados')} />
+        {membershipAtual?.unidade_id ? (
+          <>
+            <Divider />
+            <ListItem icon="people-outline" iconTone="info" title="Visitantes" subtitle="Autorizar entrada de visitas" onPress={() => router.push('/(app)/visitantes')} />
+            <Divider />
+            <ListItem icon="car-outline" iconTone="primary" title="Veículos" subtitle="Meus veículos cadastrados" onPress={() => router.push('/(app)/veiculos')} />
+          </>
+        ) : null}
       </Card>
 
       {/* Administração */}
@@ -52,12 +71,22 @@ export default function Mais() {
           <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
             <ListItem icon="add-circle-outline" iconTone="primary" title="Publicar comunicado" onPress={() => router.push('/(app)/comunicados/novo')} />
             <Divider />
+            <ListItem icon="people-outline" iconTone="info" title="Moradores e unidades" subtitle="Cadastro de unidades, moradores, dependentes e pets" onPress={() => router.push('/(app)/unidades')} />
+            <Divider />
             <ListItem
               icon="key-outline"
               iconTone="success"
               title="Código de convite"
               subtitle={membershipAtual?.condominio?.codigo_convite ?? '—'}
               chevron={false}
+            />
+            <Divider />
+            <ListItem
+              icon="shield-checkmark-outline"
+              iconTone="warning"
+              title="Código da portaria"
+              subtitle={membershipAtual?.condominio?.codigo_portaria ?? (gerandoCodigo ? 'Gerando...' : 'Toque para gerar')}
+              onPress={gerarCodigoDaPortaria}
             />
           </Card>
         </>
@@ -69,6 +98,18 @@ export default function Mais() {
       </AppText>
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
         <ListItem icon="person-outline" iconTone="neutral" title="Meu perfil" onPress={() => router.push('/(app)/perfil')} />
+        {membershipAtual?.unidade_id ? (
+          <>
+            <Divider />
+            <ListItem
+              icon="home-outline"
+              iconTone="primary"
+              title="Minha unidade"
+              subtitle="Moradores, dependentes e pets"
+              onPress={() => router.push(`/(app)/unidades/${membershipAtual.unidade_id}`)}
+            />
+          </>
+        ) : null}
         {memberships.length > 1 ? (
           <>
             <Divider />

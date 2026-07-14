@@ -3,11 +3,16 @@ import type {
   AchadoStatus,
   ChamadoCategoria,
   ChamadoStatus,
+  EncomendaStatus,
+  EspeciePet,
   Papel,
   Prioridade,
   ReservaStatus,
   SolicitacaoCategoria,
   SolicitacaoStatus,
+  TipoVeiculo,
+  Vinculo,
+  VisitanteStatus,
 } from '@/lib/types';
 
 type Meta<T extends string> = Record<T, { label: string; tone: Tone; icon?: string }>;
@@ -68,6 +73,36 @@ export const papelLabel: Record<Papel, string> = {
   sindico: 'Síndico',
   admin: 'Administrador',
   porteiro: 'Portaria',
+};
+
+export const vinculoLabel: Meta<Vinculo> = {
+  proprietario: { label: 'Proprietário', tone: 'primary' },
+  inquilino: { label: 'Inquilino', tone: 'info' },
+  dependente: { label: 'Dependente', tone: 'neutral' },
+};
+
+export const especiePetLabel: Meta<EspeciePet> = {
+  cachorro: { label: 'Cachorro', tone: 'primary', icon: 'paw-outline' },
+  gato: { label: 'Gato', tone: 'warning', icon: 'paw-outline' },
+  outro: { label: 'Outro', tone: 'neutral', icon: 'paw-outline' },
+};
+
+export const visitanteStatus: Meta<VisitanteStatus> = {
+  ativa: { label: 'Ativa', tone: 'info' },
+  utilizada: { label: 'Utilizada', tone: 'success' },
+  expirada: { label: 'Expirada', tone: 'neutral' },
+  cancelada: { label: 'Cancelada', tone: 'danger' },
+};
+
+export const encomendaStatus: Meta<EncomendaStatus> = {
+  aguardando_retirada: { label: 'Aguardando retirada', tone: 'warning' },
+  retirada: { label: 'Retirada', tone: 'success' },
+};
+
+export const tipoVeiculoLabel: Meta<TipoVeiculo> = {
+  carro: { label: 'Carro', tone: 'primary', icon: 'car-outline' },
+  moto: { label: 'Moto', tone: 'info', icon: 'bicycle-outline' },
+  outro: { label: 'Outro', tone: 'neutral', icon: 'ellipsis-horizontal-outline' },
 };
 
 /** Utilitário para transformar um mapa de metadados em opções de seleção. */

@@ -2,7 +2,7 @@ import * as ImagePicker from 'expo-image-picker';
 
 import { supabase } from '@/lib/supabase';
 
-export type Bucket = 'avatars' | 'chamados' | 'achados';
+export type Bucket = 'avatars' | 'chamados' | 'achados' | 'portaria';
 
 /** Abre a galeria e retorna o URI local da imagem escolhida (ou null). */
 export async function escolherImagem(): Promise<string | null> {

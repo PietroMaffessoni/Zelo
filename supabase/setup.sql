@@ -16,9 +16,12 @@ create table if not exists public.condominios (
   endereco text,
   cnpj text,
   codigo_convite text not null unique,
+  codigo_portaria text unique,
   criado_por uuid references auth.users(id) on delete set null,
   created_at timestamptz not null default now()
 );
+
+alter table public.condominios add column if not exists codigo_portaria text unique;
 
 create table if not exists public.profiles (
   id uuid primary key references auth.users(id) on delete cascade,
@@ -33,8 +36,14 @@ create table if not exists public.unidades (
   condominio_id uuid not null references public.condominios(id) on delete cascade,
   bloco text,
   numero text not null,
+  fracao_ideal numeric(8,5),
+  observacoes text,
   created_at timestamptz not null default now()
 );
+
+-- Evita unidades duplicadas (mesmo bloco/número) dentro de um condomínio.
+create unique index if not exists uq_unidades_cond_bloco_numero
+  on public.unidades (condominio_id, coalesce(bloco, ''), numero);
 
 create table if not exists public.memberships (
   id uuid primary key default gen_random_uuid(),
@@ -43,9 +52,15 @@ create table if not exists public.memberships (
   unidade_id uuid references public.unidades(id) on delete set null,
   papel text not null default 'morador' check (papel in ('morador','sindico','admin','porteiro')),
   status text not null default 'ativo' check (status in ('ativo','pendente','inativo')),
+  vinculo text not null default 'proprietario' check (vinculo in ('proprietario','inquilino','dependente')),
   created_at timestamptz not null default now(),
   unique (condominio_id, user_id)
 );
+
+alter table public.unidades add column if not exists fracao_ideal numeric(8,5);
+alter table public.unidades add column if not exists observacoes text;
+alter table public.memberships add column if not exists vinculo text
+  check (vinculo in ('proprietario','inquilino','dependente')) default 'proprietario';
 
 create table if not exists public.comunicados (
   id uuid primary key default gen_random_uuid(),
@@ -148,9 +163,93 @@ create table if not exists public.solicitacoes (
   updated_at timestamptz not null default now()
 );
 
+create table if not exists public.dependentes (
+  id uuid primary key default gen_random_uuid(),
+  condominio_id uuid not null references public.condominios(id) on delete cascade,
+  unidade_id uuid not null references public.unidades(id) on delete cascade,
+  nome text not null,
+  parentesco text,
+  data_nascimento date,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.pets (
+  id uuid primary key default gen_random_uuid(),
+  condominio_id uuid not null references public.condominios(id) on delete cascade,
+  unidade_id uuid not null references public.unidades(id) on delete cascade,
+  nome text not null,
+  especie text not null default 'cachorro' check (especie in ('cachorro','gato','outro')),
+  raca text,
+  foto_url text,
+  observacoes text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.visitantes_autorizados (
+  id uuid primary key default gen_random_uuid(),
+  condominio_id uuid not null references public.condominios(id) on delete cascade,
+  unidade_id uuid not null references public.unidades(id) on delete cascade,
+  autorizado_por uuid not null references public.profiles(id) on delete cascade,
+  nome_visitante text not null,
+  documento text,
+  observacao text,
+  data_inicio date not null,
+  data_fim date,
+  status text not null default 'ativa' check (status in ('ativa','utilizada','expirada','cancelada')),
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.registros_visitantes (
+  id uuid primary key default gen_random_uuid(),
+  condominio_id uuid not null references public.condominios(id) on delete cascade,
+  unidade_id uuid not null references public.unidades(id) on delete cascade,
+  autorizacao_id uuid references public.visitantes_autorizados(id) on delete set null,
+  nome_visitante text not null,
+  documento text,
+  registrado_por uuid not null references public.profiles(id) on delete cascade,
+  entrada timestamptz not null default now(),
+  saida timestamptz,
+  observacao text,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.encomendas (
+  id uuid primary key default gen_random_uuid(),
+  condominio_id uuid not null references public.condominios(id) on delete cascade,
+  unidade_id uuid not null references public.unidades(id) on delete cascade,
+  descricao text not null,
+  remetente text,
+  foto_url text,
+  registrado_por uuid not null references public.profiles(id) on delete cascade,
+  status text not null default 'aguardando_retirada' check (status in ('aguardando_retirada','retirada')),
+  retirado_por_nome text,
+  retirado_em timestamptz,
+  created_at timestamptz not null default now()
+);
+
+create table if not exists public.veiculos (
+  id uuid primary key default gen_random_uuid(),
+  condominio_id uuid not null references public.condominios(id) on delete cascade,
+  unidade_id uuid not null references public.unidades(id) on delete cascade,
+  proprietario_id uuid references public.profiles(id) on delete set null,
+  placa text not null,
+  modelo text,
+  cor text,
+  tipo text not null default 'carro' check (tipo in ('carro','moto','outro')),
+  vaga text,
+  created_at timestamptz not null default now()
+);
+
 -- Índices úteis
 create index if not exists idx_memberships_user on public.memberships(user_id);
 create index if not exists idx_memberships_cond on public.memberships(condominio_id);
+create index if not exists idx_dependentes_unidade on public.dependentes(unidade_id);
+create index if not exists idx_pets_unidade on public.pets(unidade_id);
+create index if not exists idx_visitantes_unidade on public.visitantes_autorizados(unidade_id, data_inicio desc);
+create index if not exists idx_registros_visitantes_unidade on public.registros_visitantes(unidade_id, entrada desc);
+create index if not exists idx_encomendas_unidade on public.encomendas(unidade_id, created_at desc);
+create index if not exists idx_veiculos_unidade on public.veiculos(unidade_id);
+create index if not exists idx_veiculos_placa on public.veiculos(condominio_id, placa);
 create index if not exists idx_comunicados_cond on public.comunicados(condominio_id, created_at desc);
 create index if not exists idx_chamados_cond on public.chamados(condominio_id, created_at desc);
 create index if not exists idx_chamados_autor on public.chamados(autor_id);
@@ -177,6 +276,15 @@ returns boolean language sql stable security definer set search_path = public as
     select 1 from public.memberships m
     where m.condominio_id = cond and m.user_id = auth.uid()
       and m.status = 'ativo' and m.papel in ('sindico','admin')
+  );
+$$;
+
+create or replace function public.is_porteiro(cond uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.memberships m
+    where m.condominio_id = cond and m.user_id = auth.uid()
+      and m.status = 'ativo' and m.papel = 'porteiro'
   );
 $$;
 
@@ -259,14 +367,19 @@ begin
 end;
 $$;
 
+-- Assinatura antiga (3 parâmetros) precisa ser removida antes de recriar com 4,
+-- senão o Postgres mantém as duas versões como sobrecargas e o RPC fica ambíguo.
+drop function if exists public.entrar_condominio(text, text, text);
+
 create or replace function public.entrar_condominio(
-  p_codigo text, p_bloco text default null, p_numero text default null
+  p_codigo text, p_bloco text default null, p_numero text default null, p_vinculo text default 'proprietario'
 ) returns public.memberships
 language plpgsql security definer set search_path = public as $$
 declare
   v_cond public.condominios;
   v_unidade_id uuid;
   v_membership public.memberships;
+  v_vinculo text;
 begin
   if auth.uid() is null then raise exception 'Não autenticado'; end if;
 
@@ -279,15 +392,68 @@ begin
     return v_membership; -- já é membro
   end if;
 
+  v_vinculo := case when p_vinculo in ('proprietario','inquilino','dependente') then p_vinculo else 'proprietario' end;
+
   if coalesce(trim(p_numero), '') <> '' then
-    insert into public.unidades (condominio_id, bloco, numero)
-    values (v_cond.id, nullif(trim(p_bloco), ''), trim(p_numero))
-    returning id into v_unidade_id;
+    -- Reaproveita a unidade se bloco/número já existirem (evita duplicidade).
+    select id into v_unidade_id from public.unidades
+      where condominio_id = v_cond.id
+        and coalesce(bloco, '') = coalesce(nullif(trim(p_bloco), ''), '')
+        and numero = trim(p_numero);
+    if v_unidade_id is null then
+      insert into public.unidades (condominio_id, bloco, numero)
+      values (v_cond.id, nullif(trim(p_bloco), ''), trim(p_numero))
+      returning id into v_unidade_id;
+    end if;
   end if;
 
-  insert into public.memberships (condominio_id, user_id, unidade_id, papel, status)
-  values (v_cond.id, auth.uid(), v_unidade_id, 'morador', 'ativo')
+  insert into public.memberships (condominio_id, user_id, unidade_id, papel, status, vinculo)
+  values (v_cond.id, auth.uid(), v_unidade_id, 'morador', 'ativo', v_vinculo)
   returning * into v_membership;
+
+  return v_membership;
+end;
+$$;
+
+-- RPC de convite de equipe (porteiro): código separado do convite de morador.
+create or replace function public.gerar_codigo_portaria(p_cond uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare
+  v_codigo text;
+begin
+  if not public.is_gestor(p_cond) then raise exception 'Sem permissão'; end if;
+  loop
+    v_codigo := 'P' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 6));
+    exit when not exists (select 1 from public.condominios where codigo_portaria = v_codigo);
+  end loop;
+  update public.condominios set codigo_portaria = v_codigo where id = p_cond;
+  return v_codigo;
+end;
+$$;
+
+create or replace function public.entrar_como_porteiro(p_codigo text)
+returns public.memberships
+language plpgsql security definer set search_path = public as $$
+declare
+  v_cond public.condominios;
+  v_membership public.memberships;
+begin
+  if auth.uid() is null then raise exception 'Não autenticado'; end if;
+
+  select * into v_cond from public.condominios where codigo_portaria = upper(trim(p_codigo));
+  if v_cond.id is null then raise exception 'Código de portaria inválido'; end if;
+
+  select * into v_membership from public.memberships
+    where condominio_id = v_cond.id and user_id = auth.uid();
+
+  if v_membership.id is not null then
+    update public.memberships set papel = 'porteiro', status = 'ativo'
+      where id = v_membership.id returning * into v_membership;
+  else
+    insert into public.memberships (condominio_id, user_id, papel, status)
+    values (v_cond.id, auth.uid(), 'porteiro', 'ativo')
+    returning * into v_membership;
+  end if;
 
   return v_membership;
 end;
@@ -295,9 +461,12 @@ $$;
 
 grant execute on function public.is_member(uuid) to authenticated;
 grant execute on function public.is_gestor(uuid) to authenticated;
+grant execute on function public.is_porteiro(uuid) to authenticated;
 grant execute on function public.compartilha_condominio(uuid) to authenticated;
 grant execute on function public.criar_condominio(text, text, text) to authenticated;
-grant execute on function public.entrar_condominio(text, text, text) to authenticated;
+grant execute on function public.entrar_condominio(text, text, text, text) to authenticated;
+grant execute on function public.gerar_codigo_portaria(uuid) to authenticated;
+grant execute on function public.entrar_como_porteiro(text) to authenticated;
 
 -- ----------------------------------------------------------------------------
 -- 4. ROW LEVEL SECURITY
@@ -315,6 +484,12 @@ alter table public.areas_comuns enable row level security;
 alter table public.reservas enable row level security;
 alter table public.achados_perdidos enable row level security;
 alter table public.solicitacoes enable row level security;
+alter table public.dependentes enable row level security;
+alter table public.pets enable row level security;
+alter table public.visitantes_autorizados enable row level security;
+alter table public.registros_visitantes enable row level security;
+alter table public.encomendas enable row level security;
+alter table public.veiculos enable row level security;
 
 -- profiles
 drop policy if exists profiles_select on public.profiles;
@@ -455,21 +630,166 @@ drop policy if exists solic_delete on public.solicitacoes;
 create policy solic_delete on public.solicitacoes for delete to authenticated
   using (morador_id = auth.uid() or public.is_gestor(condominio_id));
 
+-- dependentes (leitura: qualquer membro do condomínio; escrita: gestor ou morador da própria unidade)
+drop policy if exists dependentes_select on public.dependentes;
+create policy dependentes_select on public.dependentes for select to authenticated
+  using (public.is_member(condominio_id));
+drop policy if exists dependentes_write on public.dependentes;
+create policy dependentes_write on public.dependentes for all to authenticated
+  using (
+    public.is_gestor(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = dependentes.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  )
+  with check (
+    public.is_gestor(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = dependentes.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+
+-- pets (mesmo padrão de dependentes)
+drop policy if exists pets_select on public.pets;
+create policy pets_select on public.pets for select to authenticated
+  using (public.is_member(condominio_id));
+drop policy if exists pets_write on public.pets;
+create policy pets_write on public.pets for all to authenticated
+  using (
+    public.is_gestor(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = pets.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  )
+  with check (
+    public.is_gestor(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = pets.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+
+-- visitantes_autorizados (pré-autorização feita pelo morador; visível a ele, ao gestor e à portaria)
+drop policy if exists visitantes_select on public.visitantes_autorizados;
+create policy visitantes_select on public.visitantes_autorizados for select to authenticated
+  using (
+    public.is_gestor(condominio_id) or public.is_porteiro(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = visitantes_autorizados.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+drop policy if exists visitantes_insert on public.visitantes_autorizados;
+create policy visitantes_insert on public.visitantes_autorizados for insert to authenticated
+  with check (
+    autorizado_por = auth.uid() and exists (
+      select 1 from public.memberships m
+      where m.unidade_id = visitantes_autorizados.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+drop policy if exists visitantes_update on public.visitantes_autorizados;
+create policy visitantes_update on public.visitantes_autorizados for update to authenticated
+  using (autorizado_por = auth.uid() or public.is_gestor(condominio_id) or public.is_porteiro(condominio_id))
+  with check (autorizado_por = auth.uid() or public.is_gestor(condominio_id) or public.is_porteiro(condominio_id));
+drop policy if exists visitantes_delete on public.visitantes_autorizados;
+create policy visitantes_delete on public.visitantes_autorizados for delete to authenticated
+  using (autorizado_por = auth.uid() or public.is_gestor(condominio_id));
+
+-- registros_visitantes (log operacional; só gestor/portaria registram)
+drop policy if exists registros_visitantes_select on public.registros_visitantes;
+create policy registros_visitantes_select on public.registros_visitantes for select to authenticated
+  using (
+    public.is_gestor(condominio_id) or public.is_porteiro(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = registros_visitantes.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+drop policy if exists registros_visitantes_write on public.registros_visitantes;
+create policy registros_visitantes_write on public.registros_visitantes for all to authenticated
+  using (public.is_gestor(condominio_id) or public.is_porteiro(condominio_id))
+  with check (
+    registrado_por = auth.uid() and (public.is_gestor(condominio_id) or public.is_porteiro(condominio_id))
+  );
+
+-- encomendas (visível à unidade dona, gestor e portaria; registrado só por gestor/portaria)
+drop policy if exists encomendas_select on public.encomendas;
+create policy encomendas_select on public.encomendas for select to authenticated
+  using (
+    public.is_gestor(condominio_id) or public.is_porteiro(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = encomendas.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+drop policy if exists encomendas_write on public.encomendas;
+create policy encomendas_write on public.encomendas for all to authenticated
+  using (public.is_gestor(condominio_id) or public.is_porteiro(condominio_id))
+  with check (
+    registrado_por = auth.uid() and (public.is_gestor(condominio_id) or public.is_porteiro(condominio_id))
+  );
+
+-- veiculos (visível à unidade dona, gestor e portaria; cadastro pela unidade, gestor ou portaria)
+drop policy if exists veiculos_select on public.veiculos;
+create policy veiculos_select on public.veiculos for select to authenticated
+  using (
+    public.is_gestor(condominio_id) or public.is_porteiro(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = veiculos.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+drop policy if exists veiculos_write on public.veiculos;
+create policy veiculos_write on public.veiculos for insert to authenticated
+  with check (
+    public.is_gestor(condominio_id) or public.is_porteiro(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = veiculos.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+drop policy if exists veiculos_update on public.veiculos;
+create policy veiculos_update on public.veiculos for update to authenticated
+  using (
+    public.is_gestor(condominio_id) or public.is_porteiro(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = veiculos.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  )
+  with check (
+    public.is_gestor(condominio_id) or public.is_porteiro(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = veiculos.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+drop policy if exists veiculos_delete on public.veiculos;
+create policy veiculos_delete on public.veiculos for delete to authenticated
+  using (
+    public.is_gestor(condominio_id) or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = veiculos.unidade_id and m.user_id = auth.uid() and m.status = 'ativo'
+    )
+  );
+
+-- ----------------------------------------------------------------------------
+-- 4b. PERMISSÕES DE ACESSO À DATA API
+--     (necessárias além do RLS; garantem que o app enxergue as tabelas mesmo
+--      se "Automatically expose new tables" estiver desligado no projeto)
+-- ----------------------------------------------------------------------------
+
+grant usage on schema public to authenticated, anon;
+grant select, insert, update, delete on all tables in schema public to authenticated;
+grant usage, select on all sequences in schema public to authenticated;
+
 -- ----------------------------------------------------------------------------
 -- 5. STORAGE (fotos de chamados, achados e avatares)
 -- ----------------------------------------------------------------------------
 
 insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', true), ('chamados', 'chamados', true), ('achados', 'achados', true)
+values ('avatars', 'avatars', true), ('chamados', 'chamados', true), ('achados', 'achados', true), ('portaria', 'portaria', true)
 on conflict (id) do nothing;
 
 drop policy if exists fotos_leitura on storage.objects;
 create policy fotos_leitura on storage.objects for select
-  using (bucket_id in ('avatars', 'chamados', 'achados'));
+  using (bucket_id in ('avatars', 'chamados', 'achados', 'portaria'));
 
 drop policy if exists fotos_upload on storage.objects;
 create policy fotos_upload on storage.objects for insert to authenticated
-  with check (bucket_id in ('avatars', 'chamados', 'achados'));
+  with check (bucket_id in ('avatars', 'chamados', 'achados', 'portaria'));
 
 drop policy if exists fotos_update on storage.objects;
 create policy fotos_update on storage.objects for update to authenticated
@@ -499,6 +819,12 @@ begin
   exception when duplicate_object then null; end;
   begin
     alter publication supabase_realtime add table public.solicitacoes;
+  exception when duplicate_object then null; end;
+  begin
+    alter publication supabase_realtime add table public.encomendas;
+  exception when duplicate_object then null; end;
+  begin
+    alter publication supabase_realtime add table public.visitantes_autorizados;
   exception when duplicate_object then null; end;
 end $$;
 

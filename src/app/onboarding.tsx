@@ -3,15 +3,18 @@ import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppText, Button, Card, Input, Loading, Screen } from '@/components/ui';
+import { AppText, Button, Card, Chip, Input, Loading, Screen } from '@/components/ui';
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { vinculoLabel } from '@/lib/labels';
+import type { Vinculo } from '@/lib/types';
 
-type Modo = 'escolha' | 'criar' | 'entrar';
+type Modo = 'escolha' | 'criar' | 'entrar' | 'portaria';
 
 export default function Onboarding() {
   const router = useRouter();
-  const { ready, session, memberships, profile, criarCondominio, entrarCondominio, signOut } = useAuth();
+  const { ready, session, memberships, profile, criarCondominio, entrarCondominio, entrarComoPorteiro, signOut } =
+    useAuth();
   const [modo, setModo] = useState<Modo>('escolha');
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
@@ -24,6 +27,9 @@ export default function Onboarding() {
   const [codigo, setCodigo] = useState('');
   const [bloco, setBloco] = useState('');
   const [numero, setNumero] = useState('');
+  const [vinculo, setVinculo] = useState<Vinculo>('proprietario');
+  // campo portaria
+  const [codigoPortaria, setCodigoPortaria] = useState('');
 
   if (!ready) return <Loading />;
   if (!session) return <Redirect href="/(auth)/login" />;
@@ -43,7 +49,17 @@ export default function Onboarding() {
     if (!codigo.trim()) return setErro('Informe o código de convite.');
     setCarregando(true);
     setErro(null);
-    const { error } = await entrarCondominio({ codigo, bloco, numero });
+    const { error } = await entrarCondominio({ codigo, bloco, numero, vinculo });
+    setCarregando(false);
+    if (error) setErro(error);
+    else router.replace('/(app)/(tabs)/inicio');
+  }
+
+  async function entrarPortaria() {
+    if (!codigoPortaria.trim()) return setErro('Informe o código da portaria.');
+    setCarregando(true);
+    setErro(null);
+    const { error } = await entrarComoPorteiro(codigoPortaria);
     setCarregando(false);
     if (error) setErro(error);
     else router.replace('/(app)/(tabs)/inicio');
@@ -78,6 +94,15 @@ export default function Onboarding() {
               setModo('entrar');
             }}
           />
+          <OpcaoCard
+            icon="shield-checkmark"
+            titulo="Sou da portaria"
+            descricao="Tenho um código de acesso da equipe de portaria."
+            onPress={() => {
+              setErro(null);
+              setModo('portaria');
+            }}
+          />
           <Pressable onPress={signOut} style={{ alignSelf: 'center', marginTop: spacing.lg }}>
             <AppText color="muted">Sair da conta</AppText>
           </Pressable>
@@ -98,7 +123,7 @@ export default function Onboarding() {
           <Button title="Criar condomínio" onPress={criar} loading={carregando} size="lg" icon="add" />
           <Voltar onPress={() => setModo('escolha')} />
         </Card>
-      ) : (
+      ) : modo === 'entrar' ? (
         <Card style={{ gap: spacing.lg }}>
           <AppText variant="subtitle">Entrar no condomínio</AppText>
           <Input
@@ -117,8 +142,31 @@ export default function Onboarding() {
               <Input label="Apto/Casa" placeholder="101" value={numero} onChangeText={setNumero} />
             </View>
           </View>
+          <View style={{ gap: spacing.sm }}>
+            <AppText variant="label" color="muted">Você é...</AppText>
+            <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>
+              {(['proprietario', 'inquilino', 'dependente'] as Vinculo[]).map((v) => (
+                <Chip key={v} label={vinculoLabel[v].label} selected={vinculo === v} onPress={() => setVinculo(v)} />
+              ))}
+            </View>
+          </View>
           {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
           <Button title="Entrar" onPress={entrar} loading={carregando} size="lg" icon="enter-outline" />
+          <Voltar onPress={() => setModo('escolha')} />
+        </Card>
+      ) : (
+        <Card style={{ gap: spacing.lg }}>
+          <AppText variant="subtitle">Acesso da portaria</AppText>
+          <Input
+            label="Código da portaria"
+            placeholder="Ex.: P1A2B3C4"
+            autoCapitalize="characters"
+            value={codigoPortaria}
+            onChangeText={setCodigoPortaria}
+            icon="shield-checkmark-outline"
+          />
+          {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
+          <Button title="Entrar" onPress={entrarPortaria} loading={carregando} size="lg" icon="enter-outline" />
           <Voltar onPress={() => setModo('escolha')} />
         </Card>
       )}

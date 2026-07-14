@@ -5,7 +5,7 @@ import { View } from 'react-native';
 import { ActionTile, AppText, Avatar, Badge, Card, Loading, Screen } from '@/components/ui';
 import { palette, radius, spacing, tone as tones, type Tone } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
-import { listarComunicados, resumoGestor, type ResumoGestor } from '@/lib/db';
+import { listarComunicados, resumoGestor, resumoPortaria, type ResumoGestor, type ResumoPortaria } from '@/lib/db';
 import { primeiroNome, tempoRelativo } from '@/lib/format';
 import { useFetch } from '@/lib/useFetch';
 import { isGestor, type Comunicado } from '@/lib/types';
@@ -14,19 +14,23 @@ export default function Inicio() {
   const router = useRouter();
   const { profile, membershipAtual, condominioId, user, papel } = useAuth();
   const gestor = isGestor(papel);
+  const porteiro = papel === 'porteiro';
   const cond = membershipAtual?.condominio;
 
   const dados = useFetch(async () => {
-    if (!condominioId || !user) return { comunicados: [] as Comunicado[], resumo: null as ResumoGestor | null };
-    const [comunicados, resumo] = await Promise.all([
+    if (!condominioId || !user)
+      return { comunicados: [] as Comunicado[], resumo: null as ResumoGestor | null, resumoPortaria: null as ResumoPortaria | null };
+    const [comunicados, resumo, resumoPort] = await Promise.all([
       listarComunicados(condominioId, user.id),
       gestor ? resumoGestor(condominioId) : Promise.resolve(null),
+      porteiro ? resumoPortaria(condominioId) : Promise.resolve(null),
     ]);
-    return { comunicados, resumo };
-  }, [condominioId, gestor]);
+    return { comunicados, resumo, resumoPortaria: resumoPort };
+  }, [condominioId, gestor, porteiro]);
 
   const comunicados = dados.data?.comunicados ?? [];
   const resumo = dados.data?.resumo ?? null;
+  const resumoPort = dados.data?.resumoPortaria ?? null;
 
   return (
     <Screen refreshing={dados.refreshing} onRefresh={dados.refetch}>
@@ -35,7 +39,7 @@ export default function Inicio() {
         <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={48} />
         <View style={{ flex: 1 }}>
           <AppText color="muted" variant="caption">
-            {gestor ? 'Painel do síndico' : 'Bem-vindo(a)'}
+            {gestor ? 'Painel do síndico' : porteiro ? 'Painel da portaria' : 'Bem-vindo(a)'}
           </AppText>
           <AppText variant="subtitle" numberOfLines={1}>
             {primeiroNome(profile?.nome_completo) || 'Morador'}
@@ -129,6 +133,33 @@ export default function Inicio() {
         </View>
       ) : null}
 
+      {/* Dashboard da portaria */}
+      {porteiro ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg }}>
+          <StatCard
+            label="No local agora"
+            valor={resumoPort?.visitantesNoLocal ?? 0}
+            icon="people"
+            tone="info"
+            onPress={() => router.push('/(app)/portaria/visitantes')}
+          />
+          <StatCard
+            label="Autorizados hoje"
+            valor={resumoPort?.visitantesAutorizadosHoje ?? 0}
+            icon="calendar"
+            tone="primary"
+            onPress={() => router.push('/(app)/portaria/visitantes')}
+          />
+          <StatCard
+            label="Encomendas aguardando"
+            valor={resumoPort?.encomendasAguardando ?? 0}
+            icon="cube"
+            tone="warning"
+            onPress={() => router.push('/(app)/portaria/encomendas')}
+          />
+        </View>
+      ) : null}
+
       {/* Ações rápidas */}
       <AppText variant="subtitle" style={{ marginTop: spacing.xl, marginBottom: spacing.md }}>
         Ações rápidas
@@ -139,6 +170,12 @@ export default function Inicio() {
             <ActionTile icon="megaphone" label="Publicar aviso" tone="primary" onPress={() => router.push('/(app)/comunicados/novo')} />
             <ActionTile icon="construct" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
             <ActionTile icon="cube" label="Achados" tone="info" onPress={() => router.push('/(app)/achados')} />
+          </>
+        ) : porteiro ? (
+          <>
+            <ActionTile icon="person-add" label="Visitante avulso" tone="info" onPress={() => router.push('/(app)/portaria/visitante-avulso')} />
+            <ActionTile icon="cube" label="Nova encomenda" tone="warning" onPress={() => router.push('/(app)/portaria/encomenda-nova')} />
+            <ActionTile icon="car" label="Veículos" tone="primary" onPress={() => router.push('/(app)/portaria/veiculos')} />
           </>
         ) : (
           <>
