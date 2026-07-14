@@ -1,6 +1,7 @@
 import { Pressable, View, type ViewProps, type ViewStyle } from 'react-native';
 
-import { palette, radius, shadow, spacing } from '@/constants/theme';
+import { radius, shadow, spacing } from '@/constants/theme';
+import { useAppTheme } from '@/lib/theme';
 
 export type CardProps = ViewProps & {
   onPress?: () => void;
@@ -9,6 +10,7 @@ export type CardProps = ViewProps & {
 };
 
 export function Card({ onPress, padded = true, style, children, ...rest }: CardProps) {
+  const { palette } = useAppTheme();
   const base: ViewStyle = {
     backgroundColor: palette.surface,
     borderRadius: radius.lg,

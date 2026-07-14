@@ -9,6 +9,8 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { palette } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { configurarNotificacoes, salvarPushToken } from '@/lib/notificacoes';
+import { ThemeProvider, useAppTheme } from '@/lib/theme';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -20,21 +22,45 @@ function EsconderSplash() {
   return null;
 }
 
+function ConfigurarPush() {
+  const { user, condominioId } = useAuth();
+  useEffect(() => {
+    if (!user) return;
+    configurarNotificacoes().then((token) => {
+      if (token) salvarPushToken(user.id, condominioId, token);
+    });
+  }, [user, condominioId]);
+  return null;
+}
+
+// Fica DENTRO do ThemeProvider para reagir a `palette.background` mutar ao trocar de tema.
+function AppShell() {
+  const { escuro } = useAppTheme();
+  return (
+    <>
+      <StatusBar style={escuro ? 'light' : 'dark'} />
+      <EsconderSplash />
+      <ConfigurarPush />
+      <Stack
+        screenOptions={{
+          headerShown: false,
+          contentStyle: { backgroundColor: palette.background },
+          animation: 'slide_from_right',
+        }}
+      />
+    </>
+  );
+}
+
 export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
-        <AuthProvider>
-          <StatusBar style="dark" />
-          <EsconderSplash />
-          <Stack
-            screenOptions={{
-              headerShown: false,
-              contentStyle: { backgroundColor: palette.background },
-              animation: 'slide_from_right',
-            }}
-          />
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <AppShell />
+          </AuthProvider>
+        </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>
   );

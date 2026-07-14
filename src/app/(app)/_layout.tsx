@@ -1,11 +1,15 @@
 import { Redirect, Stack } from 'expo-router';
 
 import { Loading } from '@/components/ui';
-import { palette } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useNotificacoesRealtime } from '@/lib/notificacoes';
+import { useAppTheme } from '@/lib/theme';
 
 export default function AppLayout() {
-  const { ready, session, memberships } = useAuth();
+  const { ready, session, memberships, user, condominioId, membershipAtual, profile, papel } = useAuth();
+  const { palette } = useAppTheme();
+
+  useNotificacoesRealtime(condominioId, user?.id ?? null, membershipAtual?.unidade_id ?? null, profile?.preferencias_notificacao, papel);
 
   if (!ready) return <Loading />;
   if (!session) return <Redirect href="/(auth)/login" />;

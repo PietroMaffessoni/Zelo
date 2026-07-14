@@ -1,12 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
 
-import { palette } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { isGestor } from '@/lib/types';
 
 export default function TabsLayout() {
   const { papel } = useAuth();
+  const { palette } = useAppTheme();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
 

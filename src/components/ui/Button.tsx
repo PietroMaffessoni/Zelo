@@ -8,8 +8,9 @@ import {
   type ViewStyle,
 } from 'react-native';
 
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
+import { useAppTheme } from '@/lib/theme';
 
 type Variante = 'primary' | 'secondary' | 'ghost' | 'danger';
 type Tamanho = 'sm' | 'md' | 'lg';
@@ -37,6 +38,7 @@ export function Button({
   style,
   ...rest
 }: ButtonProps) {
+  const { palette } = useAppTheme();
   const bg =
     variant === 'primary'
       ? palette.primary

@@ -1,6 +1,7 @@
 import { Text as RNText, type TextProps, type TextStyle } from 'react-native';
 
-import { fontSize, fontWeight, palette } from '@/constants/theme';
+import { fontSize, fontWeight } from '@/constants/theme';
+import { useAppTheme } from '@/lib/theme';
 
 type Variant = 'display' | 'title' | 'heading' | 'subtitle' | 'body' | 'label' | 'caption';
 type ColorKey = 'default' | 'muted' | 'subtle' | 'primary' | 'onPrimary' | 'danger' | 'success';
@@ -13,16 +14,6 @@ const variants: Record<Variant, TextStyle> = {
   body: { fontSize: fontSize.md, fontWeight: fontWeight.regular },
   label: { fontSize: fontSize.sm, fontWeight: fontWeight.semibold },
   caption: { fontSize: fontSize.xs, fontWeight: fontWeight.medium },
-};
-
-const colors: Record<ColorKey, string> = {
-  default: palette.text,
-  muted: palette.textMuted,
-  subtle: palette.textSubtle,
-  primary: palette.primary,
-  onPrimary: palette.onPrimary,
-  danger: palette.danger,
-  success: palette.success,
 };
 
 export type AppTextProps = TextProps & {
@@ -40,6 +31,16 @@ export function AppText({
   style,
   ...rest
 }: AppTextProps) {
+  const { palette } = useAppTheme();
+  const colors: Record<ColorKey, string> = {
+    default: palette.text,
+    muted: palette.textMuted,
+    subtle: palette.textSubtle,
+    primary: palette.primary,
+    onPrimary: palette.onPrimary,
+    danger: palette.danger,
+    success: palette.success,
+  };
   return (
     <RNText
       {...rest}

@@ -1,8 +1,9 @@
 import { Image } from 'expo-image';
 import { View } from 'react-native';
 
-import { palette, radius } from '@/constants/theme';
+import { radius } from '@/constants/theme';
 import { iniciais } from '@/lib/format';
+import { useAppTheme } from '@/lib/theme';
 import { AppText } from '@/components/ui/Text';
 
 const cores = ['#4F46E5', '#0EA5E9', '#16A34A', '#EA580C', '#DB2777', '#7C3AED', '#0891B2'];
@@ -23,6 +24,7 @@ export function Avatar({
   url?: string | null;
   size?: number;
 }) {
+  const { palette } = useAppTheme();
   if (url) {
     return (
       <Image

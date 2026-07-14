@@ -4,7 +4,8 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Button, Card, EmptyState, Loading, Screen } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
+import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { alterarStatusReserva, listarAreas, listarReservas } from '@/lib/db';
 import { formatData, formatHora, primeiroNome } from '@/lib/format';
@@ -14,6 +15,7 @@ import { useFetch } from '@/lib/useFetch';
 
 export default function ReservasTab() {
   const router = useRouter();
+  const { palette } = useAppTheme();
   const { condominioId, papel } = useAuth();
   const gestor = isGestor(papel);
   const [processando, setProcessando] = useState<string | null>(null);
@@ -127,7 +129,7 @@ export default function ReservasTab() {
             ) : (
               <View style={{ gap: spacing.md }}>
                 {proximas.map((r) => (
-                  <Card key={r.id}>
+                  <Card key={r.id} onPress={() => router.push(`/(app)/reservas/${r.id}`)}>
                     <ReservaInfo reserva={r} mostrarMorador={gestor} />
                   </Card>
                 ))}
@@ -141,6 +143,7 @@ export default function ReservasTab() {
 }
 
 function ReservaInfo({ reserva, mostrarMorador }: { reserva: Reserva; mostrarMorador?: boolean }) {
+  const { palette } = useAppTheme();
   const st = L.reservaStatus[reserva.status];
   return (
     <View>

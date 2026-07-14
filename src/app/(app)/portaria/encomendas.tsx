@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
-import { View } from 'react-native';
+import { Switch, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Button, Card, EmptyState, Fab, Input, Loading, Screen } from '@/components/ui';
 import { palette, radius, spacing } from '@/constants/theme';
@@ -16,6 +16,7 @@ export default function PortariaEncomendas() {
   const { condominioId } = useAuth();
   const [retirandoId, setRetirandoId] = useState<string | null>(null);
   const [nomeRetirada, setNomeRetirada] = useState('');
+  const [assinou, setAssinou] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
   const { data, loading, refreshing, refetch } = useFetch(
@@ -27,13 +28,20 @@ export default function PortariaEncomendas() {
   const aguardando = encomendas.filter((e) => e.status === 'aguardando_retirada');
   const retiradas = encomendas.filter((e) => e.status === 'retirada');
 
+  function abrirRetirada(id: string) {
+    setRetirandoId(id);
+    setNomeRetirada('');
+    setAssinou(false);
+  }
+
   async function confirmarRetirada(id: string) {
     if (!nomeRetirada.trim()) return;
     setSalvando(true);
-    await marcarEncomendaRetirada(id, nomeRetirada.trim());
+    await marcarEncomendaRetirada(id, nomeRetirada.trim(), { assinaturaConfirmada: assinou });
     setSalvando(false);
     setRetirandoId(null);
     setNomeRetirada('');
+    setAssinou(false);
     refetch();
   }
 
@@ -91,6 +99,22 @@ export default function PortariaEncomendas() {
                     {retirandoId === e.id ? (
                       <View style={{ marginTop: spacing.md, gap: spacing.sm }}>
                         <Input placeholder="Nome de quem retirou" value={nomeRetirada} onChangeText={setNomeRetirada} />
+                        <View
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            gap: spacing.sm,
+                            backgroundColor: palette.surfaceAlt,
+                            borderRadius: radius.md,
+                            padding: spacing.md,
+                          }}
+                        >
+                          <View style={{ flex: 1 }}>
+                            <AppText variant="label">Assinatura eletrônica</AppText>
+                            <AppText color="muted" variant="caption">Morador confirmou o recebimento</AppText>
+                          </View>
+                          <Switch value={assinou} onValueChange={setAssinou} trackColor={{ true: palette.primary, false: palette.borderStrong }} />
+                        </View>
                         <View style={{ flexDirection: 'row', gap: spacing.sm }}>
                           <Button title="Cancelar" variant="secondary" size="sm" onPress={() => setRetirandoId(null)} />
                           <Button title="Confirmar" size="sm" loading={salvando} onPress={() => confirmarRetirada(e.id)} />
@@ -103,7 +127,7 @@ export default function PortariaEncomendas() {
                           size="sm"
                           fullWidth={false}
                           icon="checkmark-circle-outline"
-                          onPress={() => setRetirandoId(e.id)}
+                          onPress={() => abrirRetirada(e.id)}
                         />
                       </View>
                     )}
@@ -125,6 +149,7 @@ export default function PortariaEncomendas() {
                     </View>
                     <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>
                       Retirada por {e.retirado_por_nome} · {e.retirado_em ? tempoRelativo(e.retirado_em) : ''}
+                      {e.assinatura_confirmada ? ' · ✍️ assinado' : ''}
                     </AppText>
                   </Card>
                 ))}

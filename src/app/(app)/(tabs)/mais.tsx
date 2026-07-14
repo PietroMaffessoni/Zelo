@@ -7,12 +7,13 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { gerarCodigoPortaria } from '@/lib/db';
 import { papelLabel } from '@/lib/labels';
-import { isGestor as ehGestor } from '@/lib/types';
+import { isConselho as ehConselho, isGestor as ehGestor } from '@/lib/types';
 
 export default function Mais() {
   const router = useRouter();
   const { profile, papel, membershipAtual, memberships, condominioId, recarregar, signOut } = useAuth();
   const gestor = ehGestor(papel);
+  const conselho = ehConselho(papel);
   const [gerandoCodigo, setGerandoCodigo] = useState(false);
 
   async function gerarCodigoDaPortaria() {
@@ -51,6 +52,22 @@ export default function Mais() {
         <Divider />
         <ListItem icon="documents-outline" iconTone="info" title="Central do morador" subtitle="Solicitações à administração" onPress={() => router.push('/(app)/central')} />
         <Divider />
+        <ListItem icon="cash-outline" iconTone="success" title="Financeiro" subtitle="Boletos e despesas do condomínio" onPress={() => router.push('/(app)/financeiro')} />
+        <Divider />
+        <ListItem icon="folder-outline" iconTone="info" title="Documentos" subtitle="Convenção, regimento, atas e editais" onPress={() => router.push('/(app)/documentos')} />
+        <Divider />
+        <ListItem icon="podium-outline" iconTone="primary" title="Assembleias" subtitle="Convocações e votações" onPress={() => router.push('/(app)/assembleias')} />
+        <Divider />
+        <ListItem icon="bulb-outline" iconTone="warning" title="Propostas de pauta" subtitle="Sugira e apoie ideias para o condomínio" onPress={() => router.push('/(app)/propostas')} />
+        <Divider />
+        <ListItem icon="calendar-outline" iconTone="info" title="Agenda" subtitle="Eventos e datas importantes" onPress={() => router.push('/(app)/agenda')} />
+        <Divider />
+        <ListItem icon="information-circle-outline" iconTone="primary" title="Regras e informes" subtitle="Regimento, horários e convivência" onPress={() => router.push('/(app)/regras')} />
+        <Divider />
+        <ListItem icon="alert-circle-outline" iconTone="danger" title="Advertências e multas" subtitle={gestor ? 'Aplicar e gerenciar infrações' : 'Infrações da sua unidade'} onPress={() => router.push('/(app)/infracoes')} />
+        <Divider />
+        <ListItem icon="warning-outline" iconTone="danger" title="Emergência (SOS)" subtitle="Acionar a portaria em caso de emergência" onPress={() => router.push('/(app)/sos')} />
+        <Divider />
         <ListItem icon="cube-outline" iconTone="warning" title="Achados e perdidos" subtitle="Objetos encontrados no condomínio" onPress={() => router.push('/(app)/achados')} />
         {membershipAtual?.unidade_id ? (
           <>
@@ -62,6 +79,20 @@ export default function Mais() {
         ) : null}
       </Card>
 
+      {/* Gestão — síndico e conselho fiscal (leitura da operação) */}
+      {conselho ? (
+        <>
+          <AppText variant="label" color="muted" style={{ marginTop: spacing.xl, marginBottom: spacing.xs }}>
+            GESTÃO
+          </AppText>
+          <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+            <ListItem icon="construct-outline" iconTone="warning" title="Manutenção" subtitle="Equipamentos e manutenção preventiva" onPress={() => router.push('/(app)/manutencao')} />
+            <Divider />
+            <ListItem icon="bar-chart-outline" iconTone="success" title="Prestação de contas" subtitle="Receitas e despesas por mês" onPress={() => router.push('/(app)/financeiro/prestacao')} />
+          </Card>
+        </>
+      ) : null}
+
       {/* Administração */}
       {gestor ? (
         <>
@@ -72,6 +103,8 @@ export default function Mais() {
             <ListItem icon="add-circle-outline" iconTone="primary" title="Publicar comunicado" onPress={() => router.push('/(app)/comunicados/novo')} />
             <Divider />
             <ListItem icon="people-outline" iconTone="info" title="Moradores e unidades" subtitle="Cadastro de unidades, moradores, dependentes e pets" onPress={() => router.push('/(app)/unidades')} />
+            <Divider />
+            <ListItem icon="business-outline" iconTone="warning" title="Áreas comuns" subtitle="Taxa de uso, limites e disponibilidade" onPress={() => router.push('/(app)/areas')} />
             <Divider />
             <ListItem
               icon="key-outline"

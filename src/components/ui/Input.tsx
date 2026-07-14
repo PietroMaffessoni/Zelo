@@ -2,8 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
-import { fontSize, palette, radius, spacing } from '@/constants/theme';
+import { fontSize, radius, spacing } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
+import { useAppTheme } from '@/lib/theme';
 
 export type InputProps = TextInputProps & {
   label?: string;
@@ -14,6 +15,7 @@ export type InputProps = TextInputProps & {
 };
 
 export function Input({ label, error, hint, icon, senha, style, ...rest }: InputProps) {
+  const { palette } = useAppTheme();
   const [focado, setFocado] = useState(false);
   const [oculto, setOculto] = useState(!!senha);
 
@@ -37,7 +39,7 @@ export function Input({ label, error, hint, icon, senha, style, ...rest }: Input
           <Ionicons name={icon} size={18} color={palette.textSubtle} style={{ marginRight: spacing.sm }} />
         ) : null}
         <TextInput
-          style={[styles.input, Platform.OS === 'web' && (webNoOutline as object), style]}
+          style={[styles.input, { color: palette.text }, Platform.OS === 'web' && (webNoOutline as object), style]}
           placeholderTextColor={palette.textSubtle}
           onFocus={() => setFocado(true)}
           onBlur={() => setFocado(false)}
@@ -82,7 +84,6 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: fontSize.md,
-    color: palette.text,
     paddingVertical: spacing.md,
   },
 });

@@ -1,10 +1,37 @@
 /**
  * Design tokens do CondoOS.
- * Paleta clara, moderna e acessível. Um único ponto de verdade para
+ * Paleta clara e escura, moderna e acessível. Um único ponto de verdade para
  * cores, espaçamentos, tipografia, bordas e sombras.
  */
 
-export const palette = {
+export type Palette = {
+  primary: string;
+  primaryDark: string;
+  primarySoft: string;
+  onPrimary: string;
+  background: string;
+  surface: string;
+  surfaceAlt: string;
+  border: string;
+  borderStrong: string;
+  text: string;
+  textMuted: string;
+  textSubtle: string;
+  success: string;
+  successSoft: string;
+  warning: string;
+  warningSoft: string;
+  danger: string;
+  dangerSoft: string;
+  info: string;
+  infoSoft: string;
+  overlay: string;
+  white: string;
+  black: string;
+};
+export type ModoTema = 'light' | 'dark';
+
+const paletteLight: Palette = {
   // Marca
   primary: '#4F46E5',
   primaryDark: '#4338CA',
@@ -37,7 +64,53 @@ export const palette = {
   overlay: 'rgba(16, 24, 40, 0.45)',
   white: '#FFFFFF',
   black: '#101828',
-} as const;
+};
+
+const paletteDark: Palette = {
+  // Marca
+  primary: '#818CF8',
+  primaryDark: '#A5B4FC',
+  primarySoft: 'rgba(129, 140, 248, 0.18)',
+  onPrimary: '#111127',
+
+  // Neutros
+  background: '#0B0E16',
+  surface: '#161A26',
+  surfaceAlt: '#1F2433',
+  border: '#2B3142',
+  borderStrong: '#3B4257',
+
+  // Texto
+  text: '#F1F2F6',
+  textMuted: '#A2A9BD',
+  textSubtle: '#6E7488',
+
+  // Semânticas
+  success: '#4ADE80',
+  successSoft: 'rgba(74, 222, 128, 0.16)',
+  warning: '#FBBF24',
+  warningSoft: 'rgba(251, 191, 36, 0.16)',
+  danger: '#F87171',
+  dangerSoft: 'rgba(248, 113, 113, 0.16)',
+  info: '#60A5FA',
+  infoSoft: 'rgba(96, 165, 250, 0.16)',
+
+  // Utilitárias
+  overlay: 'rgba(0, 0, 0, 0.6)',
+  white: '#FFFFFF',
+  black: '#0B0E16',
+};
+
+/**
+ * `palette` é um objeto MUTÁVEL: o mesmo objeto é compartilhado por todo o app
+ * (todo `import { palette }` aponta para esta mesma referência). Trocar de tema
+ * não reatribui `palette` — muta suas propriedades in-place via `aplicarTema()`.
+ * Isso funciona porque os componentes leem `palette.x` durante a própria função
+ * de render (nunca capturam o valor em um `StyleSheet.create` no escopo do módulo),
+ * então a próxima renderização já reflete os novos valores. `ThemeProvider`
+ * (`@/lib/theme`) é quem dispara essa re-renderização ao trocar de modo.
+ */
+export const palette: Palette = { ...paletteLight };
 
 export const spacing = {
   xs: 4,
@@ -98,17 +171,31 @@ export const shadow = {
   },
 } as const;
 
-/** Cor de destaque por tipo de status (badges). */
+/** Cor de destaque por tipo de status (badges). Também mutável — ver `palette`. */
 export type Tone = 'neutral' | 'primary' | 'success' | 'warning' | 'danger' | 'info';
 
-export const tone: Record<Tone, { bg: string; fg: string }> = {
-  neutral: { bg: palette.surfaceAlt, fg: palette.textMuted },
-  primary: { bg: palette.primarySoft, fg: palette.primary },
-  success: { bg: palette.successSoft, fg: palette.success },
-  warning: { bg: palette.warningSoft, fg: palette.warning },
-  danger: { bg: palette.dangerSoft, fg: palette.danger },
-  info: { bg: palette.infoSoft, fg: palette.info },
-};
+function construirTone(p: Palette): Record<Tone, { bg: string; fg: string }> {
+  return {
+    neutral: { bg: p.surfaceAlt, fg: p.textMuted },
+    primary: { bg: p.primarySoft, fg: p.primary },
+    success: { bg: p.successSoft, fg: p.success },
+    warning: { bg: p.warningSoft, fg: p.warning },
+    danger: { bg: p.dangerSoft, fg: p.danger },
+    info: { bg: p.infoSoft, fg: p.info },
+  };
+}
+
+export const tone: Record<Tone, { bg: string; fg: string }> = construirTone(paletteLight);
+
+const paletasPorModo: Record<ModoTema, Palette> = { light: paletteLight, dark: paletteDark };
+
+/** Muta `palette` e `tone` in-place para refletir o modo escolhido. Ver `@/lib/theme`. */
+export function aplicarTema(modo: ModoTema) {
+  const nova = paletasPorModo[modo];
+  Object.assign(palette, nova);
+  const novoTone = construirTone(nova);
+  (Object.keys(novoTone) as Tone[]).forEach((k) => Object.assign(tone[k], novoTone[k]));
+}
 
 export const theme = { palette, spacing, radius, fontSize, fontWeight, shadow, tone };
 export type AppTheme = typeof theme;

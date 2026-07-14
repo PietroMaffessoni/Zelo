@@ -7,6 +7,7 @@ import { AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, Input, 
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import {
+  atualizarPapelMorador,
   atualizarVinculoMorador,
   criarDependente,
   criarPet,
@@ -55,6 +56,13 @@ export default function UnidadeDetalhe() {
     setRemovendoMorador(membershipId);
     await removerMoradorDaUnidade(membershipId);
     setRemovendoMorador(null);
+    refetch();
+  }
+
+  async function alternarConselheiro(membershipId: string, atual: 'morador' | 'conselheiro') {
+    setMudandoVinculo(membershipId);
+    await atualizarPapelMorador(membershipId, atual === 'conselheiro' ? 'morador' : 'conselheiro');
+    setMudandoVinculo(null);
     refetch();
   }
 
@@ -161,6 +169,23 @@ export default function UnidadeDetalhe() {
                     );
                   })}
                 </View>
+              ) : null}
+              {gestor && (m.papel === 'morador' || m.papel === 'conselheiro') ? (
+                <Pressable
+                  onPress={() => alternarConselheiro(m.id, m.papel as 'morador' | 'conselheiro')}
+                  disabled={mudandoVinculo === m.id}
+                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm }}
+                  hitSlop={6}
+                >
+                  <Ionicons
+                    name={m.papel === 'conselheiro' ? 'star' : 'star-outline'}
+                    size={16}
+                    color={m.papel === 'conselheiro' ? palette.warning : palette.textMuted}
+                  />
+                  <AppText variant="caption" color={m.papel === 'conselheiro' ? 'default' : 'muted'}>
+                    {m.papel === 'conselheiro' ? 'Conselheiro — toque para remover' : 'Tornar conselheiro'}
+                  </AppText>
+                </Pressable>
               ) : null}
             </Card>
           ))}

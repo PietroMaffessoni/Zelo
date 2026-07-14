@@ -3,7 +3,7 @@
  * Mantidos manualmente em sincronia com supabase/setup.sql.
  */
 
-export type Papel = 'morador' | 'sindico' | 'admin' | 'porteiro';
+export type Papel = 'morador' | 'sindico' | 'admin' | 'porteiro' | 'conselheiro';
 export type MembershipStatus = 'ativo' | 'pendente' | 'inativo';
 export type Vinculo = 'proprietario' | 'inquilino' | 'dependente';
 export type EspeciePet = 'cachorro' | 'gato' | 'outro';
@@ -36,6 +36,68 @@ export type VisitanteStatus = 'ativa' | 'utilizada' | 'expirada' | 'cancelada';
 export type EncomendaStatus = 'aguardando_retirada' | 'retirada';
 export type TipoVeiculo = 'carro' | 'moto' | 'outro';
 
+export type TipoLancamento = 'boleto' | 'despesa';
+export type CategoriaFinanceira =
+  | 'taxa_condominial'
+  | 'fundo_reserva'
+  | 'multa'
+  | 'agua'
+  | 'luz'
+  | 'manutencao'
+  | 'servicos'
+  | 'outros';
+export type StatusFinanceiro = 'pendente' | 'pago' | 'atrasado' | 'cancelado';
+
+export type CategoriaDocumento = 'convencao' | 'regimento_interno' | 'ata' | 'edital' | 'financeiro' | 'outros';
+
+export type TipoVistoria = 'entrada' | 'saida';
+export type ItemVistoria = { item: string; ok: boolean; observacao?: string };
+
+export type AssembleiaStatus = 'convocada' | 'em_andamento' | 'encerrada' | 'cancelada';
+
+export type TipoEvento = 'evento' | 'assembleia' | 'manutencao' | 'obra' | 'reuniao' | 'lazer' | 'outro';
+
+export type CategoriaRegra =
+  | 'horarios'
+  | 'areas_comuns'
+  | 'obras'
+  | 'animais'
+  | 'seguranca'
+  | 'convivencia'
+  | 'mudancas'
+  | 'geral';
+
+export type CategoriaEquipamento =
+  | 'elevador'
+  | 'bomba'
+  | 'gerador'
+  | 'portao'
+  | 'incendio'
+  | 'piscina'
+  | 'jardim'
+  | 'eletrica'
+  | 'hidraulica'
+  | 'outros';
+
+export type TipoInfracao = 'advertencia' | 'multa';
+export type MotivoInfracao =
+  | 'barulho'
+  | 'area_comum'
+  | 'animais'
+  | 'obras'
+  | 'estacionamento'
+  | 'lixo'
+  | 'seguranca'
+  | 'outros';
+export type StatusInfracao = 'aplicada' | 'contestada' | 'anulada' | 'confirmada' | 'paga';
+
+export type TipoSos = 'emergencia' | 'seguranca' | 'incendio' | 'saude' | 'outro';
+export type StatusSos = 'aberto' | 'atendido' | 'encerrado';
+
+export type StatusProposta = 'sugerida' | 'aprovada' | 'recusada' | 'arquivada';
+
+export type TipoAcessoPortao = 'social' | 'garagem' | 'servico';
+
 export type Condominio = {
   id: string;
   nome: string;
@@ -45,8 +107,17 @@ export type Condominio = {
   cnpj: string | null;
   codigo_convite: string;
   codigo_portaria: string | null;
+  total_vagas_visitante: number;
   criado_por: string | null;
   created_at: string;
+};
+
+export type PreferenciasNotificacao = {
+  comunicados: boolean;
+  chamados: boolean;
+  encomendas: boolean;
+  reservas: boolean;
+  assembleias: boolean;
 };
 
 export type Profile = {
@@ -54,6 +125,7 @@ export type Profile = {
   nome_completo: string | null;
   telefone: string | null;
   avatar_url: string | null;
+  preferencias_notificacao: PreferenciasNotificacao;
   created_at: string;
 };
 
@@ -161,6 +233,8 @@ export type AreaComum = {
   hora_fechamento: string | null;
   icone: string;
   ativo: boolean;
+  taxa_uso: number;
+  limite_mensal_por_unidade: number | null;
   created_at: string;
 };
 
@@ -175,10 +249,24 @@ export type Reserva = {
   status: ReservaStatus;
   observacao: string | null;
   resposta_admin: string | null;
+  taxa_cobrada: number | null;
+  lancamento_id: string | null;
+  comprovante_path: string | null;
   created_at: string;
   area?: AreaComum | null;
   morador?: Profile | null;
   unidade?: Unidade | null;
+};
+
+export type VistoriaReserva = {
+  id: string;
+  reserva_id: string;
+  condominio_id: string;
+  tipo: TipoVistoria;
+  itens: ItemVistoria[];
+  fotos: string[];
+  respondida_por: string | null;
+  created_at: string;
 };
 
 export type AchadoPerdido = {
@@ -247,6 +335,8 @@ export type Encomenda = {
   registrado_por: string;
   status: EncomendaStatus;
   retirado_por_nome: string | null;
+  retirado_por_id: string | null;
+  assinatura_confirmada: boolean;
   retirado_em: string | null;
   created_at: string;
   unidade?: Unidade | null;
@@ -266,6 +356,190 @@ export type Veiculo = {
   unidade?: Unidade | null;
 };
 
+export type LancamentoFinanceiro = {
+  id: string;
+  condominio_id: string;
+  unidade_id: string | null;
+  tipo: TipoLancamento;
+  categoria: CategoriaFinanceira;
+  descricao: string;
+  valor: number;
+  vencimento: string;
+  competencia: string | null;
+  status: StatusFinanceiro;
+  pago_em: string | null;
+  anexo_path: string | null;
+  observacao: string | null;
+  criado_por: string | null;
+  created_at: string;
+  updated_at: string;
+  unidade?: Unidade | null;
+};
+
+export type Documento = {
+  id: string;
+  condominio_id: string;
+  categoria: CategoriaDocumento;
+  titulo: string;
+  descricao: string | null;
+  arquivo_path: string;
+  arquivo_nome: string | null;
+  tamanho_bytes: number | null;
+  publicado_por: string | null;
+  created_at: string;
+};
+
+export type Assembleia = {
+  id: string;
+  condominio_id: string;
+  titulo: string;
+  descricao: string | null;
+  data_hora: string;
+  local: string | null;
+  link_online: string | null;
+  quorum_minimo_unidades: number | null;
+  status: AssembleiaStatus;
+  ata_documento_id: string | null;
+  criado_por: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AssembleiaPauta = {
+  id: string;
+  assembleia_id: string;
+  condominio_id: string;
+  ordem: number;
+  titulo: string;
+  descricao: string | null;
+  permite_votacao: boolean;
+  encerrada: boolean;
+  created_at: string;
+  opcoes?: AssembleiaOpcao[];
+};
+
+export type AssembleiaOpcao = {
+  id: string;
+  pauta_id: string;
+  texto: string;
+  ordem: number;
+  votos?: number;
+};
+
+export type AssembleiaVoto = {
+  id: string;
+  pauta_id: string;
+  opcao_id: string;
+  condominio_id: string;
+  unidade_id: string;
+  user_id: string;
+  created_at: string;
+};
+
+export type Evento = {
+  id: string;
+  condominio_id: string;
+  titulo: string;
+  descricao: string | null;
+  tipo: TipoEvento;
+  inicio: string;
+  fim: string | null;
+  local: string | null;
+  criado_por: string | null;
+  created_at: string;
+};
+
+export type Regra = {
+  id: string;
+  condominio_id: string;
+  categoria: CategoriaRegra;
+  titulo: string;
+  conteudo: string;
+  ordem: number;
+  ativo: boolean;
+  atualizado_por: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
+export type Equipamento = {
+  id: string;
+  condominio_id: string;
+  nome: string;
+  categoria: CategoriaEquipamento;
+  localizacao: string | null;
+  periodicidade_dias: number | null;
+  ultima_manutencao: string | null;
+  proxima_manutencao: string | null;
+  fornecedor: string | null;
+  observacoes: string | null;
+  ativo: boolean;
+  created_at: string;
+};
+
+export type Manutencao = {
+  id: string;
+  condominio_id: string;
+  equipamento_id: string;
+  descricao: string;
+  custo: number | null;
+  realizada_em: string;
+  responsavel: string | null;
+  registrado_por: string | null;
+  created_at: string;
+};
+
+export type Infracao = {
+  id: string;
+  condominio_id: string;
+  unidade_id: string | null;
+  tipo: TipoInfracao;
+  motivo: MotivoInfracao;
+  descricao: string;
+  valor: number | null;
+  status: StatusInfracao;
+  contestacao: string | null;
+  contestada_em: string | null;
+  resposta_gestor: string | null;
+  lancamento_id: string | null;
+  aplicada_por: string | null;
+  created_at: string;
+  updated_at: string;
+  unidade?: Unidade | null;
+};
+
+export type AlertaSos = {
+  id: string;
+  condominio_id: string;
+  user_id: string;
+  unidade_id: string | null;
+  tipo: TipoSos;
+  mensagem: string | null;
+  status: StatusSos;
+  atendido_por: string | null;
+  atendido_em: string | null;
+  created_at: string;
+  autor?: Profile | null;
+  unidade?: Unidade | null;
+};
+
+export type PropostaPauta = {
+  id: string;
+  condominio_id: string;
+  autor_id: string;
+  unidade_id: string | null;
+  titulo: string;
+  descricao: string;
+  status: StatusProposta;
+  assembleia_id: string | null;
+  resposta_gestor: string | null;
+  created_at: string;
+  updated_at: string;
+  autor?: Profile | null;
+  apoios?: number;
+  apoiada?: boolean;
+};
+
 export type UnidadeDetalhe = Unidade & {
   moradores: Membership[];
   dependentes: Dependente[];
@@ -274,3 +548,19 @@ export type UnidadeDetalhe = Unidade & {
 
 export const isGestor = (papel?: Papel | null) =>
   papel === 'sindico' || papel === 'admin';
+
+/** Conselho fiscal: enxerga a gestão (financeiro, infrações, manutenção) sem poder alterar. */
+export const isConselho = (papel?: Papel | null) =>
+  papel === 'sindico' || papel === 'admin' || papel === 'conselheiro';
+
+/** "atrasado" efetivo de uma infração/valor não se aplica; helper de rótulo de próxima manutenção. */
+export function manutencaoVencida(proxima?: string | null): boolean {
+  if (!proxima) return false;
+  return proxima < new Date().toISOString().slice(0, 10);
+}
+
+/** Status "atrasado" é calculado na hora de exibir, não confiado ao valor gravado (que só o gestor força manualmente). */
+export function statusFinanceiroEfetivo(l: Pick<LancamentoFinanceiro, 'status' | 'vencimento'>): StatusFinanceiro {
+  if (l.status === 'pendente' && l.vencimento < new Date().toISOString().slice(0, 10)) return 'atrasado';
+  return l.status;
+}

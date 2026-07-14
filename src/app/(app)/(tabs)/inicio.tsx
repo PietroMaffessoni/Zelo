@@ -1,36 +1,60 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ActionTile, AppText, Avatar, Badge, Card, Loading, Screen } from '@/components/ui';
-import { palette, radius, spacing, tone as tones, type Tone } from '@/constants/theme';
+import { radius, spacing, type Tone } from '@/constants/theme';
+import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
-import { listarComunicados, resumoGestor, resumoPortaria, type ResumoGestor, type ResumoPortaria } from '@/lib/db';
-import { primeiroNome, tempoRelativo } from '@/lib/format';
+import {
+  listarAssembleias,
+  listarComunicados,
+  resumoFinanceiroMorador,
+  resumoGestor,
+  resumoPortaria,
+  type ResumoFinanceiro,
+  type ResumoGestor,
+  type ResumoPortaria,
+} from '@/lib/db';
+import { formatDataHora, primeiroNome, tempoRelativo } from '@/lib/format';
 import { useFetch } from '@/lib/useFetch';
 import { isGestor, type Comunicado } from '@/lib/types';
 
 export default function Inicio() {
   const router = useRouter();
+  const { palette } = useAppTheme();
   const { profile, membershipAtual, condominioId, user, papel } = useAuth();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
+  const morador = !gestor && !porteiro;
   const cond = membershipAtual?.condominio;
+  const unidadeId = membershipAtual?.unidade_id ?? null;
 
   const dados = useFetch(async () => {
     if (!condominioId || !user)
-      return { comunicados: [] as Comunicado[], resumo: null as ResumoGestor | null, resumoPortaria: null as ResumoPortaria | null };
-    const [comunicados, resumo, resumoPort] = await Promise.all([
+      return {
+        comunicados: [] as Comunicado[],
+        resumo: null as ResumoGestor | null,
+        resumoPortaria: null as ResumoPortaria | null,
+        resumoFinanceiro: null as ResumoFinanceiro | null,
+      };
+    const [comunicados, resumo, resumoPort, resumoFin, assembleias] = await Promise.all([
       listarComunicados(condominioId, user.id),
       gestor ? resumoGestor(condominioId) : Promise.resolve(null),
       porteiro ? resumoPortaria(condominioId) : Promise.resolve(null),
+      morador ? resumoFinanceiroMorador(condominioId, unidadeId) : Promise.resolve(null),
+      listarAssembleias(condominioId),
     ]);
-    return { comunicados, resumo, resumoPortaria: resumoPort };
-  }, [condominioId, gestor, porteiro]);
+    return { comunicados, resumo, resumoPortaria: resumoPort, resumoFinanceiro: resumoFin, assembleias };
+  }, [condominioId, gestor, porteiro, morador, unidadeId]);
 
   const comunicados = dados.data?.comunicados ?? [];
   const resumo = dados.data?.resumo ?? null;
   const resumoPort = dados.data?.resumoPortaria ?? null;
+  const resumoFin = dados.data?.resumoFinanceiro ?? null;
+  const proximaAssembleia = (dados.data?.assembleias ?? [])
+    .filter((a) => (a.status === 'convocada' || a.status === 'em_andamento') && new Date(a.data_hora).getTime() >= Date.now())
+    .sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime())[0];
 
   return (
     <Screen refreshing={dados.refreshing} onRefresh={dados.refetch}>
@@ -45,6 +69,22 @@ export default function Inicio() {
             {primeiroNome(profile?.nome_completo) || 'Morador'}
           </AppText>
         </View>
+        {!porteiro ? (
+          <Pressable
+            onPress={() => router.push('/(app)/chamados/novo')}
+            hitSlop={8}
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: radius.full,
+              backgroundColor: palette.warningSoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="warning-outline" size={22} color={palette.warning} />
+          </Pressable>
+        ) : null}
       </View>
 
       {/* Cartão do condomínio */}
@@ -105,6 +145,34 @@ export default function Inicio() {
         ) : null}
       </Card>
 
+      {/* Próxima assembleia */}
+      {proximaAssembleia ? (
+        <Card
+          onPress={() => router.push(`/(app)/assembleias/${proximaAssembleia.id}`)}
+          style={{ marginTop: spacing.lg, borderColor: palette.primary, borderWidth: 1.5 }}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <View
+              style={{
+                width: 44,
+                height: 44,
+                borderRadius: radius.md,
+                backgroundColor: palette.primarySoft,
+                alignItems: 'center',
+                justifyContent: 'center',
+              }}
+            >
+              <Ionicons name="podium" size={22} color={palette.primary} />
+            </View>
+            <View style={{ flex: 1 }}>
+              <AppText color="primary" variant="caption">Próxima assembleia</AppText>
+              <AppText variant="subtitle" numberOfLines={1}>{proximaAssembleia.titulo}</AppText>
+              <AppText color="muted" variant="caption">{formatDataHora(proximaAssembleia.data_hora)}</AppText>
+            </View>
+          </View>
+        </Card>
+      ) : null}
+
       {/* Dashboard do gestor */}
       {gestor ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg }}>
@@ -130,6 +198,13 @@ export default function Inicio() {
             onPress={() => router.push('/(app)/central')}
           />
           <StatCard label="Moradores" valor={resumo?.moradores ?? 0} icon="people" tone="success" />
+          <StatCard
+            label="Boletos atrasados"
+            valor={resumo?.boletosAtrasados ?? 0}
+            icon="cash"
+            tone="danger"
+            onPress={() => router.push('/(app)/financeiro')}
+          />
         </View>
       ) : null}
 
@@ -160,6 +235,19 @@ export default function Inicio() {
         </View>
       ) : null}
 
+      {/* Financeiro do morador */}
+      {morador && resumoFin && resumoFin.pendentes > 0 ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg }}>
+          <StatCard
+            label="Boletos pendentes"
+            valor={resumoFin.pendentes}
+            icon="cash"
+            tone={resumoFin.atrasados > 0 ? 'danger' : 'warning'}
+            onPress={() => router.push('/(app)/financeiro')}
+          />
+        </View>
+      ) : null}
+
       {/* Ações rápidas */}
       <AppText variant="subtitle" style={{ marginTop: spacing.xl, marginBottom: spacing.md }}>
         Ações rápidas
@@ -181,7 +269,7 @@ export default function Inicio() {
           <>
             <ActionTile icon="add-circle" label="Abrir chamado" tone="warning" onPress={() => router.push('/(app)/chamados/novo')} />
             <ActionTile icon="calendar" label="Reservar" tone="info" onPress={() => router.push('/(app)/reservas/nova')} />
-            <ActionTile icon="documents" label="Central" tone="primary" onPress={() => router.push('/(app)/central')} />
+            <ActionTile icon="warning" label="Emergência" tone="danger" onPress={() => router.push('/(app)/sos')} />
           </>
         )}
       </View>
@@ -240,6 +328,7 @@ function StatCard({
   tone?: Tone;
   onPress?: () => void;
 }) {
+  const { tone: tones } = useAppTheme();
   const t = tones[tone];
   return (
     <Card onPress={onPress} style={{ flexGrow: 1, flexBasis: '46%', minWidth: 150 }}>

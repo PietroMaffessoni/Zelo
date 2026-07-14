@@ -10,9 +10,10 @@ import {
 } from 'react-native';
 import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { AppText } from '@/components/ui/Text';
+import { useAppTheme } from '@/lib/theme';
 
 const MAX_LARGURA = 680;
 
@@ -34,6 +35,7 @@ export function Screen({
   style?: ViewStyle;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
 }) {
+  const { palette } = useAppTheme();
   const conteudo = (
     <View
       style={[
@@ -83,6 +85,7 @@ export function AppHeader({
   onBack?: () => void;
 }) {
   const router = useRouter();
+  const { palette } = useAppTheme();
   return (
     <View
       style={{
@@ -125,6 +128,7 @@ export function AppHeader({
 }
 
 export function Loading({ label }: { label?: string }) {
+  const { palette } = useAppTheme();
   return (
     <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md }}>
       <ActivityIndicator size="large" color={palette.primary} />
@@ -151,6 +155,7 @@ export function EmptyState({
   onAction?: () => void;
 }) {
   const insets = useSafeAreaInsets();
+  const { palette } = useAppTheme();
   return (
     <View
       style={{

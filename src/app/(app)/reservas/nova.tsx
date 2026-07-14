@@ -7,6 +7,7 @@ import { AppHeader, AppText, Button, Chip, Input, Loading, Screen } from '@/comp
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarReserva, listarAreas } from '@/lib/db';
+import { formatMoeda } from '@/lib/format';
 import { useFetch } from '@/lib/useFetch';
 
 const HORAS = Array.from({ length: 17 }, (_, i) => i + 7); // 07h às 23h
@@ -58,6 +59,7 @@ export default function NovaReserva() {
         fim: fim.toISOString(),
         observacao: obs.trim() || null,
         requer_aprovacao: areaSelecionada.requer_aprovacao,
+        taxa_cobrada: areaSelecionada.taxa_uso > 0 ? areaSelecionada.taxa_uso : null,
       });
       router.back();
     } catch (e: any) {
@@ -83,6 +85,11 @@ export default function NovaReserva() {
           {areaSelecionada?.requer_aprovacao ? (
             <AppText color="subtle" variant="caption">
               Esta área precisa de aprovação do síndico.
+            </AppText>
+          ) : null}
+          {areaSelecionada && areaSelecionada.taxa_uso > 0 ? (
+            <AppText color="subtle" variant="caption">
+              Taxa de uso: {formatMoeda(areaSelecionada.taxa_uso)}
             </AppText>
           ) : null}
         </View>

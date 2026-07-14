@@ -49,6 +49,10 @@ export function iniciais(nome?: string | null): string {
   return (partes[0][0] + partes[partes.length - 1][0]).toUpperCase();
 }
 
+export function formatMoeda(valor?: number | null): string {
+  return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
+}
+
 export function primeiroNome(nome?: string | null): string {
   if (!nome) return '';
   return nome.trim().split(/\s+/)[0];

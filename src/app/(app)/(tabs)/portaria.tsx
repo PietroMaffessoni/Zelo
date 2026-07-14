@@ -3,19 +3,23 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { AppHeader, AppText, Card, Loading, Screen } from '@/components/ui';
-import { radius, spacing, tone as tones, type Tone } from '@/constants/theme';
+import { radius, spacing, type Tone } from '@/constants/theme';
+import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { resumoPortaria } from '@/lib/db';
 import { useFetch } from '@/lib/useFetch';
 
 export default function PortariaHub() {
   const router = useRouter();
-  const { condominioId } = useAuth();
+  const { condominioId, membershipAtual } = useAuth();
+  const totalVagas = membershipAtual?.condominio?.total_vagas_visitante ?? 0;
 
   const { data, loading, refreshing, refetch } = useFetch(
     async () => (condominioId ? resumoPortaria(condominioId) : null),
     [condominioId],
   );
+
+  const vagasLivres = Math.max(0, totalVagas - (data?.visitantesNoLocal ?? 0));
 
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
@@ -48,6 +52,28 @@ export default function PortariaHub() {
             legenda="Consultar cadastro por placa ou unidade"
             onPress={() => router.push('/(app)/portaria/veiculos')}
           />
+          <HubTile
+            icon="car-sport-outline"
+            tone="success"
+            titulo="Vagas de visitante"
+            valor={totalVagas > 0 ? vagasLivres : undefined}
+            legenda={totalVagas > 0 ? `${vagasLivres} livres de ${totalVagas}` : 'Toque para configurar as vagas'}
+            onPress={() => router.push('/(app)/portaria/vagas')}
+          />
+          <HubTile
+            icon="enter-outline"
+            tone="primary"
+            titulo="Portão"
+            legenda="Registrar acionamento e ver histórico"
+            onPress={() => router.push('/(app)/portaria/portao')}
+          />
+          <HubTile
+            icon="warning-outline"
+            tone="danger"
+            titulo="Emergências (SOS)"
+            legenda="Alertas acionados pelos moradores"
+            onPress={() => router.push('/(app)/sos')}
+          />
         </View>
       )}
     </Screen>
@@ -69,6 +95,7 @@ function HubTile({
   legenda: string;
   onPress: () => void;
 }) {
+  const { tone: tones } = useAppTheme();
   const t = tones[tone];
   return (
     <Card onPress={onPress}>

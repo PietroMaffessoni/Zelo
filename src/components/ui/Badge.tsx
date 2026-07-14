@@ -1,7 +1,8 @@
 import { View, type ViewStyle } from 'react-native';
 
-import { radius, spacing, tone as tones, type Tone } from '@/constants/theme';
+import { radius, spacing, type Tone } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
+import { useAppTheme } from '@/lib/theme';
 
 export function Badge({
   label,
@@ -12,6 +13,7 @@ export function Badge({
   tone?: Tone;
   style?: ViewStyle;
 }) {
+  const { tone: tones } = useAppTheme();
   const t = tones[tone];
   return (
     <View
@@ -35,6 +37,7 @@ export function Badge({
 
 /** Pequeno ponto colorido para indicar status compacto. */
 export function Dot({ tone = 'neutral' }: { tone?: Tone }) {
+  const { tone: tones } = useAppTheme();
   return (
     <View
       style={{ width: 8, height: 8, borderRadius: 4, backgroundColor: tones[tone].fg }}

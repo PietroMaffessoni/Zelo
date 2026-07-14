@@ -1,22 +1,40 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { Pressable, Switch, View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Button, Card, Input, Screen } from '@/components/ui';
+import { AppHeader, AppText, Avatar, Badge, Button, Card, Divider, Input, Screen } from '@/components/ui';
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
+import { atualizarPreferenciasNotificacao } from '@/lib/db';
 import { enviarImagem, escolherImagem } from '@/lib/storage';
 import { papelLabel } from '@/lib/labels';
-import { isGestor } from '@/lib/types';
+import { useAppTheme } from '@/lib/theme';
+import { isGestor, type PreferenciasNotificacao } from '@/lib/types';
+
+const CATEGORIAS_NOTIFICACAO: { chave: keyof PreferenciasNotificacao; label: string }[] = [
+  { chave: 'comunicados', label: 'Comunicados' },
+  { chave: 'chamados', label: 'Chamados' },
+  { chave: 'encomendas', label: 'Encomendas' },
+  { chave: 'reservas', label: 'Reservas' },
+  { chave: 'assembleias', label: 'Assembleias' },
+];
 
 export default function Perfil() {
   const { user, profile, memberships, condominioId, selecionarCondominio, recarregar, signOut } = useAuth();
+  const { escuro, alternar } = useAppTheme();
   const [nome, setNome] = useState(profile?.nome_completo ?? '');
   const [telefone, setTelefone] = useState(profile?.telefone ?? '');
   const [avatar, setAvatar] = useState(profile?.avatar_url ?? null);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  async function alternarNotificacao(chave: keyof PreferenciasNotificacao, valor: boolean) {
+    if (!user || !profile) return;
+    const preferencias = { ...profile.preferencias_notificacao, [chave]: valor };
+    await atualizarPreferenciasNotificacao(user.id, preferencias);
+    await recarregar();
+  }
 
   async function trocarAvatar() {
     const uri = await escolherImagem();
@@ -84,6 +102,53 @@ export default function Perfil() {
         ) : null}
         <Button title="Salvar alterações" onPress={salvar} loading={salvando} />
       </View>
+
+      {/* Aparência */}
+      <AppText variant="subtitle" style={{ marginTop: spacing.xxl, marginBottom: spacing.md }}>
+        Aparência
+      </AppText>
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        <Pressable
+          onPress={alternar}
+          style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md }}
+        >
+          <View
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: radius.md,
+              backgroundColor: palette.primarySoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+              marginRight: spacing.md,
+            }}
+          >
+            <Ionicons name={escuro ? 'moon' : 'sunny'} size={18} color={palette.primary} />
+          </View>
+          <AppText style={{ flex: 1 }}>Modo escuro</AppText>
+          <Switch value={escuro} onValueChange={alternar} trackColor={{ true: palette.primary, false: palette.borderStrong }} />
+        </Pressable>
+      </Card>
+
+      {/* Notificações */}
+      <AppText variant="subtitle" style={{ marginTop: spacing.xxl, marginBottom: spacing.md }}>
+        Notificações
+      </AppText>
+      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+        {CATEGORIAS_NOTIFICACAO.map((c, i) => (
+          <View key={c.chave}>
+            {i > 0 ? <Divider /> : null}
+            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md }}>
+              <AppText style={{ flex: 1 }}>{c.label}</AppText>
+              <Switch
+                value={profile?.preferencias_notificacao?.[c.chave] ?? true}
+                onValueChange={(v) => alternarNotificacao(c.chave, v)}
+                trackColor={{ true: palette.primary, false: palette.borderStrong }}
+              />
+            </View>
+          </View>
+        ))}
+      </Card>
 
       {/* Meus condomínios */}
       <AppText variant="subtitle" style={{ marginTop: spacing.xxl, marginBottom: spacing.md }}>

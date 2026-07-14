@@ -1,10 +1,12 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Pressable, ScrollView, View, type ViewStyle } from 'react-native';
 
-import { palette, radius, shadow, spacing, tone as tones, type Tone } from '@/constants/theme';
+import { radius, shadow, spacing, type Tone } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
+import { useAppTheme } from '@/lib/theme';
 
 export function Divider({ style }: { style?: ViewStyle }) {
+  const { palette } = useAppTheme();
   return <View style={[{ height: 1, backgroundColor: palette.border }, style]} />;
 }
 
@@ -20,6 +22,7 @@ export function Chip({
   onPress?: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
 }) {
+  const { palette } = useAppTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -86,6 +89,7 @@ export function ListItem({
   onPress?: () => void;
   chevron?: boolean;
 }) {
+  const { palette, tone: tones } = useAppTheme();
   const t = tones[iconTone];
   return (
     <Pressable
@@ -140,6 +144,7 @@ export function Fab({
   onPress: () => void;
   label?: string;
 }) {
+  const { palette } = useAppTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -184,6 +189,7 @@ export function ActionTile({
   tone?: Tone;
   onPress: () => void;
 }) {
+  const { palette, tone: tones } = useAppTheme();
   const t = tones[tone];
   return (
     <Pressable
