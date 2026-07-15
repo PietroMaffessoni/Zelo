@@ -120,18 +120,6 @@ export function useNotificacoesRealtime(
           }
         },
       )
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'alertas_sos', filter: `condominio_id=eq.${condominioId}` },
-        (payload) => {
-          const papelAtual = staffRef.current;
-          const ehStaff = papelAtual === 'sindico' || papelAtual === 'admin' || papelAtual === 'porteiro';
-          if (!ehStaff) return;
-          const sos = payload.new as { tipo?: string; user_id?: string };
-          if (sos.user_id === userId) return;
-          notificarLocal({ titulo: '🚨 Alerta de emergência', corpo: `Um morador acionou um SOS (${sos.tipo ?? 'emergência'}).` });
-        },
-      )
       .subscribe();
 
     return () => {

@@ -1159,9 +1159,8 @@ end $$;
 
 -- ============================================================================
 -- 7. MÓDULOS ADICIONAIS
---    Agenda/eventos, regras/informes, manutenção preventiva, infrações
---    (multas/advertências), SOS, propostas de pauta pelos moradores, vagas de
---    visitante, papel "conselheiro" e log de acionamento de portão.
+--    Agenda/eventos, manutenção preventiva, infrações (multas/advertências),
+--    propostas de pauta pelos moradores e papel "conselheiro".
 --    Bloco autocontido e idempotente — pode rodar junto do restante do arquivo.
 -- ============================================================================
 
@@ -1171,9 +1170,6 @@ end $$;
 alter table public.memberships drop constraint if exists memberships_papel_check;
 alter table public.memberships add constraint memberships_papel_check
   check (papel in ('morador','sindico','admin','porteiro','conselheiro'));
-
--- Vagas de visitante do condomínio (a portaria acompanha a ocupação).
-alter table public.condominios add column if not exists total_vagas_visitante int not null default 0;
 
 -- Comprovante de pagamento anexado a uma reserva (bucket privado 'financeiro').
 alter table public.reservas add column if not exists comprovante_path text;
@@ -1197,21 +1193,6 @@ create table if not exists public.eventos (
   local text,
   criado_por uuid references public.profiles(id) on delete set null,
   created_at timestamptz not null default now()
-);
-
--- Informes / regras do condomínio (horários de obra, uso de áreas, animais, etc.).
-create table if not exists public.regras (
-  id uuid primary key default gen_random_uuid(),
-  condominio_id uuid not null references public.condominios(id) on delete cascade,
-  categoria text not null default 'geral'
-    check (categoria in ('horarios','areas_comuns','obras','animais','seguranca','convivencia','mudancas','geral')),
-  titulo text not null,
-  conteudo text not null,
-  ordem int not null default 0,
-  ativo boolean not null default true,
-  atualizado_por uuid references public.profiles(id) on delete set null,
-  created_at timestamptz not null default now(),
-  updated_at timestamptz not null default now()
 );
 
 -- Manutenção preventiva: cadastro de equipamentos + histórico de manutenções.
@@ -1264,20 +1245,6 @@ create table if not exists public.infracoes (
   updated_at timestamptz not null default now()
 );
 
--- SOS: botão de emergência do morador; portaria/síndico recebem e atendem.
-create table if not exists public.alertas_sos (
-  id uuid primary key default gen_random_uuid(),
-  condominio_id uuid not null references public.condominios(id) on delete cascade,
-  user_id uuid not null references public.profiles(id) on delete cascade,
-  unidade_id uuid references public.unidades(id) on delete set null,
-  tipo text not null default 'emergencia' check (tipo in ('emergencia','seguranca','incendio','saude','outro')),
-  mensagem text,
-  status text not null default 'aberto' check (status in ('aberto','atendido','encerrado')),
-  atendido_por uuid references public.profiles(id) on delete set null,
-  atendido_em timestamptz,
-  created_at timestamptz not null default now()
-);
-
 -- Propostas de pauta: qualquer morador sugere um tema; o síndico aprova para virar assembleia.
 create table if not exists public.propostas_pauta (
   id uuid primary key default gen_random_uuid(),
@@ -1299,18 +1266,6 @@ create table if not exists public.propostas_apoios (
   user_id uuid not null references public.profiles(id) on delete cascade,
   created_at timestamptz not null default now(),
   primary key (proposta_id, user_id)
-);
-
--- Log de acionamento do portão pelo app (integração com hardware fica para depois;
--- por ora registra quem acionou e quando — já útil como registro manual da portaria).
-create table if not exists public.acessos_portao (
-  id uuid primary key default gen_random_uuid(),
-  condominio_id uuid not null references public.condominios(id) on delete cascade,
-  user_id uuid references public.profiles(id) on delete set null,
-  tipo text not null default 'social' check (tipo in ('social','garagem','servico')),
-  origem text not null default 'app' check (origem in ('app','portaria')),
-  observacao text,
-  created_at timestamptz not null default now()
 );
 
 -- 7.3 Contestação de infração (RPC) ------------------------------------------
@@ -1339,20 +1294,13 @@ grant execute on function public.contestar_infracao(uuid, text) to authenticated
 
 -- 7.4 Índices ----------------------------------------------------------------
 create index if not exists idx_eventos_cond on public.eventos(condominio_id, inicio);
-create index if not exists idx_regras_cond on public.regras(condominio_id, categoria, ordem);
 create index if not exists idx_equipamentos_cond on public.equipamentos(condominio_id, proxima_manutencao);
 create index if not exists idx_manutencoes_equip on public.manutencoes(equipamento_id, realizada_em desc);
 create index if not exists idx_infracoes_cond on public.infracoes(condominio_id, created_at desc);
 create index if not exists idx_infracoes_unidade on public.infracoes(unidade_id);
-create index if not exists idx_sos_cond on public.alertas_sos(condominio_id, created_at desc);
 create index if not exists idx_propostas_cond on public.propostas_pauta(condominio_id, created_at desc);
-create index if not exists idx_acessos_portao_cond on public.acessos_portao(condominio_id, created_at desc);
 
 -- 7.5 Triggers de updated_at -------------------------------------------------
-drop trigger if exists trg_regras_updated on public.regras;
-create trigger trg_regras_updated before update on public.regras
-  for each row execute function public.touch_updated_at();
-
 drop trigger if exists trg_infracoes_updated on public.infracoes;
 create trigger trg_infracoes_updated before update on public.infracoes
   for each row execute function public.touch_updated_at();
@@ -1363,28 +1311,18 @@ create trigger trg_propostas_updated before update on public.propostas_pauta
 
 -- 7.6 RLS --------------------------------------------------------------------
 alter table public.eventos enable row level security;
-alter table public.regras enable row level security;
 alter table public.equipamentos enable row level security;
 alter table public.manutencoes enable row level security;
 alter table public.infracoes enable row level security;
-alter table public.alertas_sos enable row level security;
 alter table public.propostas_pauta enable row level security;
 alter table public.propostas_apoios enable row level security;
-alter table public.acessos_portao enable row level security;
 
--- eventos / regras: leitura para membros, escrita só gestor
+-- eventos: leitura para membros, escrita só gestor
 drop policy if exists eventos_select on public.eventos;
 create policy eventos_select on public.eventos for select to authenticated
   using (public.is_member(condominio_id));
 drop policy if exists eventos_write on public.eventos;
 create policy eventos_write on public.eventos for all to authenticated
-  using (public.is_gestor(condominio_id)) with check (public.is_gestor(condominio_id));
-
-drop policy if exists regras_select on public.regras;
-create policy regras_select on public.regras for select to authenticated
-  using (public.is_member(condominio_id));
-drop policy if exists regras_write on public.regras;
-create policy regras_write on public.regras for all to authenticated
   using (public.is_gestor(condominio_id)) with check (public.is_gestor(condominio_id));
 
 -- equipamentos / manutenções: informação administrativa — gestor e conselho leem, gestor escreve
@@ -1424,18 +1362,6 @@ drop policy if exists infracoes_delete on public.infracoes;
 create policy infracoes_delete on public.infracoes for delete to authenticated
   using (public.is_gestor(condominio_id));
 
--- SOS: o morador cria e vê os próprios; gestor/portaria veem e atendem todos
-drop policy if exists sos_select on public.alertas_sos;
-create policy sos_select on public.alertas_sos for select to authenticated
-  using (user_id = (select auth.uid()) or public.is_gestor(condominio_id) or public.is_porteiro(condominio_id));
-drop policy if exists sos_insert on public.alertas_sos;
-create policy sos_insert on public.alertas_sos for insert to authenticated
-  with check (user_id = (select auth.uid()) and public.is_member(condominio_id));
-drop policy if exists sos_update on public.alertas_sos;
-create policy sos_update on public.alertas_sos for update to authenticated
-  using (user_id = (select auth.uid()) or public.is_gestor(condominio_id) or public.is_porteiro(condominio_id))
-  with check (user_id = (select auth.uid()) or public.is_gestor(condominio_id) or public.is_porteiro(condominio_id));
-
 -- propostas de pauta: todos os membros veem; autor cria; autor e gestor atualizam
 drop policy if exists propostas_select on public.propostas_pauta;
 create policy propostas_select on public.propostas_pauta for select to authenticated
@@ -1466,14 +1392,6 @@ drop policy if exists apoios_delete on public.propostas_apoios;
 create policy apoios_delete on public.propostas_apoios for delete to authenticated
   using (user_id = (select auth.uid()));
 
--- acionamento de portão: morador registra o próprio; gestor/portaria veem tudo
-drop policy if exists acessos_portao_select on public.acessos_portao;
-create policy acessos_portao_select on public.acessos_portao for select to authenticated
-  using (user_id = (select auth.uid()) or public.is_gestor(condominio_id) or public.is_porteiro(condominio_id));
-drop policy if exists acessos_portao_insert on public.acessos_portao;
-create policy acessos_portao_insert on public.acessos_portao for insert to authenticated
-  with check (user_id = (select auth.uid()) and public.is_member(condominio_id));
-
 -- 7.7 Grants (as novas tabelas foram criadas depois do grant global da seção 4b)
 grant select, insert, update, delete on all tables in schema public to authenticated;
 grant usage, select on all sequences in schema public to authenticated;
@@ -1481,9 +1399,6 @@ grant usage, select on all sequences in schema public to authenticated;
 -- 7.8 Realtime ---------------------------------------------------------------
 do $$
 begin
-  begin
-    alter publication supabase_realtime add table public.alertas_sos;
-  exception when duplicate_object then null; end;
   begin
     alter publication supabase_realtime add table public.infracoes;
   exception when duplicate_object then null; end;
@@ -1494,5 +1409,17 @@ begin
     alter publication supabase_realtime add table public.eventos;
   exception when duplicate_object then null; end;
 end $$;
+
+-- 7.9 Limpeza de módulos removidos --------------------------------------------
+--    Funcionalidades descontinuadas do app: SOS, acionamento de portão, vagas
+--    de visitante e regras/informes (substituídas pelo regimento interno, que
+--    usa a tabela public.documentos com categoria 'regimento_interno'). Os
+--    drops abaixo são idempotentes (IF EXISTS) para que colar este arquivo no
+--    Supabase também limpe uma base já provisionada, não só evite recriar
+--    essas estruturas.
+drop table if exists public.alertas_sos cascade;
+drop table if exists public.acessos_portao cascade;
+drop table if exists public.regras cascade;
+alter table public.condominios drop column if exists total_vagas_visitante;
 
 -- Fim do setup.

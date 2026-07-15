@@ -40,7 +40,7 @@ export default function TabsLayout() {
         name="chamados"
         options={{
           title: 'Chamados',
-          href: porteiro ? null : undefined,
+          href: null,
           tabBarIcon: ({ color, size }) => <Ionicons name="construct-outline" size={size} color={color} />,
         }}
       />
@@ -48,7 +48,7 @@ export default function TabsLayout() {
         name="reservas"
         options={{
           title: 'Reservas',
-          href: porteiro ? null : undefined,
+          href: null,
           tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
         }}
       />
@@ -56,7 +56,7 @@ export default function TabsLayout() {
         name="portaria"
         options={{
           title: 'Portaria',
-          href: gestor || porteiro ? undefined : null,
+          href: gestor ? undefined : null,
           tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline" size={size} color={color} />,
         }}
       />

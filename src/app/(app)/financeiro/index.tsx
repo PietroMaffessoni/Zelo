@@ -9,13 +9,14 @@ import { useAuth } from '@/lib/auth';
 import { listarLancamentos } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
 import { categoriaFinanceira, statusFinanceiro } from '@/lib/labels';
-import { isGestor, statusFinanceiroEfetivo, type TipoLancamento } from '@/lib/types';
+import { isConselho, isGestor, statusFinanceiroEfetivo, type TipoLancamento } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function FinanceiroLista() {
   const router = useRouter();
   const { condominioId, papel } = useAuth();
   const gestor = isGestor(papel);
+  const podeVerDespesas = isConselho(papel);
   const [tipo, setTipo] = useState<TipoLancamento>('boleto');
 
   const { data, loading, refreshing, refetch } = useFetch(
@@ -31,7 +32,7 @@ export default function FinanceiroLista() {
         <AppHeader
           title="Financeiro"
           back
-          subtitle={gestor ? 'Boletos e despesas do condomínio' : 'Meus boletos e despesas do condomínio'}
+          subtitle={gestor ? 'Boletos e despesas do condomínio' : 'Meus boletos'}
           right={
             gestor ? (
               <Pressable
@@ -52,14 +53,16 @@ export default function FinanceiroLista() {
           }
         />
 
-        <Segmented
-          value={tipo}
-          onChange={setTipo}
-          options={[
-            { value: 'boleto', label: gestor ? 'Boletos' : 'Meus boletos' },
-            { value: 'despesa', label: 'Despesas do condomínio' },
-          ]}
-        />
+        {podeVerDespesas ? (
+          <Segmented
+            value={tipo}
+            onChange={setTipo}
+            options={[
+              { value: 'boleto', label: gestor ? 'Boletos' : 'Meus boletos' },
+              { value: 'despesa', label: 'Despesas do condomínio' },
+            ]}
+          />
+        ) : null}
 
         <View style={{ marginTop: spacing.lg }}>
           {loading ? (

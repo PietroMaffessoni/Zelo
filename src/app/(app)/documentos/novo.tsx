@@ -14,9 +14,9 @@ const categorias: CategoriaDocumento[] = ['convencao', 'regimento_interno', 'ata
 
 export default function NovoDocumento() {
   const router = useRouter();
-  const { assembleiaId } = useLocalSearchParams<{ assembleiaId?: string }>();
+  const { assembleiaId, categoria: categoriaParam } = useLocalSearchParams<{ assembleiaId?: string; categoria?: CategoriaDocumento }>();
   const { condominioId, user } = useAuth();
-  const [categoria, setCategoria] = useState<CategoriaDocumento>(assembleiaId ? 'ata' : 'convencao');
+  const [categoria, setCategoria] = useState<CategoriaDocumento>(assembleiaId ? 'ata' : categoriaParam ?? 'convencao');
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [arquivo, setArquivo] = useState<{ uri: string; nome: string; tamanho: number | null } | null>(null);

@@ -57,16 +57,6 @@ export type AssembleiaStatus = 'convocada' | 'em_andamento' | 'encerrada' | 'can
 
 export type TipoEvento = 'evento' | 'assembleia' | 'manutencao' | 'obra' | 'reuniao' | 'lazer' | 'outro';
 
-export type CategoriaRegra =
-  | 'horarios'
-  | 'areas_comuns'
-  | 'obras'
-  | 'animais'
-  | 'seguranca'
-  | 'convivencia'
-  | 'mudancas'
-  | 'geral';
-
 export type CategoriaEquipamento =
   | 'elevador'
   | 'bomba'
@@ -91,12 +81,7 @@ export type MotivoInfracao =
   | 'outros';
 export type StatusInfracao = 'aplicada' | 'contestada' | 'anulada' | 'confirmada' | 'paga';
 
-export type TipoSos = 'emergencia' | 'seguranca' | 'incendio' | 'saude' | 'outro';
-export type StatusSos = 'aberto' | 'atendido' | 'encerrado';
-
 export type StatusProposta = 'sugerida' | 'aprovada' | 'recusada' | 'arquivada';
-
-export type TipoAcessoPortao = 'social' | 'garagem' | 'servico';
 
 export type Condominio = {
   id: string;
@@ -107,7 +92,6 @@ export type Condominio = {
   cnpj: string | null;
   codigo_convite: string;
   codigo_portaria: string | null;
-  total_vagas_visitante: number;
   criado_por: string | null;
   created_at: string;
 };
@@ -449,19 +433,6 @@ export type Evento = {
   created_at: string;
 };
 
-export type Regra = {
-  id: string;
-  condominio_id: string;
-  categoria: CategoriaRegra;
-  titulo: string;
-  conteudo: string;
-  ordem: number;
-  ativo: boolean;
-  atualizado_por: string | null;
-  created_at: string;
-  updated_at: string;
-};
-
 export type Equipamento = {
   id: string;
   condominio_id: string;
@@ -505,21 +476,6 @@ export type Infracao = {
   aplicada_por: string | null;
   created_at: string;
   updated_at: string;
-  unidade?: Unidade | null;
-};
-
-export type AlertaSos = {
-  id: string;
-  condominio_id: string;
-  user_id: string;
-  unidade_id: string | null;
-  tipo: TipoSos;
-  mensagem: string | null;
-  status: StatusSos;
-  atendido_por: string | null;
-  atendido_em: string | null;
-  created_at: string;
-  autor?: Profile | null;
   unidade?: Unidade | null;
 };
 

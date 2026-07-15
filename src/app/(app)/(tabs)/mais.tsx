@@ -14,6 +14,7 @@ export default function Mais() {
   const { profile, papel, membershipAtual, memberships, condominioId, recarregar, signOut } = useAuth();
   const gestor = ehGestor(papel);
   const conselho = ehConselho(papel);
+  const porteiro = papel === 'porteiro';
   const [gerandoCodigo, setGerandoCodigo] = useState(false);
 
   async function gerarCodigoDaPortaria() {
@@ -49,24 +50,32 @@ export default function Mais() {
       </AppText>
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
         <ListItem icon="megaphone-outline" iconTone="primary" title="Comunicados" subtitle="Avisos do condomínio" onPress={() => router.push('/(app)/comunicados')} />
+        {!porteiro ? (
+          <>
+            <Divider />
+            <ListItem icon="documents-outline" iconTone="info" title="Central do morador" subtitle="Solicitações à administração" onPress={() => router.push('/(app)/central')} />
+            <Divider />
+            <ListItem icon="cash-outline" iconTone="success" title="Financeiro" subtitle="Boletos e despesas do condomínio" onPress={() => router.push('/(app)/financeiro')} />
+          </>
+        ) : null}
         <Divider />
-        <ListItem icon="documents-outline" iconTone="info" title="Central do morador" subtitle="Solicitações à administração" onPress={() => router.push('/(app)/central')} />
-        <Divider />
-        <ListItem icon="cash-outline" iconTone="success" title="Financeiro" subtitle="Boletos e despesas do condomínio" onPress={() => router.push('/(app)/financeiro')} />
-        <Divider />
-        <ListItem icon="folder-outline" iconTone="info" title="Documentos" subtitle="Convenção, regimento, atas e editais" onPress={() => router.push('/(app)/documentos')} />
-        <Divider />
-        <ListItem icon="podium-outline" iconTone="primary" title="Assembleias" subtitle="Convocações e votações" onPress={() => router.push('/(app)/assembleias')} />
-        <Divider />
-        <ListItem icon="bulb-outline" iconTone="warning" title="Propostas de pauta" subtitle="Sugira e apoie ideias para o condomínio" onPress={() => router.push('/(app)/propostas')} />
+        <ListItem icon="book-outline" iconTone="info" title="Regimento interno" subtitle="Regimento interno do condomínio" onPress={() => router.push('/(app)/documentos')} />
+        {!porteiro ? (
+          <>
+            <Divider />
+            <ListItem icon="podium-outline" iconTone="primary" title="Assembleias" subtitle="Convocações e votações" onPress={() => router.push('/(app)/assembleias')} />
+            <Divider />
+            <ListItem icon="bulb-outline" iconTone="warning" title="Propostas de pauta" subtitle="Sugira e apoie ideias para o condomínio" onPress={() => router.push('/(app)/propostas')} />
+          </>
+        ) : null}
         <Divider />
         <ListItem icon="calendar-outline" iconTone="info" title="Agenda" subtitle="Eventos e datas importantes" onPress={() => router.push('/(app)/agenda')} />
-        <Divider />
-        <ListItem icon="information-circle-outline" iconTone="primary" title="Regras e informes" subtitle="Regimento, horários e convivência" onPress={() => router.push('/(app)/regras')} />
-        <Divider />
-        <ListItem icon="alert-circle-outline" iconTone="danger" title="Advertências e multas" subtitle={gestor ? 'Aplicar e gerenciar infrações' : 'Infrações da sua unidade'} onPress={() => router.push('/(app)/infracoes')} />
-        <Divider />
-        <ListItem icon="warning-outline" iconTone="danger" title="Emergência (SOS)" subtitle="Acionar a portaria em caso de emergência" onPress={() => router.push('/(app)/sos')} />
+        {!porteiro ? (
+          <>
+            <Divider />
+            <ListItem icon="alert-circle-outline" iconTone="danger" title="Advertências e multas" subtitle={gestor ? 'Aplicar e gerenciar infrações' : 'Infrações da sua unidade'} onPress={() => router.push('/(app)/infracoes')} />
+          </>
+        ) : null}
         <Divider />
         <ListItem icon="cube-outline" iconTone="warning" title="Achados e perdidos" subtitle="Objetos encontrados no condomínio" onPress={() => router.push('/(app)/achados')} />
         {membershipAtual?.unidade_id ? (

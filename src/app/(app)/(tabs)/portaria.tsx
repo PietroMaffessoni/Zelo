@@ -11,15 +11,12 @@ import { useFetch } from '@/lib/useFetch';
 
 export default function PortariaHub() {
   const router = useRouter();
-  const { condominioId, membershipAtual } = useAuth();
-  const totalVagas = membershipAtual?.condominio?.total_vagas_visitante ?? 0;
+  const { condominioId } = useAuth();
 
   const { data, loading, refreshing, refetch } = useFetch(
     async () => (condominioId ? resumoPortaria(condominioId) : null),
     [condominioId],
   );
-
-  const vagasLivres = Math.max(0, totalVagas - (data?.visitantesNoLocal ?? 0));
 
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>
@@ -33,8 +30,8 @@ export default function PortariaHub() {
             icon="people-outline"
             tone="info"
             titulo="Visitantes"
-            valor={data?.visitantesNoLocal ?? 0}
-            legenda={`${data?.visitantesNoLocal ?? 0} no local agora · ${data?.visitantesAutorizadosHoje ?? 0} autorizados hoje`}
+            valor={data?.visitantesAutorizadosHoje ?? 0}
+            legenda={`${data?.visitantesAutorizadosHoje ?? 0} autorizados hoje`}
             onPress={() => router.push('/(app)/portaria/visitantes')}
           />
           <HubTile
@@ -51,28 +48,6 @@ export default function PortariaHub() {
             titulo="Veículos"
             legenda="Consultar cadastro por placa ou unidade"
             onPress={() => router.push('/(app)/portaria/veiculos')}
-          />
-          <HubTile
-            icon="car-sport-outline"
-            tone="success"
-            titulo="Vagas de visitante"
-            valor={totalVagas > 0 ? vagasLivres : undefined}
-            legenda={totalVagas > 0 ? `${vagasLivres} livres de ${totalVagas}` : 'Toque para configurar as vagas'}
-            onPress={() => router.push('/(app)/portaria/vagas')}
-          />
-          <HubTile
-            icon="enter-outline"
-            tone="primary"
-            titulo="Portão"
-            legenda="Registrar acionamento e ver histórico"
-            onPress={() => router.push('/(app)/portaria/portao')}
-          />
-          <HubTile
-            icon="warning-outline"
-            tone="danger"
-            titulo="Emergências (SOS)"
-            legenda="Alertas acionados pelos moradores"
-            onPress={() => router.push('/(app)/sos')}
           />
         </View>
       )}

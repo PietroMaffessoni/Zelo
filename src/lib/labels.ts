@@ -5,7 +5,6 @@ import type {
   CategoriaDocumento,
   CategoriaEquipamento,
   CategoriaFinanceira,
-  CategoriaRegra,
   ChamadoCategoria,
   ChamadoStatus,
   EncomendaStatus,
@@ -19,10 +18,8 @@ import type {
   StatusFinanceiro,
   StatusInfracao,
   StatusProposta,
-  StatusSos,
   TipoEvento,
   TipoInfracao,
-  TipoSos,
   TipoVeiculo,
   TipoVistoria,
   Vinculo,
@@ -169,17 +166,6 @@ export const tipoEventoLabel: Meta<TipoEvento> = {
   outro: { label: 'Outro', tone: 'neutral', icon: 'ellipse-outline' },
 };
 
-export const categoriaRegra: Meta<CategoriaRegra> = {
-  horarios: { label: 'Horários', tone: 'primary', icon: 'time-outline' },
-  areas_comuns: { label: 'Áreas comuns', tone: 'info', icon: 'business-outline' },
-  obras: { label: 'Obras e reformas', tone: 'warning', icon: 'hammer-outline' },
-  animais: { label: 'Animais', tone: 'success', icon: 'paw-outline' },
-  seguranca: { label: 'Segurança', tone: 'danger', icon: 'shield-checkmark-outline' },
-  convivencia: { label: 'Convivência', tone: 'primary', icon: 'happy-outline' },
-  mudancas: { label: 'Mudanças', tone: 'info', icon: 'cube-outline' },
-  geral: { label: 'Geral', tone: 'neutral', icon: 'information-circle-outline' },
-};
-
 export const categoriaEquipamento: Meta<CategoriaEquipamento> = {
   elevador: { label: 'Elevador', tone: 'primary', icon: 'swap-vertical-outline' },
   bomba: { label: 'Bomba d’água', tone: 'info', icon: 'water-outline' },
@@ -215,20 +201,6 @@ export const statusInfracao: Meta<StatusInfracao> = {
   anulada: { label: 'Anulada', tone: 'neutral' },
   confirmada: { label: 'Confirmada', tone: 'danger' },
   paga: { label: 'Paga', tone: 'success' },
-};
-
-export const tipoSosLabel: Meta<TipoSos> = {
-  emergencia: { label: 'Emergência', tone: 'danger', icon: 'warning-outline' },
-  seguranca: { label: 'Segurança', tone: 'danger', icon: 'shield-outline' },
-  incendio: { label: 'Incêndio', tone: 'danger', icon: 'flame-outline' },
-  saude: { label: 'Saúde', tone: 'info', icon: 'medkit-outline' },
-  outro: { label: 'Outro', tone: 'neutral', icon: 'help-circle-outline' },
-};
-
-export const statusSos: Meta<StatusSos> = {
-  aberto: { label: 'Aberto', tone: 'danger' },
-  atendido: { label: 'Em atendimento', tone: 'warning' },
-  encerrado: { label: 'Encerrado', tone: 'success' },
 };
 
 export const statusProposta: Meta<StatusProposta> = {

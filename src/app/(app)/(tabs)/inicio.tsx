@@ -212,13 +212,6 @@ export default function Inicio() {
       {porteiro ? (
         <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg }}>
           <StatCard
-            label="No local agora"
-            valor={resumoPort?.visitantesNoLocal ?? 0}
-            icon="people"
-            tone="info"
-            onPress={() => router.push('/(app)/portaria/visitantes')}
-          />
-          <StatCard
             label="Autorizados hoje"
             valor={resumoPort?.visitantesAutorizadosHoje ?? 0}
             icon="calendar"
@@ -261,15 +254,13 @@ export default function Inicio() {
           </>
         ) : porteiro ? (
           <>
-            <ActionTile icon="person-add" label="Visitante avulso" tone="info" onPress={() => router.push('/(app)/portaria/visitante-avulso')} />
             <ActionTile icon="cube" label="Nova encomenda" tone="warning" onPress={() => router.push('/(app)/portaria/encomenda-nova')} />
             <ActionTile icon="car" label="Veículos" tone="primary" onPress={() => router.push('/(app)/portaria/veiculos')} />
           </>
         ) : (
           <>
-            <ActionTile icon="add-circle" label="Abrir chamado" tone="warning" onPress={() => router.push('/(app)/chamados/novo')} />
-            <ActionTile icon="calendar" label="Reservar" tone="info" onPress={() => router.push('/(app)/reservas/nova')} />
-            <ActionTile icon="warning" label="Emergência" tone="danger" onPress={() => router.push('/(app)/sos')} />
+            <ActionTile icon="construct" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
+            <ActionTile icon="calendar" label="Reservas" tone="info" onPress={() => router.push('/(app)/(tabs)/reservas')} />
           </>
         )}
       </View>

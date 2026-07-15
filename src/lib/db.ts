@@ -2,7 +2,6 @@ import { supabase } from '@/lib/supabase';
 import type {
   AchadoPerdido,
   AchadoStatus,
-  AlertaSos,
   AreaComum,
   Assembleia,
   AssembleiaOpcao,
@@ -16,7 +15,6 @@ import type {
   CategoriaDocumento,
   CategoriaEquipamento,
   CategoriaFinanceira,
-  CategoriaRegra,
   Dependente,
   Documento,
   Encomenda,
@@ -34,7 +32,6 @@ import type {
   PreferenciasNotificacao,
   Prioridade,
   PropostaPauta,
-  Regra,
   RegistroVisitante,
   Reserva,
   ReservaStatus,
@@ -44,11 +41,9 @@ import type {
   StatusFinanceiro,
   StatusInfracao,
   StatusProposta,
-  TipoAcessoPortao,
   TipoEvento,
   TipoInfracao,
   TipoLancamento,
-  TipoSos,
   TipoVeiculo,
   TipoVistoria,
   Unidade,
@@ -491,16 +486,6 @@ export async function atualizarStatusVisitante(id: string, status: VisitanteStat
   await supabase.from('visitantes_autorizados').update({ status }).eq('id', id);
 }
 
-export async function listarRegistrosVisitantes(condominioId: string): Promise<RegistroVisitante[]> {
-  return unwrap(
-    await supabase
-      .from('registros_visitantes')
-      .select('*')
-      .eq('condominio_id', condominioId)
-      .order('entrada', { ascending: false }),
-  ) as RegistroVisitante[];
-}
-
 export async function registrarEntradaVisitante(input: {
   condominio_id: string;
   unidade_id: string;
@@ -517,10 +502,6 @@ export async function registrarEntradaVisitante(input: {
     await atualizarStatusVisitante(input.autorizacao_id, 'utilizada');
   }
   return registro;
-}
-
-export async function registrarSaidaVisitante(registroId: string) {
-  await supabase.from('registros_visitantes').update({ saida: new Date().toISOString() }).eq('id', registroId);
 }
 
 export async function listarEncomendas(condominioId: string, unidadeId?: string): Promise<Encomenda[]> {
@@ -603,13 +584,12 @@ export async function gerarCodigoPortaria(condominioId: string): Promise<string>
 export type ResumoPortaria = {
   encomendasAguardando: number;
   visitantesAutorizadosHoje: number;
-  visitantesNoLocal: number;
 };
 
 export async function resumoPortaria(condominioId: string): Promise<ResumoPortaria> {
   const conta = (q: any) => q.then((r: any) => (r.count ?? 0) as number);
   const hoje = new Date().toISOString().slice(0, 10);
-  const [encomendasAguardando, visitantesAutorizadosHoje, visitantesNoLocal] = await Promise.all([
+  const [encomendasAguardando, visitantesAutorizadosHoje] = await Promise.all([
     conta(
       supabase
         .from('encomendas')
@@ -625,15 +605,8 @@ export async function resumoPortaria(condominioId: string): Promise<ResumoPortar
         .eq('status', 'ativa')
         .lte('data_inicio', hoje),
     ),
-    conta(
-      supabase
-        .from('registros_visitantes')
-        .select('id', { count: 'exact', head: true })
-        .eq('condominio_id', condominioId)
-        .is('saida', null),
-    ),
   ]);
-  return { encomendasAguardando, visitantesAutorizadosHoje, visitantesNoLocal };
+  return { encomendasAguardando, visitantesAutorizadosHoje };
 }
 
 // ---------------------------------------------------------------------- Financeiro
@@ -934,38 +907,6 @@ export async function removerEvento(id: string) {
   await supabase.from('eventos').delete().eq('id', id);
 }
 
-// ---------------------------------------------------------------------- Regras / Informes
-export async function listarRegras(condominioId: string): Promise<Regra[]> {
-  return unwrap(
-    await supabase
-      .from('regras')
-      .select('*')
-      .eq('condominio_id', condominioId)
-      .eq('ativo', true)
-      .order('categoria', { ascending: true })
-      .order('ordem', { ascending: true }),
-  ) as Regra[];
-}
-
-export async function criarRegra(input: {
-  condominio_id: string;
-  categoria: CategoriaRegra;
-  titulo: string;
-  conteudo: string;
-  ordem?: number;
-  atualizado_por: string;
-}): Promise<Regra> {
-  return unwrap(await supabase.from('regras').insert(input).select('*').single());
-}
-
-export async function atualizarRegra(id: string, patch: Partial<Regra>) {
-  await supabase.from('regras').update(patch).eq('id', id);
-}
-
-export async function removerRegra(id: string) {
-  await supabase.from('regras').delete().eq('id', id);
-}
-
 // ---------------------------------------------------------------- Manutenção preventiva
 export async function listarEquipamentos(condominioId: string): Promise<Equipamento[]> {
   return unwrap(
@@ -1088,34 +1029,6 @@ export async function responderInfracao(id: string, status: StatusInfracao, resp
   await supabase.from('infracoes').update({ status, resposta_gestor: resposta ?? null }).eq('id', id);
 }
 
-// ------------------------------------------------------------------------------ SOS
-export async function dispararSos(input: {
-  condominio_id: string;
-  user_id: string;
-  unidade_id?: string | null;
-  tipo: TipoSos;
-  mensagem?: string | null;
-}): Promise<AlertaSos> {
-  return unwrap(await supabase.from('alertas_sos').insert(input).select('*').single());
-}
-
-export async function listarAlertasSos(condominioId: string): Promise<AlertaSos[]> {
-  return unwrap(
-    await supabase
-      .from('alertas_sos')
-      .select('*, autor:profiles(*), unidade:unidades(*)')
-      .eq('condominio_id', condominioId)
-      .order('created_at', { ascending: false }),
-  ) as AlertaSos[];
-}
-
-export async function atenderSos(id: string, atendidoPor: string, status: 'atendido' | 'encerrado') {
-  await supabase
-    .from('alertas_sos')
-    .update({ status, atendido_por: atendidoPor, atendido_em: new Date().toISOString() })
-    .eq('id', id);
-}
-
 // -------------------------------------------------------- Propostas de pauta (moradores)
 export async function listarPropostas(condominioId: string, userId: string): Promise<PropostaPauta[]> {
   const propostas = unwrap(
@@ -1159,42 +1072,6 @@ export async function responderProposta(id: string, status: StatusProposta, resp
     .from('propostas_pauta')
     .update({ status, resposta_gestor: resposta ?? null, assembleia_id: assembleiaId ?? null })
     .eq('id', id);
-}
-
-// ------------------------------------------------------------------ Acionamento de portão
-export async function registrarAcessoPortao(input: {
-  condominio_id: string;
-  user_id: string;
-  tipo: TipoAcessoPortao;
-  origem?: 'app' | 'portaria';
-  observacao?: string | null;
-}) {
-  await supabase.from('acessos_portao').insert({ origem: 'app', ...input });
-}
-
-export type AcessoPortaoLog = {
-  id: string;
-  tipo: TipoAcessoPortao;
-  origem: string;
-  created_at: string;
-  autor?: { nome_completo: string | null } | null;
-};
-
-export async function listarAcessosPortao(condominioId: string, limite = 30): Promise<AcessoPortaoLog[]> {
-  const data = unwrap(
-    await supabase
-      .from('acessos_portao')
-      .select('id, tipo, origem, created_at, autor:profiles(nome_completo)')
-      .eq('condominio_id', condominioId)
-      .order('created_at', { ascending: false })
-      .limit(limite),
-  );
-  return data as unknown as AcessoPortaoLog[];
-}
-
-/** Define quantas vagas de visitante o condomínio possui (só gestor, via RLS de condominios). */
-export async function definirVagasVisitante(condominioId: string, total: number) {
-  await supabase.from('condominios').update({ total_vagas_visitante: total }).eq('id', condominioId);
 }
 
 // -------------------------------------------------------------------- Prestação de contas
