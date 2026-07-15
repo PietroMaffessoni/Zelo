@@ -9,7 +9,7 @@ import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarAchado } from '@/lib/db';
-import { enviarImagem, escolherImagem } from '@/lib/storage';
+import { enviarArquivo, escolherImagem } from '@/lib/storage';
 
 export default function NovoAchado() {
   const router = useRouter();
@@ -45,7 +45,7 @@ export default function NovoAchado() {
     setSalvando(true);
     setErro(null);
     try {
-      const foto_url = foto ? await enviarImagem('achados', foto) : null;
+      const foto_url = foto ? await enviarArquivo('achados', foto, condominioId) : null;
       await criarAchado({
         condominio_id: condominioId,
         registrado_por: user.id,

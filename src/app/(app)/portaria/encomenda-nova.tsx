@@ -9,7 +9,7 @@ import { UnidadeSeletor } from '@/components/UnidadeSeletor';
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarEncomenda, listarUnidades } from '@/lib/db';
-import { enviarImagem, escolherImagem } from '@/lib/storage';
+import { enviarArquivo, escolherImagem } from '@/lib/storage';
 import { useFetch } from '@/lib/useFetch';
 
 export default function NovaEncomenda() {
@@ -36,7 +36,7 @@ export default function NovaEncomenda() {
     setSalvando(true);
     setErro(null);
     try {
-      const foto_url = foto ? await enviarImagem('portaria', foto) : null;
+      const foto_url = foto ? await enviarArquivo('portaria', foto, condominioId) : null;
       await criarEncomenda({
         condominio_id: condominioId,
         unidade_id: unidadeId,

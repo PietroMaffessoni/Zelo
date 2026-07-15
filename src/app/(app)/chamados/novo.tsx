@@ -5,11 +5,14 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppHeader, AppText, Button, Chip, Input, Screen, Segmented } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarChamado } from '@/lib/db';
-import { escolherImagem, enviarImagem } from '@/lib/storage';
+import { hapticError, hapticSuccess } from '@/lib/haptics';
+import { escolherImagem, enviarArquivo } from '@/lib/storage';
 import * as L from '@/lib/labels';
+import { useAppTheme } from '@/lib/theme';
+import { useToast } from '@/lib/toast';
 import type { ChamadoCategoria, Prioridade } from '@/lib/types';
 
 const categorias = (Object.keys(L.chamadoCategoria) as ChamadoCategoria[]).map((value) => ({
@@ -25,13 +28,15 @@ const prioridades: { value: Prioridade; label: string }[] = [
 
 export default function NovoChamado() {
   const router = useRouter();
+  const { palette } = useAppTheme();
+  const toast = useToast();
   const { condominioId, user, membershipAtual } = useAuth();
   const [categoria, setCategoria] = useState<ChamadoCategoria>('manutencao');
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [prioridade, setPrioridade] = useState<Prioridade>('media');
   const [fotos, setFotos] = useState<string[]>([]);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erros, setErros] = useState<{ titulo?: string; descricao?: string }>({});
   const [salvando, setSalvando] = useState(false);
 
   async function adicionarFoto() {
@@ -39,14 +44,24 @@ export default function NovoChamado() {
     if (uri) setFotos((f) => [...f, uri]);
   }
 
+  function validar() {
+    const e: { titulo?: string; descricao?: string } = {};
+    if (!titulo.trim()) e.titulo = 'Informe um título para o chamado.';
+    if (!descricao.trim()) e.descricao = 'Descreva o que está acontecendo.';
+    setErros(e);
+    return Object.keys(e).length === 0;
+  }
+
   async function enviar() {
-    if (!titulo.trim() || !descricao.trim()) return setErro('Preencha título e descrição.');
+    if (!validar()) {
+      hapticError();
+      return;
+    }
     if (!condominioId || !user) return;
     setSalvando(true);
-    setErro(null);
     try {
       const urls: string[] = [];
-      for (const uri of fotos) urls.push(await enviarImagem('chamados', uri));
+      for (const uri of fotos) urls.push(await enviarArquivo('chamados', uri, condominioId));
       await criarChamado({
         condominio_id: condominioId,
         autor_id: user.id,
@@ -57,9 +72,12 @@ export default function NovoChamado() {
         prioridade,
         fotos: urls,
       });
+      toast.sucesso('Chamado aberto ✓');
+      hapticSuccess();
       router.back();
     } catch (e: any) {
-      setErro(e?.message ?? 'Não foi possível abrir o chamado.');
+      toast.erro(e?.message ?? 'Não foi possível abrir o chamado.');
+      hapticError();
       setSalvando(false);
     }
   }
@@ -86,12 +104,25 @@ export default function NovoChamado() {
           </View>
         </View>
 
-        <Input label="Título" placeholder="Resuma o problema" value={titulo} onChangeText={setTitulo} />
+        <Input
+          label="Título"
+          placeholder="Resuma o problema"
+          value={titulo}
+          onChangeText={(t) => {
+            setTitulo(t);
+            if (erros.titulo) setErros((e) => ({ ...e, titulo: undefined }));
+          }}
+          error={erros.titulo}
+        />
         <Input
           label="Descrição"
           placeholder="Descreva com detalhes o que está acontecendo..."
           value={descricao}
-          onChangeText={setDescricao}
+          onChangeText={(t) => {
+            setDescricao(t);
+            if (erros.descricao) setErros((e) => ({ ...e, descricao: undefined }));
+          }}
+          error={erros.descricao}
           multiline
           numberOfLines={5}
           style={{ minHeight: 110, textAlignVertical: 'top' }}
@@ -114,6 +145,9 @@ export default function NovoChamado() {
                 <Image source={{ uri }} style={{ width: 84, height: 84, borderRadius: radius.md }} contentFit="cover" />
                 <Pressable
                   onPress={() => setFotos((f) => f.filter((_, idx) => idx !== i))}
+                  accessibilityRole="button"
+                  accessibilityLabel="Remover foto"
+                  hitSlop={8}
                   style={{ position: 'absolute', top: -6, right: -6, backgroundColor: palette.danger, borderRadius: radius.full }}
                 >
                   <Ionicons name="close-circle" size={22} color={palette.white} />
@@ -122,6 +156,8 @@ export default function NovoChamado() {
             ))}
             <Pressable
               onPress={adicionarFoto}
+              accessibilityRole="button"
+              accessibilityLabel="Adicionar foto"
               style={{
                 width: 84,
                 height: 84,
@@ -137,12 +173,6 @@ export default function NovoChamado() {
             </Pressable>
           </ScrollView>
         </View>
-
-        {erro ? (
-          <AppText color="danger" variant="label">
-            {erro}
-          </AppText>
-        ) : null}
 
         <Button title="Abrir chamado" icon="send" onPress={enviar} loading={salvando} size="lg" />
       </View>

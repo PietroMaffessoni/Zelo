@@ -6,8 +6,11 @@ import { Linking, Pressable, View } from 'react-native';
 import { AppHeader, AppText, Badge, Button, Card, Input, Loading, Screen } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useConfirm } from '@/lib/confirm';
 import { alterarStatusReserva, anexarComprovanteReserva, getReserva, listarVistorias, salvarVistoria } from '@/lib/db';
 import { formatData, formatHora, formatMoeda, primeiroNome } from '@/lib/format';
+import { hapticSuccess } from '@/lib/haptics';
+import { useToast } from '@/lib/toast';
 import { reservaStatus, tipoVistoriaLabel } from '@/lib/labels';
 import { enviarArquivo, escolherDocumento, urlAssinada } from '@/lib/storage';
 import { isGestor, type ItemVistoria, type ReservaStatus, type TipoVistoria, type VistoriaReserva } from '@/lib/types';
@@ -18,6 +21,8 @@ const statusOrdem: ReservaStatus[] = ['pendente', 'aprovada', 'rejeitada', 'canc
 export default function ReservaDetalhe() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, papel } = useAuth();
+  const confirmar = useConfirm();
+  const toast = useToast();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
   const podeVistoriar = gestor || porteiro;
@@ -31,8 +36,25 @@ export default function ReservaDetalhe() {
 
   async function mudarStatus(novo: ReservaStatus) {
     if (!data?.reserva || novo === data.reserva.status) return;
+    const destrutivo = novo === 'cancelada' || novo === 'rejeitada';
+    if (destrutivo) {
+      const ok = await confirmar({
+        titulo: novo === 'cancelada' ? 'Cancelar reserva?' : 'Rejeitar reserva?',
+        mensagem: 'O morador será notificado da alteração.',
+        confirmar: novo === 'cancelada' ? 'Cancelar reserva' : 'Rejeitar',
+        cancelar: 'Voltar',
+        destrutivo: true,
+      });
+      if (!ok) return;
+    }
     setMudando(true);
-    await alterarStatusReserva(id, novo);
+    try {
+      await alterarStatusReserva(id, novo);
+      toast.sucesso('Status atualizado ✓');
+      hapticSuccess();
+    } catch (e: any) {
+      toast.erro(e?.message ?? 'Não foi possível alterar o status.');
+    }
     setMudando(false);
     refetch();
   }

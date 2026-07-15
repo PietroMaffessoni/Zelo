@@ -2,20 +2,22 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
-import { palette, spacing } from '@/constants/theme';
+import { AppHeader, AppText, Badge, Card, EmptyState, ErrorState, Fab, Screen, SkeletonList } from '@/components/ui';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarComunicados } from '@/lib/db';
 import { tempoRelativo } from '@/lib/format';
+import { useAppTheme } from '@/lib/theme';
 import { isGestor } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function ComunicadosLista() {
   const router = useRouter();
+  const { palette } = useAppTheme();
   const { condominioId, user, papel } = useAuth();
   const gestor = isGestor(papel);
 
-  const { data, loading, refreshing, refetch } = useFetch(
+  const { data, loading, refreshing, error, refetch } = useFetch(
     async () => (condominioId && user ? listarComunicados(condominioId, user.id) : []),
     [condominioId],
   );
@@ -24,11 +26,13 @@ export default function ComunicadosLista() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch}>
-        <AppHeader title="Comunicados" back subtitle="Avisos oficiais do condomínio" />
+      <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
+        <AppHeader title="Comunicados" back subtitle="Avisos oficiais do condomínio" onRefresh={refetch} />
 
         {loading ? (
-          <Loading />
+          <SkeletonList />
+        ) : error ? (
+          <ErrorState onRetry={refetch} />
         ) : comunicados.length === 0 ? (
           <EmptyState
             icon="megaphone-outline"

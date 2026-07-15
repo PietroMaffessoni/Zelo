@@ -3,9 +3,12 @@ import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
 import { AppHeader, AppText, Button, Card, Input, Screen, Segmented } from '@/components/ui';
-import { palette, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarComunicado } from '@/lib/db';
+import { hapticError, hapticSuccess } from '@/lib/haptics';
+import { useAppTheme } from '@/lib/theme';
+import { useToast } from '@/lib/toast';
 import type { Prioridade } from '@/lib/types';
 
 const prioridades: { value: Prioridade; label: string }[] = [
@@ -16,19 +19,27 @@ const prioridades: { value: Prioridade; label: string }[] = [
 
 export default function NovoComunicado() {
   const router = useRouter();
+  const { palette } = useAppTheme();
+  const toast = useToast();
   const { condominioId, user } = useAuth();
   const [titulo, setTitulo] = useState('');
   const [corpo, setCorpo] = useState('');
   const [prioridade, setPrioridade] = useState<Prioridade>('media');
   const [fixado, setFixado] = useState(false);
-  const [erro, setErro] = useState<string | null>(null);
+  const [erros, setErros] = useState<{ titulo?: string; corpo?: string }>({});
   const [salvando, setSalvando] = useState(false);
 
   async function publicar() {
-    if (!titulo.trim() || !corpo.trim()) return setErro('Preencha título e mensagem.');
+    const e: { titulo?: string; corpo?: string } = {};
+    if (!titulo.trim()) e.titulo = 'Informe um título.';
+    if (!corpo.trim()) e.corpo = 'Escreva a mensagem do comunicado.';
+    setErros(e);
+    if (Object.keys(e).length > 0) {
+      hapticError();
+      return;
+    }
     if (!condominioId || !user) return;
     setSalvando(true);
-    setErro(null);
     try {
       await criarComunicado({
         condominio_id: condominioId,
@@ -38,9 +49,12 @@ export default function NovoComunicado() {
         prioridade,
         fixado,
       });
+      toast.sucesso('Comunicado publicado ✓');
+      hapticSuccess();
       router.back();
     } catch (e: any) {
-      setErro(e?.message ?? 'Não foi possível publicar.');
+      toast.erro(e?.message ?? 'Não foi possível publicar.');
+      hapticError();
       setSalvando(false);
     }
   }
@@ -50,12 +64,25 @@ export default function NovoComunicado() {
       <AppHeader title="Novo comunicado" back />
 
       <View style={{ gap: spacing.lg }}>
-        <Input label="Título" placeholder="Ex.: Manutenção do elevador" value={titulo} onChangeText={setTitulo} />
+        <Input
+          label="Título"
+          placeholder="Ex.: Manutenção do elevador"
+          value={titulo}
+          onChangeText={(t) => {
+            setTitulo(t);
+            if (erros.titulo) setErros((e) => ({ ...e, titulo: undefined }));
+          }}
+          error={erros.titulo}
+        />
         <Input
           label="Mensagem"
           placeholder="Escreva o comunicado..."
           value={corpo}
-          onChangeText={setCorpo}
+          onChangeText={(t) => {
+            setCorpo(t);
+            if (erros.corpo) setErros((e) => ({ ...e, corpo: undefined }));
+          }}
+          error={erros.corpo}
           multiline
           numberOfLines={6}
           style={{ minHeight: 120, textAlignVertical: 'top' }}
@@ -81,12 +108,6 @@ export default function NovoComunicado() {
             trackColor={{ true: palette.primary, false: palette.borderStrong }}
           />
         </Card>
-
-        {erro ? (
-          <AppText color="danger" variant="label">
-            {erro}
-          </AppText>
-        ) : null}
 
         <Button title="Publicar comunicado" icon="megaphone" onPress={publicar} loading={salvando} size="lg" />
       </View>

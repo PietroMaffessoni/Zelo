@@ -1,7 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import { useEffect } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Pressable,
   RefreshControl,
   ScrollView,
@@ -17,7 +20,7 @@ import { useAppTheme } from '@/lib/theme';
 
 const MAX_LARGURA = 680;
 
-/** Container base de tela: fundo, área segura e centralização no web. */
+/** Container base de tela: fundo, área segura, teclado e centralização no web. */
 export function Screen({
   children,
   scroll = true,
@@ -26,6 +29,7 @@ export function Screen({
   padded = true,
   style,
   edges = ['top'],
+  maxWidth = MAX_LARGURA,
 }: {
   children: React.ReactNode;
   scroll?: boolean;
@@ -34,12 +38,13 @@ export function Screen({
   padded?: boolean;
   style?: ViewStyle;
   edges?: ('top' | 'bottom' | 'left' | 'right')[];
+  maxWidth?: number;
 }) {
   const { palette } = useAppTheme();
   const conteudo = (
     <View
       style={[
-        { width: '100%', maxWidth: MAX_LARGURA, alignSelf: 'center', flex: scroll ? undefined : 1 },
+        { width: '100%', maxWidth, alignSelf: 'center', flex: scroll ? undefined : 1 },
         padded ? { paddingHorizontal: spacing.lg } : null,
         style,
       ]}
@@ -50,22 +55,28 @@ export function Screen({
 
   return (
     <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }} edges={edges}>
-      {scroll ? (
-        <ScrollView
-          contentContainerStyle={{ paddingBottom: spacing.xxxl, flexGrow: 1 }}
-          keyboardShouldPersistTaps="handled"
-          showsVerticalScrollIndicator={false}
-          refreshControl={
-            onRefresh ? (
-              <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={palette.primary} />
-            ) : undefined
-          }
-        >
-          {conteudo}
-        </ScrollView>
-      ) : (
-        conteudo
-      )}
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
+        {scroll ? (
+          <ScrollView
+            contentContainerStyle={{ paddingBottom: spacing.xxxl, flexGrow: 1 }}
+            keyboardShouldPersistTaps="handled"
+            keyboardDismissMode="interactive"
+            showsVerticalScrollIndicator={false}
+            refreshControl={
+              onRefresh ? (
+                <RefreshControl refreshing={!!refreshing} onRefresh={onRefresh} tintColor={palette.primary} />
+              ) : undefined
+            }
+          >
+            {conteudo}
+          </ScrollView>
+        ) : (
+          conteudo
+        )}
+      </KeyboardAvoidingView>
     </SafeAreaView>
   );
 }
@@ -77,15 +88,26 @@ export function AppHeader({
   back,
   right,
   onBack,
+  onRefresh,
 }: {
   title: string;
   subtitle?: string;
   back?: boolean;
   right?: React.ReactNode;
   onBack?: () => void;
+  /** Só no web: exibe um botão de atualizar (pull-to-refresh não existe no navegador). */
+  onRefresh?: () => void;
 }) {
   const router = useRouter();
   const { palette } = useAppTheme();
+
+  // Web: título da aba do navegador por rota (antes toda página ficava "CondoOS").
+  useEffect(() => {
+    if (Platform.OS === 'web' && typeof document !== 'undefined') {
+      document.title = `${title} · CondoOS`;
+    }
+  }, [title]);
+
   return (
     <View
       style={{
@@ -99,10 +121,12 @@ export function AppHeader({
       {back ? (
         <Pressable
           onPress={() => (onBack ? onBack() : router.back())}
-          hitSlop={10}
+          hitSlop={8}
+          accessibilityRole="button"
+          accessibilityLabel="Voltar"
           style={{
-            width: 38,
-            height: 38,
+            width: 44,
+            height: 44,
             borderRadius: radius.full,
             backgroundColor: palette.surfaceAlt,
             alignItems: 'center',
@@ -122,6 +146,23 @@ export function AppHeader({
           </AppText>
         ) : null}
       </View>
+      {Platform.OS === 'web' && onRefresh ? (
+        <Pressable
+          onPress={onRefresh}
+          accessibilityRole="button"
+          accessibilityLabel="Atualizar"
+          style={({ pressed, hovered }: any) => ({
+            width: 44,
+            height: 44,
+            borderRadius: radius.full,
+            backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
+            alignItems: 'center',
+            justifyContent: 'center',
+          })}
+        >
+          <Ionicons name="refresh" size={20} color={palette.textMuted} />
+        </Pressable>
+      ) : null}
       {right}
     </View>
   );
@@ -190,6 +231,55 @@ export function EmptyState({
       {actionLabel && onAction ? (
         <View style={{ marginTop: spacing.md }}>
           <Button title={actionLabel} onPress={onAction} fullWidth={false} icon="add" />
+        </View>
+      ) : null}
+    </View>
+  );
+}
+
+/** Estado de falha de carregamento — distingue "deu erro" de "está vazio". */
+export function ErrorState({
+  title = 'Não foi possível carregar',
+  description = 'Verifique sua conexão e tente novamente.',
+  onRetry,
+}: {
+  title?: string;
+  description?: string;
+  onRetry?: () => void;
+}) {
+  const { palette } = useAppTheme();
+  return (
+    <View
+      style={{
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingVertical: spacing.xxxl,
+        paddingHorizontal: spacing.xl,
+        gap: spacing.sm,
+      }}
+    >
+      <View
+        style={{
+          width: 72,
+          height: 72,
+          borderRadius: radius.full,
+          backgroundColor: palette.dangerSoft,
+          alignItems: 'center',
+          justifyContent: 'center',
+          marginBottom: spacing.sm,
+        }}
+      >
+        <Ionicons name="cloud-offline-outline" size={34} color={palette.danger} />
+      </View>
+      <AppText variant="subtitle" center>
+        {title}
+      </AppText>
+      <AppText color="muted" center style={{ maxWidth: 320 }}>
+        {description}
+      </AppText>
+      {onRetry ? (
+        <View style={{ marginTop: spacing.md }}>
+          <Button title="Tentar novamente" onPress={onRetry} fullWidth={false} icon="refresh" variant="secondary" />
         </View>
       ) : null}
     </View>

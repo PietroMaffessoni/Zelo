@@ -1,6 +1,6 @@
 import { Link, useRouter } from 'expo-router';
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, View } from 'react-native';
+import { View } from 'react-native';
 
 import { Brand } from '@/components/Brand';
 import { AppText, Button, Input, Screen } from '@/components/ui';
@@ -30,23 +30,23 @@ export default function Login() {
 
   return (
     <Screen>
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
-        <View style={{ marginTop: spacing.xxxl, marginBottom: spacing.xl }}>
-          <Brand size="lg" tagline />
-        </View>
+      <View style={{ marginTop: spacing.xxxl, marginBottom: spacing.xl }}>
+        <Brand size="lg" tagline />
+      </View>
 
-        <View style={{ gap: spacing.lg }}>
-          <AppText variant="heading">Entrar</AppText>
+      <View style={{ gap: spacing.lg }}>
+        <AppText variant="heading">Entrar</AppText>
 
-          <Input
-            label="E-mail"
-            placeholder="voce@email.com"
-            icon="mail-outline"
-            autoCapitalize="none"
-            keyboardType="email-address"
-            value={email}
-            onChangeText={setEmail}
-          />
+        <Input
+          label="E-mail"
+          placeholder="voce@email.com"
+          icon="mail-outline"
+          autoCapitalize="none"
+          keyboardType="email-address"
+          value={email}
+          onChangeText={setEmail}
+        />
+        <View style={{ gap: spacing.sm }}>
           <Input
             label="Senha"
             placeholder="Sua senha"
@@ -56,25 +56,30 @@ export default function Login() {
             onChangeText={setSenha}
             onSubmitEditing={entrar}
           />
-
-          {erro ? (
-            <AppText color="danger" variant="label">
-              {erro}
+          <Link href="/(auth)/esqueci-senha" asChild>
+            <AppText color="primary" variant="label" style={{ alignSelf: 'flex-end' }}>
+              Esqueci minha senha
             </AppText>
-          ) : null}
-
-          <Button title="Entrar" onPress={entrar} loading={carregando} size="lg" />
-
-          <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs }}>
-            <AppText color="muted">Ainda não tem conta?</AppText>
-            <Link href="/(auth)/cadastro" asChild>
-              <AppText color="primary" weight="semibold">
-                Criar conta
-              </AppText>
-            </Link>
-          </View>
+          </Link>
         </View>
-      </KeyboardAvoidingView>
+
+        {erro ? (
+          <AppText color="danger" variant="label">
+            {erro}
+          </AppText>
+        ) : null}
+
+        <Button title="Entrar" onPress={entrar} loading={carregando} size="lg" />
+
+        <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs }}>
+          <AppText color="muted">Ainda não tem conta?</AppText>
+          <Link href="/(auth)/cadastro" asChild>
+            <AppText color="primary" weight="semibold">
+              Criar conta
+            </AppText>
+          </Link>
+        </View>
+      </View>
     </Screen>
   );
 }

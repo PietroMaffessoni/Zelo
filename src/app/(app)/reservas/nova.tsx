@@ -8,12 +8,15 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarReserva, listarAreas } from '@/lib/db';
 import { formatMoeda } from '@/lib/format';
+import { hapticError, hapticSuccess } from '@/lib/haptics';
+import { useToast } from '@/lib/toast';
 import { useFetch } from '@/lib/useFetch';
 
 const HORAS = Array.from({ length: 17 }, (_, i) => i + 7); // 07h às 23h
 
 export default function NovaReserva() {
   const router = useRouter();
+  const toast = useToast();
   const { area: areaParam } = useLocalSearchParams<{ area?: string }>();
   const { condominioId, user, membershipAtual } = useAuth();
 
@@ -42,8 +45,14 @@ export default function NovaReserva() {
   const areaSelecionada = areas?.find((a) => a.id === areaId);
 
   async function reservar() {
-    if (!areaId) return setErro('Escolha uma área.');
-    if (horaFim <= horaInicio) return setErro('O horário final deve ser depois do inicial.');
+    if (!areaId) {
+      hapticError();
+      return setErro('Escolha uma área.');
+    }
+    if (horaFim <= horaInicio) {
+      hapticError();
+      return setErro('O horário final deve ser depois do inicial.');
+    }
     if (!condominioId || !user || !areaSelecionada) return;
     setSalvando(true);
     setErro(null);
@@ -61,9 +70,12 @@ export default function NovaReserva() {
         requer_aprovacao: areaSelecionada.requer_aprovacao,
         taxa_cobrada: areaSelecionada.taxa_uso > 0 ? areaSelecionada.taxa_uso : null,
       });
+      toast.sucesso(areaSelecionada.requer_aprovacao ? 'Reserva enviada para aprovação ✓' : 'Reserva confirmada ✓');
+      hapticSuccess();
       router.back();
     } catch (e: any) {
-      setErro(e?.message ?? 'Não foi possível reservar.');
+      toast.erro(e?.message ?? 'Não foi possível reservar.');
+      hapticError();
       setSalvando(false);
     }
   }

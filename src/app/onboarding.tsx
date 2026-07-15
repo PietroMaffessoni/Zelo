@@ -13,11 +13,22 @@ type Modo = 'escolha' | 'criar' | 'entrar' | 'portaria';
 
 export default function Onboarding() {
   const router = useRouter();
-  const { ready, session, memberships, profile, criarCondominio, entrarCondominio, entrarComoPorteiro, signOut } =
-    useAuth();
+  const {
+    ready,
+    session,
+    memberships,
+    membershipsPendentes,
+    profile,
+    criarCondominio,
+    entrarCondominio,
+    entrarComoPorteiro,
+    recarregar,
+    signOut,
+  } = useAuth();
   const [modo, setModo] = useState<Modo>('escolha');
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [verificando, setVerificando] = useState(false);
 
   // campos criar
   const [nome, setNome] = useState('');
@@ -35,6 +46,46 @@ export default function Onboarding() {
   if (!session) return <Redirect href="/(auth)/login" />;
   if (memberships.length > 0) return <Redirect href="/(app)/(tabs)/inicio" />;
 
+  if (membershipsPendentes.length > 0) {
+    return (
+      <Screen>
+        <View style={{ marginTop: spacing.xxl, alignItems: 'center', gap: spacing.md }}>
+          <View
+            style={{
+              width: 72,
+              height: 72,
+              borderRadius: radius.full,
+              backgroundColor: palette.primarySoft,
+              alignItems: 'center',
+              justifyContent: 'center',
+            }}
+          >
+            <Ionicons name="time-outline" size={34} color={palette.primary} />
+          </View>
+          <AppText variant="title" center>
+            Aguardando aprovação
+          </AppText>
+          <AppText color="muted" center style={{ marginTop: spacing.xs }}>
+            Seu pedido para entrar em{' '}
+            <AppText weight="semibold">{membershipsPendentes[0].condominio?.nome ?? 'o condomínio'}</AppText> foi
+            enviado ao síndico. Assim que ele aprovar, você terá acesso automaticamente.
+          </AppText>
+          <Button
+            title="Verificar novamente"
+            variant="secondary"
+            icon="refresh-outline"
+            onPress={verificar}
+            loading={verificando}
+            style={{ marginTop: spacing.lg }}
+          />
+          <Pressable onPress={signOut} style={{ marginTop: spacing.lg }}>
+            <AppText color="muted">Sair da conta</AppText>
+          </Pressable>
+        </View>
+      </Screen>
+    );
+  }
+
   async function criar() {
     if (!nome.trim()) return setErro('Informe o nome do condomínio.');
     setCarregando(true);
@@ -51,8 +102,9 @@ export default function Onboarding() {
     setErro(null);
     const { error } = await entrarCondominio({ codigo, bloco, numero, vinculo });
     setCarregando(false);
+    // Entra como 'pendente' — não redireciona; assim que recarregar() atualizar o
+    // contexto, este componente já cai sozinho na tela de "aguardando aprovação" acima.
     if (error) setErro(error);
-    else router.replace('/(app)/(tabs)/inicio');
   }
 
   async function entrarPortaria() {
@@ -63,6 +115,12 @@ export default function Onboarding() {
     setCarregando(false);
     if (error) setErro(error);
     else router.replace('/(app)/(tabs)/inicio');
+  }
+
+  async function verificar() {
+    setVerificando(true);
+    await recarregar();
+    setVerificando(false);
   }
 
   return (

@@ -90,8 +90,11 @@ export type Condominio = {
   uf: string | null;
   endereco: string | null;
   cnpj: string | null;
-  codigo_convite: string;
-  codigo_portaria: string | null;
+  // Só vêm preenchidos para quem é gestor daquele condomínio (buscados à parte
+  // via RPC obter_codigos_condominio — o select geral de condominios não expõe
+  // essas duas colunas, ver setup.sql seção 7.10).
+  codigo_convite?: string;
+  codigo_portaria?: string | null;
   criado_por: string | null;
   created_at: string;
 };

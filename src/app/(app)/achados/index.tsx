@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { alterarStatusAchado, listarAchados } from '@/lib/db';
 import { formatData } from '@/lib/format';
 import * as L from '@/lib/labels';
+import { urlsAssinadas } from '@/lib/storage';
 import { isGestor, type AchadoPerdido } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
@@ -19,12 +20,16 @@ export default function AchadosLista() {
   const gestor = isGestor(papel);
   const [processando, setProcessando] = useState<string | null>(null);
 
-  const { data, loading, refreshing, refetch } = useFetch(
-    async () => (condominioId ? listarAchados(condominioId) : []),
-    [condominioId],
-  );
+  const { data, loading, refreshing, refetch } = useFetch(async () => {
+    if (!condominioId) return { itens: [] as AchadoPerdido[], fotoUrls: {} as Record<string, string> };
+    const itens = await listarAchados(condominioId);
+    const paths = itens.map((a) => a.foto_url).filter((p): p is string => !!p);
+    const fotoUrls = await urlsAssinadas('achados', paths);
+    return { itens, fotoUrls };
+  }, [condominioId]);
 
-  const itens = data ?? [];
+  const itens = data?.itens ?? [];
+  const fotoUrls = data?.fotoUrls ?? {};
 
   async function marcarDevolvido(a: AchadoPerdido) {
     setProcessando(a.id);
@@ -56,8 +61,8 @@ export default function AchadosLista() {
               return (
                 <Card key={a.id}>
                   <View style={{ flexDirection: 'row', gap: spacing.md }}>
-                    {a.foto_url ? (
-                      <Image source={{ uri: a.foto_url }} style={{ width: 72, height: 72, borderRadius: radius.md }} contentFit="cover" />
+                    {a.foto_url && fotoUrls[a.foto_url] ? (
+                      <Image source={{ uri: fotoUrls[a.foto_url] }} style={{ width: 72, height: 72, borderRadius: radius.md }} contentFit="cover" />
                     ) : (
                       <View
                         style={{

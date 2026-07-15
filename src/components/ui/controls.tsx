@@ -1,9 +1,15 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Pressable, ScrollView, View, type ViewStyle } from 'react-native';
+import { Platform, Pressable, ScrollView, View, type ViewStyle } from 'react-native';
 
 import { radius, shadow, spacing, type Tone } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
 import { useAppTheme } from '@/lib/theme';
+
+/** Anel de foco para navegação por teclado (só web). */
+export function focusRing(focused: boolean, cor: string): ViewStyle {
+  if (Platform.OS !== 'web' || !focused) return {};
+  return { outlineStyle: 'solid', outlineWidth: 2, outlineColor: cor, outlineOffset: 2 } as ViewStyle;
+}
 
 export function Divider({ style }: { style?: ViewStyle }) {
   const { palette } = useAppTheme();
@@ -26,17 +32,25 @@ export function Chip({
   return (
     <Pressable
       onPress={onPress}
-      style={{
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: 6,
-        paddingHorizontal: spacing.md,
-        paddingVertical: spacing.sm,
-        borderRadius: radius.full,
-        borderWidth: 1.5,
-        borderColor: selected ? palette.primary : palette.border,
-        backgroundColor: selected ? palette.primarySoft : palette.surface,
-      }}
+      hitSlop={8}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ selected: !!selected }}
+      style={({ hovered, focused }: any) => [
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
+          minHeight: 40,
+          paddingHorizontal: spacing.md,
+          paddingVertical: spacing.sm,
+          borderRadius: radius.full,
+          borderWidth: 1.5,
+          borderColor: selected ? palette.primary : hovered ? palette.borderStrong : palette.border,
+          backgroundColor: selected ? palette.primarySoft : hovered ? palette.surfaceAlt : palette.surface,
+        },
+        focusRing(focused, palette.primary),
+      ]}
     >
       {icon ? (
         <Ionicons name={icon} size={15} color={selected ? palette.primary : palette.textMuted} />
@@ -94,13 +108,23 @@ export function ListItem({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: spacing.md,
-        paddingVertical: spacing.md,
-        opacity: pressed && onPress ? 0.7 : 1,
-      })}
+      accessibilityRole={onPress ? 'button' : undefined}
+      accessibilityLabel={subtitle ? `${title}. ${subtitle}` : title}
+      style={({ pressed, hovered, focused }: any) => [
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          minHeight: 44,
+          paddingVertical: spacing.md,
+          paddingHorizontal: hovered && onPress ? spacing.sm : 0,
+          marginHorizontal: hovered && onPress ? -spacing.sm : 0,
+          borderRadius: radius.md,
+          backgroundColor: hovered && onPress ? palette.surfaceAlt : 'transparent',
+          opacity: pressed && onPress ? 0.7 : 1,
+        },
+        focusRing(focused, palette.primary),
+      ]}
     >
       {icon ? (
         <View
@@ -148,7 +172,9 @@ export function Fab({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => [
+      accessibilityRole="button"
+      accessibilityLabel={label ?? 'Adicionar'}
+      style={({ pressed, focused }: any) => [
         {
           position: 'absolute',
           right: spacing.lg,
@@ -165,6 +191,7 @@ export function Fab({
           opacity: pressed ? 0.9 : 1,
         },
         shadow.floating,
+        focusRing(focused, palette.primary),
       ]}
     >
       <Ionicons name={icon} size={26} color={palette.onPrimary} />
@@ -194,17 +221,22 @@ export function ActionTile({
   return (
     <Pressable
       onPress={onPress}
-      style={({ pressed }) => ({
-        flex: 1,
-        alignItems: 'center',
-        gap: spacing.sm,
-        paddingVertical: spacing.lg,
-        borderRadius: radius.lg,
-        backgroundColor: palette.surface,
-        borderWidth: 1,
-        borderColor: palette.border,
-        opacity: pressed ? 0.8 : 1,
-      })}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed, hovered, focused }: any) => [
+        {
+          flex: 1,
+          alignItems: 'center',
+          gap: spacing.sm,
+          paddingVertical: spacing.lg,
+          borderRadius: radius.lg,
+          backgroundColor: hovered ? palette.surfaceAlt : palette.surface,
+          borderWidth: 1,
+          borderColor: hovered ? palette.borderStrong : palette.border,
+          opacity: pressed ? 0.8 : 1,
+        },
+        focusRing(focused, palette.primary),
+      ]}
     >
       <View
         style={{

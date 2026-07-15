@@ -3,23 +3,25 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen, Segmented } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { AppHeader, AppText, Badge, Card, EmptyState, ErrorState, Fab, Screen, Segmented, SkeletonList } from '@/components/ui';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarLancamentos } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
 import { categoriaFinanceira, statusFinanceiro } from '@/lib/labels';
+import { useAppTheme } from '@/lib/theme';
 import { isConselho, isGestor, statusFinanceiroEfetivo, type TipoLancamento } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function FinanceiroLista() {
   const router = useRouter();
+  const { palette } = useAppTheme();
   const { condominioId, papel } = useAuth();
   const gestor = isGestor(papel);
   const podeVerDespesas = isConselho(papel);
   const [tipo, setTipo] = useState<TipoLancamento>('boleto');
 
-  const { data, loading, refreshing, refetch } = useFetch(
+  const { data, loading, refreshing, error, refetch } = useFetch(
     async () => (condominioId ? listarLancamentos(condominioId) : []),
     [condominioId],
   );
@@ -28,19 +30,22 @@ export default function FinanceiroLista() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch}>
+      <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
         <AppHeader
           title="Financeiro"
           back
           subtitle={gestor ? 'Boletos e despesas do condomínio' : 'Meus boletos'}
+          onRefresh={refetch}
           right={
             gestor ? (
               <Pressable
                 onPress={() => router.push('/(app)/financeiro/gerar-mensal')}
                 hitSlop={10}
+                accessibilityRole="button"
+                accessibilityLabel="Gerar boletos do mês"
                 style={{
-                  width: 38,
-                  height: 38,
+                  width: 44,
+                  height: 44,
                   borderRadius: radius.full,
                   backgroundColor: palette.surfaceAlt,
                   alignItems: 'center',
@@ -66,7 +71,9 @@ export default function FinanceiroLista() {
 
         <View style={{ marginTop: spacing.lg }}>
           {loading ? (
-            <Loading />
+            <SkeletonList />
+          ) : error ? (
+            <ErrorState onRetry={refetch} />
           ) : lancamentos.length === 0 ? (
             <EmptyState
               icon="cash-outline"

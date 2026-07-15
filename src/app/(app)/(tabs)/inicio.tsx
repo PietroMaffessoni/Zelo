@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
-import { ActionTile, AppText, Avatar, Badge, Card, Loading, Screen } from '@/components/ui';
+import { ActionTile, AppText, Avatar, Badge, Card, ErrorState, Screen, SkeletonList } from '@/components/ui';
 import { radius, spacing, type Tone } from '@/constants/theme';
 import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
@@ -73,6 +73,8 @@ export default function Inicio() {
           <Pressable
             onPress={() => router.push('/(app)/chamados/novo')}
             hitSlop={8}
+            accessibilityRole="button"
+            accessibilityLabel="Abrir chamado"
             style={{
               width: 42,
               height: 42,
@@ -274,7 +276,13 @@ export default function Inicio() {
       </View>
 
       {dados.loading ? (
-        <Loading />
+        <SkeletonList count={3} />
+      ) : dados.error ? (
+        <ErrorState
+          title="Não foi possível carregar"
+          description="Verifique sua conexão para ver os dados do condomínio."
+          onRetry={dados.refetch}
+        />
       ) : comunicados.length === 0 ? (
         <Card>
           <AppText color="muted" center>

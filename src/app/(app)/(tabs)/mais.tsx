@@ -5,17 +5,30 @@ import { View } from 'react-native';
 import { AppHeader, AppText, Avatar, Badge, Card, Divider, ListItem, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useConfirm } from '@/lib/confirm';
 import { gerarCodigoPortaria } from '@/lib/db';
 import { papelLabel } from '@/lib/labels';
 import { isConselho as ehConselho, isGestor as ehGestor } from '@/lib/types';
 
 export default function Mais() {
   const router = useRouter();
+  const confirmar = useConfirm();
   const { profile, papel, membershipAtual, memberships, condominioId, recarregar, signOut } = useAuth();
   const gestor = ehGestor(papel);
   const conselho = ehConselho(papel);
   const porteiro = papel === 'porteiro';
   const [gerandoCodigo, setGerandoCodigo] = useState(false);
+
+  async function sair() {
+    const ok = await confirmar({
+      titulo: 'Sair da conta?',
+      mensagem: 'Você precisará entrar novamente com e-mail e senha.',
+      confirmar: 'Sair',
+      cancelar: 'Cancelar',
+      destrutivo: true,
+    });
+    if (ok) await signOut();
+  }
 
   async function gerarCodigoDaPortaria() {
     if (!condominioId) return;
@@ -159,7 +172,7 @@ export default function Mais() {
           </>
         ) : null}
         <Divider />
-        <ListItem icon="log-out-outline" iconTone="danger" title="Sair" chevron={false} onPress={signOut} />
+        <ListItem icon="log-out-outline" iconTone="danger" title="Sair" chevron={false} onPress={sair} />
       </Card>
 
       <AppText color="subtle" center variant="caption" style={{ marginTop: spacing.xxl }}>

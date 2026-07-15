@@ -18,10 +18,18 @@ export async function escolherImagem(): Promise<string | null> {
   return res.assets[0].uri;
 }
 
-/** Envia a imagem local para o Storage e retorna a URL pública. */
-export async function enviarImagem(bucket: Bucket, localUri: string): Promise<string> {
+/**
+ * Envia a imagem local para o bucket **público** de avatares e retorna a URL pública.
+ * O path fica sempre dentro de "{auth.uid()}/arquivo" — é o que a policy de storage
+ * exige para permitir o upload (cada usuário só escreve no próprio path).
+ */
+export async function enviarImagem(bucket: 'avatars', localUri: string): Promise<string> {
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) throw new Error('Não autenticado');
   const ext = (localUri.split('.').pop()?.split('?')[0] || 'jpg').toLowerCase();
-  const nome = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+  const nome = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
   const resp = await fetch(localUri);
   const blob = await resp.blob();
   const { error } = await supabase.storage.from(bucket).upload(nome, blob, {
@@ -34,7 +42,7 @@ export async function enviarImagem(bucket: Bucket, localUri: string): Promise<st
 }
 
 /** Escolhe e envia numa etapa. Retorna a URL pública ou null se cancelado. */
-export async function escolherEEnviar(bucket: Bucket): Promise<string | null> {
+export async function escolherEEnviar(bucket: 'avatars'): Promise<string | null> {
   const uri = await escolherImagem();
   if (!uri) return null;
   return enviarImagem(bucket, uri);
@@ -74,4 +82,21 @@ export async function urlAssinada(bucket: Bucket, path: string, expiresIn = 3600
   const { data, error } = await supabase.storage.from(bucket).createSignedUrl(path, expiresIn);
   if (error) throw error;
   return data.signedUrl;
+}
+
+/**
+ * Gera URLs temporárias para vários arquivos de uma vez (ex.: fotos de uma lista de
+ * chamados/encomendas). Retorna um mapa `path -> url assinada`; paths que falharem
+ * (arquivo removido, etc.) simplesmente não aparecem no mapa.
+ */
+export async function urlsAssinadas(bucket: Bucket, paths: string[], expiresIn = 3600): Promise<Record<string, string>> {
+  const unicos = [...new Set(paths)];
+  if (unicos.length === 0) return {};
+  const { data, error } = await supabase.storage.from(bucket).createSignedUrls(unicos, expiresIn);
+  if (error) throw error;
+  const mapa: Record<string, string> = {};
+  for (const item of data ?? []) {
+    if (item.path && item.signedUrl) mapa[item.path] = item.signedUrl;
+  }
+  return mapa;
 }

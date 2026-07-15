@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen, Segmented } from '@/components/ui';
+import { AppHeader, AppText, Badge, Card, EmptyState, ErrorState, Fab, Screen, Segmented, SkeletonList } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarChamados } from '@/lib/db';
@@ -26,7 +26,7 @@ export default function ChamadosTab() {
   const gestor = isGestor(papel);
   const [filtro, setFiltro] = useState<Filtro>('todos');
 
-  const { data, loading, refreshing, refetch } = useFetch(
+  const { data, loading, refreshing, error, refetch } = useFetch(
     async () => (condominioId ? listarChamados(condominioId) : []),
     [condominioId],
   );
@@ -38,15 +38,21 @@ export default function ChamadosTab() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch} edges={['top']}>
-        <AppHeader title="Chamados" subtitle={gestor ? 'Todos os chamados do condomínio' : 'Seus chamados'} />
+      <Screen refreshing={refreshing} onRefresh={refetch} edges={['top']} maxWidth={920}>
+        <AppHeader
+          title="Chamados"
+          subtitle={gestor ? 'Todos os chamados do condomínio' : 'Seus chamados'}
+          onRefresh={refetch}
+        />
 
         <View style={{ marginBottom: spacing.md }}>
           <Segmented options={filtros} value={filtro} onChange={setFiltro} />
         </View>
 
         {loading ? (
-          <Loading />
+          <SkeletonList />
+        ) : error ? (
+          <ErrorState onRetry={refetch} />
         ) : lista.length === 0 ? (
           <EmptyState
             icon="construct-outline"

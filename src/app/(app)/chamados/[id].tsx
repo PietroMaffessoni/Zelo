@@ -10,6 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { alterarStatusChamado, comentarChamado, getChamado, listarEventos } from '@/lib/db';
 import { formatDataHora, primeiroNome, tempoRelativo } from '@/lib/format';
 import * as L from '@/lib/labels';
+import { urlsAssinadas } from '@/lib/storage';
 import { isGestor, type ChamadoEvento, type ChamadoStatus } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
@@ -25,11 +26,13 @@ export default function ChamadoDetalhe() {
 
   const { data, loading, refetch } = useFetch(async () => {
     const [chamado, eventos] = await Promise.all([getChamado(id), listarEventos(id)]);
-    return { chamado, eventos };
+    const fotoUrls = await urlsAssinadas('chamados', chamado.fotos ?? []);
+    return { chamado, eventos, fotoUrls };
   }, [id]);
 
   const chamado = data?.chamado;
   const eventos = data?.eventos ?? [];
+  const fotoUrls = data?.fotoUrls ?? {};
 
   async function enviarComentario() {
     if (!comentario.trim() || !user) return;
@@ -76,8 +79,8 @@ export default function ChamadoDetalhe() {
 
       {chamado.fotos?.length ? (
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm, marginTop: spacing.md }}>
-          {chamado.fotos.map((url) => (
-            <Image key={url} source={{ uri: url }} style={{ width: 120, height: 120, borderRadius: radius.md }} contentFit="cover" />
+          {chamado.fotos.filter((path) => fotoUrls[path]).map((path) => (
+            <Image key={path} source={{ uri: fotoUrls[path] }} style={{ width: 120, height: 120, borderRadius: radius.md }} contentFit="cover" />
           ))}
         </ScrollView>
       ) : null}

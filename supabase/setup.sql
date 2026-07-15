@@ -1,4 +1,4 @@
--- ============================================================================
+ -- ============================================================================
 --  CondoOS — Setup completo do banco de dados (Supabase / PostgreSQL)
 --  Cole este arquivo inteiro no SQL Editor do seu projeto Supabase e execute.
 --  É seguro rodar mais de uma vez (idempotente).
@@ -470,9 +470,71 @@ drop trigger if exists trg_chamados_updated on public.chamados;
 create trigger trg_chamados_updated before update on public.chamados
   for each row execute function public.touch_updated_at();
 
+-- A policy de update de comunicados é gestor-only, mas não impede trocar o autor_id
+-- para outro perfil — reatribuindo a autoria de um post. Nunca é uma operação
+-- legítima, então trava geral via trigger.
+create or replace function public.proteger_autor_id()
+returns trigger language plpgsql as $$
+begin
+  if new.autor_id is distinct from old.autor_id then
+    raise exception 'Não é permitido reatribuir a autoria deste registro';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_comunicados_protect_autor on public.comunicados;
+create trigger trg_comunicados_protect_autor before update on public.comunicados
+  for each row execute function public.proteger_autor_id();
+
+-- chamados_update deixa autor OU gestor editar qualquer coluna — na prática o autor
+-- podia mudar responsavel_id/prioridade (decisão de gestão) e reatribuir a própria
+-- autoria. O autor segue livre para editar título/descrição/categoria/fotos; o resto
+-- (responsavel, prioridade, autoria) passa a ser gestor-only.
+create or replace function public.proteger_chamado_update()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if public.is_gestor(new.condominio_id) then
+    return new;
+  end if;
+  if new.autor_id is distinct from old.autor_id
+     or new.responsavel_id is distinct from old.responsavel_id
+     or new.prioridade is distinct from old.prioridade then
+    raise exception 'Sem permissão para alterar autoria, responsável ou prioridade do chamado';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_chamados_protect_update on public.chamados;
+create trigger trg_chamados_protect_update before update on public.chamados
+  for each row execute function public.proteger_chamado_update();
+
 drop trigger if exists trg_solic_updated on public.solicitacoes;
 create trigger trg_solic_updated before update on public.solicitacoes
   for each row execute function public.touch_updated_at();
+
+-- Só o gestor responde (status/resposta); o morador só edita o texto e só
+-- enquanto a solicitação segue aberta (evita "auto-responder" a própria solicitação).
+create or replace function public.proteger_solicitacao_update()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if public.is_gestor(new.condominio_id) then
+    return new;
+  end if;
+  if new.status is distinct from old.status or new.resposta is distinct from old.resposta then
+    raise exception 'Sem permissão para alterar status/resposta da solicitação';
+  end if;
+  if old.status <> 'aberta' then
+    raise exception 'Esta solicitação já está em análise ou concluída e não pode mais ser editada';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_solic_before_update on public.solicitacoes;
+create trigger trg_solic_before_update before update on public.solicitacoes
+  for each row execute function public.proteger_solicitacao_update();
 
 drop trigger if exists trg_financeiro_updated on public.lancamentos_financeiros;
 create trigger trg_financeiro_updated before update on public.lancamentos_financeiros
@@ -508,6 +570,49 @@ drop trigger if exists trg_reservas_limite on public.reservas;
 create trigger trg_reservas_limite before insert or update of unidade_id, area_id, inicio, status on public.reservas
   for each row execute function public.checar_limite_reservas();
 
+-- O cliente não é confiável para decidir se uma reserva precisa de aprovação nem
+-- quanto ela custa: essas informações são sempre derivadas da própria área comum.
+create or replace function public.derivar_reserva_insert()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare
+  v_area public.areas_comuns;
+begin
+  select * into v_area from public.areas_comuns where id = new.area_id;
+  if v_area.id is null then raise exception 'Área comum inválida'; end if;
+  new.status := case when v_area.requer_aprovacao then 'pendente' else 'aprovada' end;
+  new.taxa_cobrada := case when v_area.taxa_uso > 0 then v_area.taxa_uso else null end;
+  new.lancamento_id := null;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_reservas_before_insert on public.reservas;
+create trigger trg_reservas_before_insert before insert on public.reservas
+  for each row execute function public.derivar_reserva_insert();
+
+-- Depois de criada, só o gestor mexe em status/taxa/lançamento (aprovar, rejeitar,
+-- gerar boleto); o morador dono da reserva só pode cancelá-la.
+create or replace function public.proteger_reserva_update()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if public.is_gestor(new.condominio_id) then
+    return new;
+  end if;
+  if new.taxa_cobrada is distinct from old.taxa_cobrada
+     or new.lancamento_id is distinct from old.lancamento_id then
+    raise exception 'Sem permissão para alterar a taxa ou o lançamento da reserva';
+  end if;
+  if new.status is distinct from old.status and new.status <> 'cancelada' then
+    raise exception 'Sem permissão para alterar o status da reserva';
+  end if;
+  return new;
+end;
+$$;
+
+drop trigger if exists trg_reservas_before_update on public.reservas;
+create trigger trg_reservas_before_update before update on public.reservas
+  for each row execute function public.proteger_reserva_update();
+
 -- ----------------------------------------------------------------------------
 -- 3. RPCs DE ONBOARDING
 -- ----------------------------------------------------------------------------
@@ -524,7 +629,8 @@ begin
   if coalesce(trim(p_nome), '') = '' then raise exception 'Informe o nome do condomínio'; end if;
 
   loop
-    v_codigo := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 6));
+    -- 10 chars hex (16^10 combinações) — bem mais difícil de adivinhar/força-bruta que os 6 chars antigos.
+    v_codigo := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
     exit when not exists (select 1 from public.condominios where codigo_convite = v_codigo);
   end loop;
 
@@ -586,8 +692,10 @@ begin
     end if;
   end if;
 
+  -- Entra como 'pendente': o morador só reivindica a unidade/vínculo, quem confirma
+  -- que ele de fato mora ali é o síndico (tela de Moradores e unidades aprova/recusa).
   insert into public.memberships (condominio_id, user_id, unidade_id, papel, status, vinculo)
-  values (v_cond.id, (select auth.uid()), v_unidade_id, 'morador', 'ativo', v_vinculo)
+  values (v_cond.id, (select auth.uid()), v_unidade_id, 'morador', 'pendente', v_vinculo)
   returning * into v_membership;
 
   return v_membership;
@@ -602,13 +710,26 @@ declare
 begin
   if not public.is_gestor(p_cond) then raise exception 'Sem permissão'; end if;
   loop
-    v_codigo := 'P' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 6));
+    v_codigo := 'P' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
     exit when not exists (select 1 from public.condominios where codigo_portaria = v_codigo);
   end loop;
   update public.condominios set codigo_portaria = v_codigo where id = p_cond;
   return v_codigo;
 end;
 $$;
+
+-- Os códigos (convite/portaria) são segredos que dão acesso ao condomínio — a coluna
+-- não é mais exposta pelo select geral de condominios (ver seção 4), só por esta RPC,
+-- restrita a quem já é gestor daquele condomínio.
+create or replace function public.obter_codigos_condominio(p_cond uuid)
+returns table (codigo_convite text, codigo_portaria text)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_gestor(p_cond) then raise exception 'Sem permissão'; end if;
+  return query select c.codigo_convite, c.codigo_portaria from public.condominios c where c.id = p_cond;
+end;
+$$;
+grant execute on function public.obter_codigos_condominio(uuid) to authenticated;
 
 create or replace function public.entrar_como_porteiro(p_codigo text)
 returns public.memberships
@@ -741,9 +862,21 @@ create policy memberships_delete on public.memberships for delete to authenticat
 drop policy if exists comunicados_select on public.comunicados;
 create policy comunicados_select on public.comunicados for select to authenticated
   using (public.is_member(condominio_id));
+-- 'comunicados_write' cobria insert/update/delete sem exigir autor_id = auth.uid(),
+-- então um gestor podia publicar um comunicado assinado por outro perfil. Insert
+-- agora exige autoria própria; update/delete seguem gestor-only (edição de conteúdo
+-- por qualquer gestor é esperado — o que fica travado é reatribuir a autoria, via
+-- o trigger trg_comunicados_protect_autor abaixo).
 drop policy if exists comunicados_write on public.comunicados;
-create policy comunicados_write on public.comunicados for all to authenticated
+drop policy if exists comunicados_insert on public.comunicados;
+create policy comunicados_insert on public.comunicados for insert to authenticated
+  with check (autor_id = (select auth.uid()) and public.is_gestor(condominio_id));
+drop policy if exists comunicados_update on public.comunicados;
+create policy comunicados_update on public.comunicados for update to authenticated
   using (public.is_gestor(condominio_id)) with check (public.is_gestor(condominio_id));
+drop policy if exists comunicados_delete on public.comunicados;
+create policy comunicados_delete on public.comunicados for delete to authenticated
+  using (public.is_gestor(condominio_id));
 
 -- comunicado_leituras
 drop policy if exists leituras_select on public.comunicado_leituras;
@@ -751,7 +884,11 @@ create policy leituras_select on public.comunicado_leituras for select to authen
   using (user_id = (select auth.uid()));
 drop policy if exists leituras_insert on public.comunicado_leituras;
 create policy leituras_insert on public.comunicado_leituras for insert to authenticated
-  with check (user_id = (select auth.uid()));
+  with check (
+    user_id = (select auth.uid()) and exists (
+      select 1 from public.comunicados c where c.id = comunicado_id and public.is_member(c.condominio_id)
+    )
+  );
 
 -- chamados
 drop policy if exists chamados_select on public.chamados;
@@ -1049,15 +1186,22 @@ create policy votos_insert on public.assembleia_votos for insert to authenticate
     user_id = (select auth.uid()) and exists (
       select 1 from public.memberships m
       where m.user_id = (select auth.uid()) and m.unidade_id = assembleia_votos.unidade_id and m.status = 'ativo'
+        and m.condominio_id = assembleia_votos.condominio_id
     ) and exists (
-      select 1 from public.assembleia_pautas p where p.id = pauta_id and p.permite_votacao and not p.encerrada
+      select 1 from public.assembleia_pautas p
+      where p.id = pauta_id and p.permite_votacao and not p.encerrada
+        and p.condominio_id = assembleia_votos.condominio_id
     )
   );
 
--- push_tokens (cada usuário só vê/gerencia os próprios tokens)
+-- push_tokens (cada usuário só vê/gerencia os próprios tokens; condominio_id, quando
+-- informado, precisa ser de fato um condomínio do qual o usuário é membro)
 drop policy if exists push_tokens_all on public.push_tokens;
 create policy push_tokens_all on public.push_tokens for all to authenticated
-  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+  using (user_id = (select auth.uid()))
+  with check (
+    user_id = (select auth.uid()) and (condominio_id is null or public.is_member(condominio_id))
+  );
 
 -- ----------------------------------------------------------------------------
 -- 4b. PERMISSÕES DE ACESSO À DATA API
@@ -1070,28 +1214,68 @@ grant select, insert, update, delete on all tables in schema public to authentic
 grant usage, select on all sequences in schema public to authenticated;
 
 -- ----------------------------------------------------------------------------
--- 5. STORAGE (fotos de chamados, achados e avatares)
+-- 5. STORAGE (fotos de chamados, achados, portaria e avatares)
 -- ----------------------------------------------------------------------------
 
+-- 'chamados'/'achados'/'portaria' eram buckets públicos e sem isolamento por
+-- condomínio (qualquer autenticado lia/escrevia na raiz do bucket) — fotos de
+-- encomendas/portaria são dado sensível. Agora seguem o mesmo padrão de
+-- 'financeiro'/'documentos': privados, path "{condominio_id}/arquivo", lidos
+-- via signed URL (ver urlAssinada em storage.ts). 'avatars' continua público
+-- (foto de perfil não é sensível), mas só o dono sobe no seu próprio path.
 insert into storage.buckets (id, name, public)
-values ('avatars', 'avatars', true), ('chamados', 'chamados', true), ('achados', 'achados', true), ('portaria', 'portaria', true)
+values ('avatars', 'avatars', true), ('chamados', 'chamados', false), ('achados', 'achados', false), ('portaria', 'portaria', false)
 on conflict (id) do nothing;
 
+-- update explícito: garante que colar este script numa base já provisionada também
+-- torna os buckets privados e aplica os limites abaixo (insert...on conflict do nothing
+-- não atualiza uma linha já existente).
+update storage.buckets set public = false where id in ('chamados', 'achados', 'portaria');
+
 drop policy if exists fotos_leitura on storage.objects;
-create policy fotos_leitura on storage.objects for select
-  using (bucket_id in ('avatars', 'chamados', 'achados', 'portaria'));
-
 drop policy if exists fotos_upload on storage.objects;
-create policy fotos_upload on storage.objects for insert to authenticated
-  with check (bucket_id in ('avatars', 'chamados', 'achados', 'portaria'));
 
+-- avatars: leitura pública, upload só no próprio path "{auth.uid()}/arquivo".
+drop policy if exists avatars_select on storage.objects;
+create policy avatars_select on storage.objects for select
+  using (bucket_id = 'avatars');
+
+drop policy if exists avatars_insert on storage.objects;
+create policy avatars_insert on storage.objects for insert to authenticated
+  with check (bucket_id = 'avatars' and (storage.foldername(name))[1] = (select auth.uid())::text);
+
+-- chamados/achados: fotos privadas por condomínio; leitura e upload para membros.
+drop policy if exists chamados_achados_storage_select on storage.objects;
+create policy chamados_achados_storage_select on storage.objects for select to authenticated
+  using (bucket_id in ('chamados', 'achados') and public.is_member(((storage.foldername(name))[1])::uuid));
+
+drop policy if exists chamados_achados_storage_insert on storage.objects;
+create policy chamados_achados_storage_insert on storage.objects for insert to authenticated
+  with check (bucket_id in ('chamados', 'achados') and public.is_member(((storage.foldername(name))[1])::uuid));
+
+-- portaria: fotos de encomendas — leitura para membros do condomínio, upload só gestor/portaria.
+drop policy if exists portaria_storage_select on storage.objects;
+create policy portaria_storage_select on storage.objects for select to authenticated
+  using (bucket_id = 'portaria' and public.is_member(((storage.foldername(name))[1])::uuid));
+
+drop policy if exists portaria_storage_insert on storage.objects;
+create policy portaria_storage_insert on storage.objects for insert to authenticated
+  with check (
+    bucket_id = 'portaria' and (
+      public.is_gestor(((storage.foldername(name))[1])::uuid) or public.is_porteiro(((storage.foldername(name))[1])::uuid)
+    )
+  );
+
+-- update/delete do dono do arquivo — restrito aos buckets de fotos (não vale para
+-- 'financeiro'/'documentos', que não têm policy de update/delete de propósito).
 drop policy if exists fotos_update on storage.objects;
 create policy fotos_update on storage.objects for update to authenticated
-  using (owner = (select auth.uid()));
+  using (bucket_id in ('avatars', 'chamados', 'achados', 'portaria') and owner = (select auth.uid()))
+  with check (bucket_id in ('avatars', 'chamados', 'achados', 'portaria') and owner = (select auth.uid()));
 
 drop policy if exists fotos_delete on storage.objects;
 create policy fotos_delete on storage.objects for delete to authenticated
-  using (owner = (select auth.uid()));
+  using (bucket_id in ('avatars', 'chamados', 'achados', 'portaria') and owner = (select auth.uid()));
 
 -- Bucket privado (boletos/comprovantes): path "{condominio_id}/arquivo", lido via signed URL.
 insert into storage.buckets (id, name, public)
@@ -1121,6 +1305,16 @@ create policy documentos_storage_select on storage.objects for select to authent
 drop policy if exists documentos_storage_insert on storage.objects;
 create policy documentos_storage_insert on storage.objects for insert to authenticated
   with check (bucket_id = 'documentos' and public.is_gestor(((storage.foldername(name))[1])::uuid));
+
+-- Limite de tamanho/tipo por bucket — antes nenhum bucket tinha limite, permitindo
+-- encher o storage com qualquer arquivo. Fotos: 5 MB, JPEG/PNG/WebP. PDFs
+-- (financeiro/documentos): 20 MB, PDF ou imagem (comprovante pode ser foto). Fica
+-- depois de criados todos os buckets acima (senão o update não acha as linhas ainda
+-- não inseridas na primeira execução do script).
+update storage.buckets set file_size_limit = 5 * 1024 * 1024, allowed_mime_types = array['image/jpeg', 'image/png', 'image/webp']
+  where id in ('avatars', 'chamados', 'achados', 'portaria');
+update storage.buckets set file_size_limit = 20 * 1024 * 1024, allowed_mime_types = array['application/pdf', 'image/jpeg', 'image/png', 'image/webp']
+  where id in ('financeiro', 'documentos');
 
 -- ----------------------------------------------------------------------------
 -- 6. REALTIME (notificações instantâneas)
@@ -1421,5 +1615,16 @@ drop table if exists public.alertas_sos cascade;
 drop table if exists public.acessos_portao cascade;
 drop table if exists public.regras cascade;
 alter table public.condominios drop column if exists total_vagas_visitante;
+
+-- 7.10 codigo_convite/codigo_portaria não fazem parte do select geral -----------
+-- RLS é por linha, não por coluna: qualquer membro que enxerga a linha do
+-- condomínio (policy condominios_select) enxergaria também essas duas colunas,
+-- que na prática são "senhas" (dão acesso de morador/porteiro). Por isso o
+-- privilégio de tabela é revogado e reconcedido só nas colunas não sensíveis;
+-- os códigos passam a ser lidos exclusivamente pela RPC obter_codigos_condominio
+-- (seção 3), que confere is_gestor antes de devolver algo. Precisa ficar depois
+-- dos "grant select on all tables" (4b e 7.7) para não ser sobrescrito por eles.
+revoke select on public.condominios from authenticated;
+grant select (id, nome, cidade, uf, endereco, cnpj, criado_por, created_at) on public.condominios to authenticated;
 
 -- Fim do setup.

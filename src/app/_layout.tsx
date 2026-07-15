@@ -9,8 +9,10 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import { palette } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
+import { ConfirmProvider } from '@/lib/confirm';
 import { configurarNotificacoes, salvarPushToken } from '@/lib/notificacoes';
 import { ThemeProvider, useAppTheme } from '@/lib/theme';
+import { ToastProvider } from '@/lib/toast';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -57,9 +59,13 @@ export default function RootLayout() {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <ThemeProvider>
-          <AuthProvider>
-            <AppShell />
-          </AuthProvider>
+          <ToastProvider>
+            <ConfirmProvider>
+              <AuthProvider>
+                <AppShell />
+              </AuthProvider>
+            </ConfirmProvider>
+          </ToastProvider>
         </ThemeProvider>
       </SafeAreaProvider>
     </GestureHandlerRootView>

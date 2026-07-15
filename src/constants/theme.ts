@@ -48,7 +48,8 @@ const paletteLight: Palette = {
   // Texto
   text: '#101828',
   textMuted: '#5B6478',
-  textSubtle: '#98A2B3',
+  // #667085 ~5:1 sobre branco (WCAG AA); o antigo #98A2B3 ficava em ~2.7:1
+  textSubtle: '#667085',
 
   // Semânticas
   success: '#15803D',
@@ -83,7 +84,8 @@ const paletteDark: Palette = {
   // Texto
   text: '#F1F2F6',
   textMuted: '#A2A9BD',
-  textSubtle: '#6E7488',
+  // Clareado de #6E7488 para ~4.6:1 sobre as superfícies escuras
+  textSubtle: '#868FA5',
 
   // Semânticas
   success: '#4ADE80',

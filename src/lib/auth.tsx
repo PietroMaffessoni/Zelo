@@ -13,12 +13,15 @@ type AuthState = {
   user: User | null;
   profile: Profile | null;
   memberships: Membership[];
+  /** Vínculos aguardando aprovação do síndico (entrar_condominio cria como 'pendente'). */
+  membershipsPendentes: Membership[];
   membershipAtual: Membership | null;
   condominioId: string | null;
   papel: Papel | null;
 
   signIn: (email: string, senha: string) => Promise<{ error?: string }>;
   signUp: (nome: string, email: string, senha: string) => Promise<{ error?: string }>;
+  resetarSenha: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   selecionarCondominio: (id: string) => Promise<void>;
   recarregar: () => Promise<void>;
@@ -43,6 +46,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
+  const [membershipsPendentes, setMembershipsPendentes] = useState<Membership[]>([]);
   const [condominioId, setCondominioId] = useState<string | null>(null);
   const selecionadoRef = useRef<string | null>(null);
 
@@ -51,14 +55,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabase
         .from('memberships')
-        .select('*, condominio:condominios(*), unidade:unidades(*)')
+        // codigo_convite/codigo_portaria não fazem parte do select geral de condominios
+        // (são segredos de acesso) — quem é gestor os busca à parte, via RPC, logo abaixo.
+        .select('*, condominio:condominios(id, nome, cidade, uf, endereco, cnpj, criado_por, created_at), unidade:unidades(*)')
         .eq('user_id', uid)
-        .eq('status', 'ativo')
+        .in('status', ['ativo', 'pendente'])
         .order('created_at', { ascending: true }),
     ]);
 
     setProfile((prof as Profile) ?? null);
-    const lista = (mbs as Membership[]) ?? [];
+    const todas = (mbs as Membership[]) ?? [];
+    const lista = todas.filter((m) => m.status === 'ativo');
+    setMembershipsPendentes(todas.filter((m) => m.status === 'pendente'));
+
+    const gestorEm = lista.filter((m) => m.papel === 'sindico' || m.papel === 'admin');
+    if (gestorEm.length) {
+      const codigos = await Promise.all(
+        gestorEm.map((m) => supabase.rpc('obter_codigos_condominio', { p_cond: m.condominio_id })),
+      );
+      for (let i = 0; i < gestorEm.length; i++) {
+        const linha = (codigos[i].data as { codigo_convite: string; codigo_portaria: string | null }[] | null)?.[0];
+        if (!linha) continue;
+        const membership = lista.find((m) => m.condominio_id === gestorEm[i].condominio_id);
+        if (membership?.condominio) Object.assign(membership.condominio, linha);
+      }
+    }
     setMemberships(lista);
 
     // Define o condomínio atual: preferência salva, senão o primeiro.
@@ -77,6 +98,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       } else {
         setProfile(null);
         setMemberships([]);
+        setMembershipsPendentes([]);
         setCondominioId(null);
       }
     },
@@ -115,6 +137,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       password: senha,
       options: { data: { nome_completo: nome.trim() } },
     });
+    return { error: error ? traduzErro(error.message) : undefined };
+  }, []);
+
+  const resetarSenha: AuthState['resetarSenha'] = useCallback(async (email) => {
+    const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
     return { error: error ? traduzErro(error.message) : undefined };
   }, []);
 
@@ -193,11 +220,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     user: session?.user ?? null,
     profile,
     memberships,
+    membershipsPendentes,
     membershipAtual,
     condominioId,
     papel: membershipAtual?.papel ?? null,
     signIn,
     signUp,
+    resetarSenha,
     signOut,
     selecionarCondominio,
     recarregar,
@@ -219,10 +248,12 @@ function traduzErro(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
   if (m.includes('user already registered')) return 'Este e-mail já está cadastrado.';
-  if (m.includes('password should be at least')) return 'A senha deve ter no mínimo 6 caracteres.';
+  if (m.includes('password should be at least')) return 'A senha deve ter no mínimo 8 caracteres.';
   if (m.includes('email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
   if (m.includes('unable to validate email') || m.includes('invalid email')) return 'E-mail inválido.';
   if (m.includes('código') || m.includes('codigo')) return msg;
   if (m.includes('network')) return 'Sem conexão. Verifique sua internet.';
-  return msg;
+  // Mensagens não mapeadas não são devolvidas cruas: podem vazar detalhe interno do
+  // backend. Fica um erro genérico — quem quiser investigar o real motivo, olha os logs.
+  return 'Não foi possível concluir. Tente novamente em instantes.';
 }

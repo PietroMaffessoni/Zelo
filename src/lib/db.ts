@@ -370,6 +370,27 @@ export async function responderSolicitacao(id: string, status: SolicitacaoStatus
 }
 
 // --------------------------------------------------------- Moradores e unidades
+
+/** Pedidos de acesso ainda não aprovados pelo síndico (entrar_condominio cria como 'pendente'). */
+export async function listarMembershipsPendentes(condominioId: string): Promise<Membership[]> {
+  return unwrap(
+    await supabase
+      .from('memberships')
+      .select('*, profile:profiles(*), unidade:unidades(*)')
+      .eq('condominio_id', condominioId)
+      .eq('status', 'pendente')
+      .order('created_at', { ascending: true }),
+  ) as Membership[];
+}
+
+export async function aprovarMembership(membershipId: string) {
+  await supabase.from('memberships').update({ status: 'ativo' }).eq('id', membershipId);
+}
+
+export async function recusarMembership(membershipId: string) {
+  await supabase.from('memberships').delete().eq('id', membershipId);
+}
+
 export async function listarUnidades(condominioId: string): Promise<Unidade[]> {
   return unwrap(
     await supabase

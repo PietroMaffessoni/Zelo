@@ -3,28 +3,39 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, EmptyState, Fab, Input, Loading, Screen } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { AppHeader, AppText, Badge, Button, Card, EmptyState, ErrorState, Fab, Input, Screen, SkeletonList } from '@/components/ui';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarEncomendas, marcarEncomendaRetirada } from '@/lib/db';
 import { tempoRelativo } from '@/lib/format';
+import { hapticSuccess } from '@/lib/haptics';
 import * as L from '@/lib/labels';
+import { urlsAssinadas } from '@/lib/storage';
+import { useAppTheme } from '@/lib/theme';
+import { useToast } from '@/lib/toast';
+import type { Encomenda } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function PortariaEncomendas() {
   const router = useRouter();
+  const { palette } = useAppTheme();
+  const toast = useToast();
   const { condominioId } = useAuth();
   const [retirandoId, setRetirandoId] = useState<string | null>(null);
   const [nomeRetirada, setNomeRetirada] = useState('');
   const [assinou, setAssinou] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
-  const { data, loading, refreshing, refetch } = useFetch(
-    async () => (condominioId ? listarEncomendas(condominioId) : []),
-    [condominioId],
-  );
+  const { data, loading, refreshing, error, refetch } = useFetch(async () => {
+    if (!condominioId) return { encomendas: [] as Encomenda[], fotoUrls: {} as Record<string, string> };
+    const encomendas = await listarEncomendas(condominioId);
+    const paths = encomendas.map((e) => e.foto_url).filter((p): p is string => !!p);
+    const fotoUrls = await urlsAssinadas('portaria', paths);
+    return { encomendas, fotoUrls };
+  }, [condominioId]);
 
-  const encomendas = data ?? [];
+  const encomendas = data?.encomendas ?? [];
+  const fotoUrls = data?.fotoUrls ?? {};
   const aguardando = encomendas.filter((e) => e.status === 'aguardando_retirada');
   const retiradas = encomendas.filter((e) => e.status === 'retirada');
 
@@ -37,7 +48,13 @@ export default function PortariaEncomendas() {
   async function confirmarRetirada(id: string) {
     if (!nomeRetirada.trim()) return;
     setSalvando(true);
-    await marcarEncomendaRetirada(id, nomeRetirada.trim(), { assinaturaConfirmada: assinou });
+    try {
+      await marcarEncomendaRetirada(id, nomeRetirada.trim(), { assinaturaConfirmada: assinou });
+      toast.sucesso('Retirada registrada ✓');
+      hapticSuccess();
+    } catch (e: any) {
+      toast.erro(e?.message ?? 'Não foi possível registrar a retirada.');
+    }
     setSalvando(false);
     setRetirandoId(null);
     setNomeRetirada('');
@@ -47,11 +64,13 @@ export default function PortariaEncomendas() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch}>
-        <AppHeader title="Encomendas" back />
+      <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
+        <AppHeader title="Encomendas" back onRefresh={refetch} />
 
         {loading ? (
-          <Loading />
+          <SkeletonList />
+        ) : error ? (
+          <ErrorState onRetry={refetch} />
         ) : encomendas.length === 0 ? (
           <EmptyState icon="cube-outline" title="Nenhuma encomenda registrada" />
         ) : (
@@ -66,8 +85,8 @@ export default function PortariaEncomendas() {
                 aguardando.map((e) => (
                   <Card key={e.id}>
                     <View style={{ flexDirection: 'row', gap: spacing.md }}>
-                      {e.foto_url ? (
-                        <Image source={{ uri: e.foto_url }} style={{ width: 56, height: 56, borderRadius: radius.md }} contentFit="cover" />
+                      {e.foto_url && fotoUrls[e.foto_url] ? (
+                        <Image source={{ uri: fotoUrls[e.foto_url] }} style={{ width: 56, height: 56, borderRadius: radius.md }} contentFit="cover" />
                       ) : (
                         <View
                           style={{

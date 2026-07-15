@@ -23,8 +23,8 @@ export default function Cadastro() {
       setErro('Preencha todos os campos.');
       return;
     }
-    if (senha.length < 6) {
-      setErro('A senha deve ter no mínimo 6 caracteres.');
+    if (senha.length < 8) {
+      setErro('A senha deve ter no mínimo 8 caracteres.');
       return;
     }
     setCarregando(true);
@@ -66,7 +66,7 @@ export default function Cadastro() {
           />
           <Input
             label="Senha"
-            placeholder="Mínimo 6 caracteres"
+            placeholder="Mínimo 8 caracteres"
             icon="lock-closed-outline"
             senha
             value={senha}
