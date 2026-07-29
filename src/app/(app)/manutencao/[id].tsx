@@ -1,21 +1,24 @@
+import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import dayjs from 'dayjs';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { useMemo, useState } from 'react';
+import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Button, Card, Divider, Input, Loading, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { getEquipamento, listarManutencoes, registrarManutencao } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
-import { categoriaEquipamento } from '@/lib/labels';
-import { isGestor, manutencaoVencida } from '@/lib/types';
+import { categoriaEquipamento, checklistManutencao } from '@/lib/labels';
+import { useAppTheme } from '@/lib/theme';
+import { manutencaoVencida, podeManutencao, type ItemVistoria } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function EquipamentoDetalhe() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { palette } = useAppTheme();
   const { condominioId, user, papel } = useAuth();
-  const gestor = isGestor(papel);
+  const podeRegistrar = podeManutencao(papel);
 
   const { data, loading, refetch } = useFetch(async () => {
     if (!id) return null;
@@ -26,8 +29,14 @@ export default function EquipamentoDetalhe() {
   const [descricao, setDescricao] = useState('');
   const [custo, setCusto] = useState('');
   const [responsavel, setResponsavel] = useState('');
+  const [marcados, setMarcados] = useState<Record<string, boolean>>({});
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
+
+  const template = useMemo(
+    () => (data?.equipamento ? checklistManutencao[data.equipamento.categoria] ?? [] : []),
+    [data?.equipamento],
+  );
 
   if (loading || !data?.equipamento) {
     return (
@@ -48,6 +57,7 @@ export default function EquipamentoDetalhe() {
     setSalvando(true);
     setErro(null);
     try {
+      const itens: ItemVistoria[] = template.map((item) => ({ item, ok: !!marcados[item] }));
       await registrarManutencao({
         condominio_id: condominioId,
         equipamento_id: id,
@@ -56,11 +66,13 @@ export default function EquipamentoDetalhe() {
         realizada_em: dayjs().format('YYYY-MM-DD'),
         responsavel: responsavel.trim() || null,
         registrado_por: user.id,
+        itens,
         periodicidade_dias: eq.periodicidade_dias,
       });
       setDescricao('');
       setCusto('');
       setResponsavel('');
+      setMarcados({});
       await refetch();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível registrar.');
@@ -90,11 +102,37 @@ export default function EquipamentoDetalhe() {
           {eq.fornecedor ? <AppText color="muted" variant="caption">Fornecedor: {eq.fornecedor}</AppText> : null}
         </Card>
 
-        {gestor ? (
+        {podeRegistrar ? (
           <Card>
             <AppText variant="subtitle" style={{ marginBottom: spacing.sm }}>Registrar manutenção</AppText>
             <View style={{ gap: spacing.sm }}>
               <Input label="Serviço realizado" placeholder="Ex.: Troca de óleo e revisão" value={descricao} onChangeText={setDescricao} multiline />
+
+              {template.length > 0 ? (
+                <View style={{ gap: spacing.xs, marginTop: spacing.xs }}>
+                  <AppText variant="label" color="muted">Checklist</AppText>
+                  {template.map((item) => {
+                    const ok = !!marcados[item];
+                    return (
+                      <Pressable
+                        key={item}
+                        onPress={() => setMarcados((m) => ({ ...m, [item]: !m[item] }))}
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: ok }}
+                        style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, paddingVertical: 6 }}
+                      >
+                        <Ionicons
+                          name={ok ? 'checkbox' : 'square-outline'}
+                          size={22}
+                          color={ok ? palette.success : palette.textSubtle}
+                        />
+                        <AppText style={{ flex: 1 }}>{item}</AppText>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
+
               <Input label="Custo (R$, opcional)" placeholder="Ex.: 350,00" value={custo} onChangeText={setCusto} keyboardType="decimal-pad" />
               <Input label="Responsável (opcional)" placeholder="Empresa ou técnico" value={responsavel} onChangeText={setResponsavel} />
               {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
@@ -121,6 +159,20 @@ export default function EquipamentoDetalhe() {
                     </View>
                     <AppText style={{ marginTop: 2 }}>{m.descricao}</AppText>
                     {m.responsavel ? <AppText color="subtle" variant="caption">{m.responsavel}</AppText> : null}
+                    {m.itens?.length ? (
+                      <View style={{ marginTop: spacing.xs, gap: 2 }}>
+                        {m.itens.map((it, idx) => (
+                          <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+                            <Ionicons
+                              name={it.ok ? 'checkmark-circle' : 'close-circle'}
+                              size={14}
+                              color={it.ok ? palette.success : palette.textSubtle}
+                            />
+                            <AppText variant="caption" color="muted">{it.item}</AppText>
+                          </View>
+                        ))}
+                      </View>
+                    ) : null}
                   </View>
                 </View>
               ))}

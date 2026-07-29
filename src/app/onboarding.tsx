@@ -9,7 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { vinculoLabel } from '@/lib/labels';
 import type { Vinculo } from '@/lib/types';
 
-type Modo = 'escolha' | 'criar' | 'entrar' | 'portaria';
+type Modo = 'escolha' | 'criar' | 'entrar' | 'portaria' | 'zelador';
 
 export default function Onboarding() {
   const router = useRouter();
@@ -22,6 +22,7 @@ export default function Onboarding() {
     criarCondominio,
     entrarCondominio,
     entrarComoPorteiro,
+    entrarComoZelador,
     recarregar,
     signOut,
   } = useAuth();
@@ -39,8 +40,9 @@ export default function Onboarding() {
   const [bloco, setBloco] = useState('');
   const [numero, setNumero] = useState('');
   const [vinculo, setVinculo] = useState<Vinculo>('proprietario');
-  // campo portaria
+  // campo portaria / zelador
   const [codigoPortaria, setCodigoPortaria] = useState('');
+  const [codigoZelador, setCodigoZelador] = useState('');
 
   if (!ready) return <Loading />;
   if (!session) return <Redirect href="/(auth)/login" />;
@@ -117,6 +119,16 @@ export default function Onboarding() {
     else router.replace('/(app)/(tabs)/inicio');
   }
 
+  async function entrarZelador() {
+    if (!codigoZelador.trim()) return setErro('Informe o código do zelador.');
+    setCarregando(true);
+    setErro(null);
+    const { error } = await entrarComoZelador(codigoZelador);
+    setCarregando(false);
+    if (error) setErro(error);
+    else router.replace('/(app)/(tabs)/inicio');
+  }
+
   async function verificar() {
     setVerificando(true);
     await recarregar();
@@ -159,6 +171,15 @@ export default function Onboarding() {
             onPress={() => {
               setErro(null);
               setModo('portaria');
+            }}
+          />
+          <OpcaoCard
+            icon="construct"
+            titulo="Sou zelador"
+            descricao="Tenho um código de acesso da equipe de zeladoria."
+            onPress={() => {
+              setErro(null);
+              setModo('zelador');
             }}
           />
           <Pressable onPress={signOut} style={{ alignSelf: 'center', marginTop: spacing.lg }}>
@@ -212,7 +233,7 @@ export default function Onboarding() {
           <Button title="Entrar" onPress={entrar} loading={carregando} size="lg" icon="enter-outline" />
           <Voltar onPress={() => setModo('escolha')} />
         </Card>
-      ) : (
+      ) : modo === 'portaria' ? (
         <Card style={{ gap: spacing.lg }}>
           <AppText variant="subtitle">Acesso da portaria</AppText>
           <Input
@@ -225,6 +246,21 @@ export default function Onboarding() {
           />
           {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
           <Button title="Entrar" onPress={entrarPortaria} loading={carregando} size="lg" icon="enter-outline" />
+          <Voltar onPress={() => setModo('escolha')} />
+        </Card>
+      ) : (
+        <Card style={{ gap: spacing.lg }}>
+          <AppText variant="subtitle">Acesso da zeladoria</AppText>
+          <Input
+            label="Código do zelador"
+            placeholder="Ex.: Z1A2B3C4"
+            autoCapitalize="characters"
+            value={codigoZelador}
+            onChangeText={setCodigoZelador}
+            icon="construct-outline"
+          />
+          {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
+          <Button title="Entrar" onPress={entrarZelador} loading={carregando} size="lg" icon="enter-outline" />
           <Voltar onPress={() => setModo('escolha')} />
         </Card>
       )}

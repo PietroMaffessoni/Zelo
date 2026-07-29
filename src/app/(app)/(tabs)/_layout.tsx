@@ -15,7 +15,8 @@ export default function TabsLayout() {
   const { width } = useWindowDimensions();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
-  const morador = !gestor && !porteiro;
+  const zelador = papel === 'zelador';
+  const morador = !gestor && !porteiro && !zelador;
 
   // Em telas largas (web/desktop) a navegação vira uma sidebar fixa e a tab bar
   // inferior some — aproveita melhor a tela e evita o visual de "celular esticado".
@@ -24,7 +25,7 @@ export default function TabsLayout() {
   // Exibe 3–4 destinos de alto tráfego por papel; os demais ficam ocultos
   // (href: null) mas continuam navegáveis por links/ações rápidas.
   const mostrar = {
-    chamados: morador || gestor,
+    chamados: morador || gestor || zelador,
     reservas: morador,
     portaria: gestor || porteiro,
   };

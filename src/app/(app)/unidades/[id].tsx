@@ -7,6 +7,7 @@ import { AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, Input, 
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import {
+  atualizarDadosCadastrais,
   atualizarPapelMorador,
   atualizarVinculoMorador,
   criarDependente,
@@ -17,7 +18,7 @@ import {
   removerPet,
 } from '@/lib/db';
 import { especiePetLabel, papelLabel, vinculoLabel } from '@/lib/labels';
-import { isGestor, type EspeciePet, type Vinculo } from '@/lib/types';
+import { isGestor, type EspeciePet, type Membership, type Vinculo } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 const vinculos: Vinculo[] = ['proprietario', 'inquilino', 'dependente'];
@@ -187,6 +188,8 @@ export default function UnidadeDetalhe() {
                   </AppText>
                 </Pressable>
               ) : null}
+
+              {podeGerenciar ? <FichaMorador membership={m} gestor={gestor} onSaved={refetch} /> : null}
             </Card>
           ))}
         </View>
@@ -289,5 +292,85 @@ export default function UnidadeDetalhe() {
         </Card>
       )}
     </Screen>
+  );
+}
+
+/**
+ * Ficha cadastral do morador na visão da unidade: contato + documentos. O gestor
+ * edita CPF/RG (só ele e o próprio morador enxergam esses campos, ver RLS de
+ * memberships). E-mail/telefone vêm do perfil.
+ */
+function FichaMorador({
+  membership,
+  gestor,
+  onSaved,
+}: {
+  membership: Membership;
+  gestor: boolean;
+  onSaved: () => void;
+}) {
+  const [editando, setEditando] = useState(false);
+  const [cpf, setCpf] = useState(membership.cpf ?? '');
+  const [rg, setRg] = useState(membership.rg ?? '');
+  const [salvando, setSalvando] = useState(false);
+
+  const email = membership.profile?.email;
+  const telefone = membership.profile?.telefone;
+
+  async function salvar() {
+    setSalvando(true);
+    await atualizarDadosCadastrais(membership.id, {
+      cpf: cpf.trim() || null,
+      rg: rg.trim() || null,
+    });
+    setSalvando(false);
+    setEditando(false);
+    onSaved();
+  }
+
+  if (editando) {
+    return (
+      <View style={{ marginTop: spacing.sm, gap: spacing.sm }}>
+        <Divider style={{ marginBottom: spacing.xs }} />
+        <Input label="CPF" placeholder="000.000.000-00" value={cpf} onChangeText={setCpf} keyboardType="numbers-and-punctuation" />
+        <Input label="RG" placeholder="00.000.000-0" value={rg} onChangeText={setRg} />
+        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Button title="Cancelar" variant="secondary" size="sm" fullWidth={false} onPress={() => setEditando(false)} />
+          <Button title="Salvar ficha" size="sm" icon="checkmark" fullWidth={false} onPress={salvar} loading={salvando} />
+        </View>
+      </View>
+    );
+  }
+
+  const temFicha = email || telefone || membership.cpf || membership.rg;
+  return (
+    <View style={{ marginTop: spacing.sm }}>
+      <Divider style={{ marginBottom: spacing.sm }} />
+      {temFicha ? (
+        <View style={{ gap: 3 }}>
+          {email ? <LinhaFicha icon="mail-outline" texto={email} /> : null}
+          {telefone ? <LinhaFicha icon="call-outline" texto={telefone} /> : null}
+          {membership.cpf ? <LinhaFicha icon="card-outline" texto={`CPF ${membership.cpf}`} /> : null}
+          {membership.rg ? <LinhaFicha icon="document-text-outline" texto={`RG ${membership.rg}`} /> : null}
+        </View>
+      ) : (
+        <AppText color="subtle" variant="caption">Ficha cadastral não preenchida.</AppText>
+      )}
+      {gestor ? (
+        <Pressable onPress={() => setEditando(true)} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm }}>
+          <Ionicons name="create-outline" size={16} color={palette.primary} />
+          <AppText variant="caption" color="primary">{membership.cpf || membership.rg ? 'Editar ficha (CPF/RG)' : 'Adicionar CPF/RG'}</AppText>
+        </Pressable>
+      ) : null}
+    </View>
+  );
+}
+
+function LinhaFicha({ icon, texto }: { icon: keyof typeof Ionicons.glyphMap; texto: string }) {
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+      <Ionicons name={icon} size={14} color={palette.textSubtle} />
+      <AppText variant="caption" color="muted" numberOfLines={1} style={{ flex: 1 }}>{texto}</AppText>
+    </View>
   );
 }

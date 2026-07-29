@@ -3,7 +3,7 @@
  * Mantidos manualmente em sincronia com supabase/setup.sql.
  */
 
-export type Papel = 'morador' | 'sindico' | 'admin' | 'porteiro' | 'conselheiro';
+export type Papel = 'morador' | 'sindico' | 'admin' | 'porteiro' | 'conselheiro' | 'zelador';
 export type MembershipStatus = 'ativo' | 'pendente' | 'inativo';
 export type Vinculo = 'proprietario' | 'inquilino' | 'dependente';
 export type EspeciePet = 'cachorro' | 'gato' | 'outro';
@@ -90,11 +90,17 @@ export type Condominio = {
   uf: string | null;
   endereco: string | null;
   cnpj: string | null;
+  // Administradora que efetua os pagamentos (Caminho A: o CondoOS substitui o
+  // Imodolo e convive com a administradora). Colunas não sensíveis, legíveis por
+  // membros (setup.sql seção 8.4).
+  administradora?: string | null;
+  administradora_contato?: string | null;
   // Só vêm preenchidos para quem é gestor daquele condomínio (buscados à parte
   // via RPC obter_codigos_condominio — o select geral de condominios não expõe
-  // essas duas colunas, ver setup.sql seção 7.10).
+  // essas colunas de código, ver setup.sql seção 7.10 e 8.2).
   codigo_convite?: string;
   codigo_portaria?: string | null;
+  codigo_zelador?: string | null;
   criado_por: string | null;
   created_at: string;
 };
@@ -111,6 +117,7 @@ export type Profile = {
   id: string;
   nome_completo: string | null;
   telefone: string | null;
+  email: string | null;
   avatar_url: string | null;
   preferencias_notificacao: PreferenciasNotificacao;
   created_at: string;
@@ -134,6 +141,10 @@ export type Membership = {
   papel: Papel;
   status: MembershipStatus;
   vinculo: Vinculo;
+  // Ficha cadastral (PII): só o próprio morador e o gestor leem — vivem na
+  // membership justamente por isso (setup.sql seção 8.1).
+  cpf: string | null;
+  rg: string | null;
   created_at: string;
   // joins opcionais
   profile?: Profile | null;
@@ -357,6 +368,9 @@ export type LancamentoFinanceiro = {
   pago_em: string | null;
   anexo_path: string | null;
   observacao: string | null;
+  // Caminho A: momento em que a despesa foi enviada à administradora para pagar
+  // (null = ainda não enviada). Só faz sentido para tipo 'despesa'.
+  enviado_administradora_em: string | null;
   criado_por: string | null;
   created_at: string;
   updated_at: string;
@@ -460,6 +474,7 @@ export type Manutencao = {
   realizada_em: string;
   responsavel: string | null;
   registrado_por: string | null;
+  itens: ItemVistoria[];
   created_at: string;
 };
 
@@ -511,6 +526,15 @@ export const isGestor = (papel?: Papel | null) =>
 /** Conselho fiscal: enxerga a gestão (financeiro, infrações, manutenção) sem poder alterar. */
 export const isConselho = (papel?: Papel | null) =>
   papel === 'sindico' || papel === 'admin' || papel === 'conselheiro';
+
+/** Zelador: equipe operacional de manutenção e chamados (não é gestão). */
+export const isZelador = (papel?: Papel | null) => papel === 'zelador';
+
+/** Quem pode registrar manutenção e operar a agenda de manutenção: gestor ou zelador. */
+export const podeManutencao = (papel?: Papel | null) => isGestor(papel) || isZelador(papel);
+
+/** Enxerga a agenda de manutenção (leitura): conselho ou zelador. */
+export const veManutencao = (papel?: Papel | null) => isConselho(papel) || isZelador(papel);
 
 /** "atrasado" efetivo de uma infração/valor não se aplica; helper de rótulo de próxima manutenção. */
 export function manutencaoVencida(proxima?: string | null): boolean {

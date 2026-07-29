@@ -37,6 +37,7 @@ type AuthState = {
     vinculo?: Vinculo;
   }) => Promise<{ error?: string; condominioId?: string }>;
   entrarComoPorteiro: (codigo: string) => Promise<{ error?: string; condominioId?: string }>;
+  entrarComoZelador: (codigo: string) => Promise<{ error?: string; condominioId?: string }>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -55,9 +56,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabase
         .from('memberships')
-        // codigo_convite/codigo_portaria não fazem parte do select geral de condominios
-        // (são segredos de acesso) — quem é gestor os busca à parte, via RPC, logo abaixo.
-        .select('*, condominio:condominios(id, nome, cidade, uf, endereco, cnpj, criado_por, created_at), unidade:unidades(*)')
+        // codigo_convite/codigo_portaria/codigo_zelador não fazem parte do select geral de
+        // condominios (são segredos de acesso) — quem é gestor os busca à parte, via RPC, logo abaixo.
+        .select('*, condominio:condominios(id, nome, cidade, uf, endereco, cnpj, administradora, administradora_contato, criado_por, created_at), unidade:unidades(*)')
         .eq('user_id', uid)
         .in('status', ['ativo', 'pendente'])
         .order('created_at', { ascending: true }),
@@ -74,7 +75,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         gestorEm.map((m) => supabase.rpc('obter_codigos_condominio', { p_cond: m.condominio_id })),
       );
       for (let i = 0; i < gestorEm.length; i++) {
-        const linha = (codigos[i].data as { codigo_convite: string; codigo_portaria: string | null }[] | null)?.[0];
+        const linha = (codigos[i].data as { codigo_convite: string; codigo_portaria: string | null; codigo_zelador: string | null }[] | null)?.[0];
         if (!linha) continue;
         const membership = lista.find((m) => m.condominio_id === gestorEm[i].condominio_id);
         if (membership?.condominio) Object.assign(membership.condominio, linha);
@@ -209,6 +210,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [recarregar, selecionarCondominio],
   );
 
+  const entrarComoZelador: AuthState['entrarComoZelador'] = useCallback(
+    async (codigo) => {
+      const { data, error } = await supabase.rpc('entrar_como_zelador', {
+        p_codigo: codigo.trim().toUpperCase(),
+      });
+      if (error) return { error: traduzErro(error.message) };
+      const cid = (data as { condominio_id: string } | null)?.condominio_id;
+      await recarregar();
+      if (cid) await selecionarCondominio(cid);
+      return { condominioId: cid };
+    },
+    [recarregar, selecionarCondominio],
+  );
+
   const membershipAtual = useMemo(
     () => memberships.find((m) => m.condominio_id === condominioId) ?? null,
     [memberships, condominioId],
@@ -233,6 +248,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     criarCondominio,
     entrarCondominio,
     entrarComoPorteiro,
+    entrarComoZelador,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

@@ -6,9 +6,9 @@ import { AppHeader, AppText, Avatar, Badge, Card, Divider, ListItem, Screen } fr
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
-import { gerarCodigoPortaria } from '@/lib/db';
+import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
 import { papelLabel } from '@/lib/labels';
-import { isConselho as ehConselho, isGestor as ehGestor } from '@/lib/types';
+import { isConselho as ehConselho, isGestor as ehGestor, veManutencao } from '@/lib/types';
 
 export default function Mais() {
   const router = useRouter();
@@ -17,7 +17,10 @@ export default function Mais() {
   const gestor = ehGestor(papel);
   const conselho = ehConselho(papel);
   const porteiro = papel === 'porteiro';
+  const zelador = papel === 'zelador';
+  const equipe = porteiro || zelador; // funcionários: menu enxuto, sem itens de morador
   const [gerandoCodigo, setGerandoCodigo] = useState(false);
+  const [gerandoZelador, setGerandoZelador] = useState(false);
 
   async function sair() {
     const ok = await confirmar({
@@ -36,6 +39,14 @@ export default function Mais() {
     await gerarCodigoPortaria(condominioId);
     await recarregar();
     setGerandoCodigo(false);
+  }
+
+  async function gerarCodigoDoZelador() {
+    if (!condominioId) return;
+    setGerandoZelador(true);
+    await gerarCodigoZelador(condominioId);
+    await recarregar();
+    setGerandoZelador(false);
   }
 
   return (
@@ -63,7 +74,7 @@ export default function Mais() {
       </AppText>
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
         <ListItem icon="megaphone-outline" iconTone="primary" title="Comunicados" subtitle="Avisos do condomínio" onPress={() => router.push('/(app)/comunicados')} />
-        {!porteiro ? (
+        {!equipe ? (
           <>
             <Divider />
             <ListItem icon="documents-outline" iconTone="info" title="Central do morador" subtitle="Solicitações à administração" onPress={() => router.push('/(app)/central')} />
@@ -73,7 +84,7 @@ export default function Mais() {
         ) : null}
         <Divider />
         <ListItem icon="book-outline" iconTone="info" title="Regimento interno" subtitle="Regimento interno do condomínio" onPress={() => router.push('/(app)/documentos')} />
-        {!porteiro ? (
+        {!equipe ? (
           <>
             <Divider />
             <ListItem icon="podium-outline" iconTone="primary" title="Assembleias" subtitle="Convocações e votações" onPress={() => router.push('/(app)/assembleias')} />
@@ -83,7 +94,7 @@ export default function Mais() {
         ) : null}
         <Divider />
         <ListItem icon="calendar-outline" iconTone="info" title="Agenda" subtitle="Eventos e datas importantes" onPress={() => router.push('/(app)/agenda')} />
-        {!porteiro ? (
+        {!equipe ? (
           <>
             <Divider />
             <ListItem icon="alert-circle-outline" iconTone="danger" title="Advertências e multas" subtitle={gestor ? 'Aplicar e gerenciar infrações' : 'Infrações da sua unidade'} onPress={() => router.push('/(app)/infracoes')} />
@@ -101,16 +112,20 @@ export default function Mais() {
         ) : null}
       </Card>
 
-      {/* Gestão — síndico e conselho fiscal (leitura da operação) */}
-      {conselho ? (
+      {/* Gestão — síndico, conselho fiscal e zelador (operação/manutenção) */}
+      {veManutencao(papel) ? (
         <>
           <AppText variant="label" color="muted" style={{ marginTop: spacing.xl, marginBottom: spacing.xs }}>
             GESTÃO
           </AppText>
           <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
             <ListItem icon="construct-outline" iconTone="warning" title="Manutenção" subtitle="Equipamentos e manutenção preventiva" onPress={() => router.push('/(app)/manutencao')} />
-            <Divider />
-            <ListItem icon="bar-chart-outline" iconTone="success" title="Prestação de contas" subtitle="Receitas e despesas por mês" onPress={() => router.push('/(app)/financeiro/prestacao')} />
+            {conselho ? (
+              <>
+                <Divider />
+                <ListItem icon="bar-chart-outline" iconTone="success" title="Prestação de contas" subtitle="Receitas e despesas por mês" onPress={() => router.push('/(app)/financeiro/prestacao')} />
+              </>
+            ) : null}
           </Card>
         </>
       ) : null}
@@ -124,9 +139,13 @@ export default function Mais() {
           <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
             <ListItem icon="add-circle-outline" iconTone="primary" title="Publicar comunicado" onPress={() => router.push('/(app)/comunicados/novo')} />
             <Divider />
-            <ListItem icon="people-outline" iconTone="info" title="Moradores e unidades" subtitle="Cadastro de unidades, moradores, dependentes e pets" onPress={() => router.push('/(app)/unidades')} />
+            <ListItem icon="people-outline" iconTone="info" title="Moradores e unidades" subtitle="Cadastro, ficha (CPF/RG) e busca de moradores" onPress={() => router.push('/(app)/unidades')} />
             <Divider />
             <ListItem icon="business-outline" iconTone="warning" title="Áreas comuns" subtitle="Taxa de uso, limites e disponibilidade" onPress={() => router.push('/(app)/areas')} />
+            <Divider />
+            <ListItem icon="trending-down-outline" iconTone="danger" title="Inadimplência" subtitle="Unidades com boletos vencidos" onPress={() => router.push('/(app)/financeiro/inadimplencia')} />
+            <Divider />
+            <ListItem icon="briefcase-outline" iconTone="primary" title="Contas a pagar" subtitle="Enviar despesas para a administradora" onPress={() => router.push('/(app)/financeiro/administradora')} />
             <Divider />
             <ListItem
               icon="key-outline"
@@ -142,6 +161,14 @@ export default function Mais() {
               title="Código da portaria"
               subtitle={membershipAtual?.condominio?.codigo_portaria ?? (gerandoCodigo ? 'Gerando...' : 'Toque para gerar')}
               onPress={gerarCodigoDaPortaria}
+            />
+            <Divider />
+            <ListItem
+              icon="construct-outline"
+              iconTone="info"
+              title="Código do zelador"
+              subtitle={membershipAtual?.condominio?.codigo_zelador ?? (gerandoZelador ? 'Gerando...' : 'Toque para gerar')}
+              onPress={gerarCodigoDoZelador}
             />
           </Card>
         </>

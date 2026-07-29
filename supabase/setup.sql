@@ -1627,4 +1627,188 @@ alter table public.condominios drop column if exists total_vagas_visitante;
 revoke select on public.condominios from authenticated;
 grant select (id, nome, cidade, uf, endereco, cnpj, criado_por, created_at) on public.condominios to authenticated;
 
+-- ============================================================================
+-- 8. MÓDULO "CAMINHO A" — substituir o Imodolo, conviver com a administradora
+--    Ficha cadastral do morador (CPF/RG/e-mail), papel "zelador", agenda de
+--    manutenção turbinada (checklist), inadimplência e envio de contas para a
+--    administradora pagar. Bloco autocontido e idempotente — roda junto do resto.
+-- ============================================================================
+
+-- 8.1 Ficha cadastral do morador --------------------------------------------
+-- CPF/RG são PII sensível: ficam em memberships (não em profiles), porque a
+-- policy memberships_select só devolve a linha para o próprio usuário OU para o
+-- gestor daquele condomínio — exatamente a visibilidade que a ficha exige. Em
+-- profiles (legível por qualquer co-morador) o CPF ficaria exposto a vizinhos.
+alter table public.memberships add column if not exists cpf text;
+alter table public.memberships add column if not exists rg text;
+
+-- E-mail no perfil: o síndico pediu o e-mail do morador "sempre à mão". Vem do
+-- auth.users (fonte da verdade) via trigger + backfill. É menos sensível que
+-- CPF e útil para contato entre a gestão e o morador.
+alter table public.profiles add column if not exists email text;
+
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, nome_completo, email)
+  values (new.id, coalesce(new.raw_user_meta_data->>'nome_completo', ''), new.email)
+  on conflict (id) do update set email = excluded.email;
+  return new;
+end;
+$$;
+
+-- Backfill dos perfis já existentes (o trigger só cobre novos cadastros).
+update public.profiles p set email = u.email
+  from auth.users u where u.id = p.id and p.email is distinct from u.email;
+
+-- 8.2 Papel "zelador" (equipe operacional: manutenção + chamados) -------------
+-- Login individual (cada zelador com seu e-mail) via código de equipe próprio,
+-- no mesmo molde do porteiro. Enxerga/opera manutenção e chamados; não é gestão.
+alter table public.condominios add column if not exists codigo_zelador text unique;
+
+alter table public.memberships drop constraint if exists memberships_papel_check;
+alter table public.memberships add constraint memberships_papel_check
+  check (papel in ('morador','sindico','admin','porteiro','conselheiro','zelador'));
+
+create or replace function public.is_zelador(cond uuid)
+returns boolean language sql stable security definer set search_path = public as $$
+  select exists (
+    select 1 from public.memberships m
+    where m.condominio_id = cond and m.user_id = (select auth.uid())
+      and m.status = 'ativo' and m.papel = 'zelador'
+  );
+$$;
+grant execute on function public.is_zelador(uuid) to authenticated;
+
+create or replace function public.gerar_codigo_zelador(p_cond uuid)
+returns text language plpgsql security definer set search_path = public as $$
+declare
+  v_codigo text;
+begin
+  if not public.is_gestor(p_cond) then raise exception 'Sem permissão'; end if;
+  loop
+    v_codigo := 'Z' || upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
+    exit when not exists (select 1 from public.condominios where codigo_zelador = v_codigo);
+  end loop;
+  update public.condominios set codigo_zelador = v_codigo where id = p_cond;
+  return v_codigo;
+end;
+$$;
+grant execute on function public.gerar_codigo_zelador(uuid) to authenticated;
+
+create or replace function public.entrar_como_zelador(p_codigo text)
+returns public.memberships
+language plpgsql security definer set search_path = public as $$
+declare
+  v_cond public.condominios;
+  v_membership public.memberships;
+begin
+  if (select auth.uid()) is null then raise exception 'Não autenticado'; end if;
+  select * into v_cond from public.condominios where codigo_zelador = upper(trim(p_codigo));
+  if v_cond.id is null then raise exception 'Código de zelador inválido'; end if;
+
+  select * into v_membership from public.memberships
+    where condominio_id = v_cond.id and user_id = (select auth.uid());
+  if v_membership.id is not null then
+    update public.memberships set papel = 'zelador', status = 'ativo'
+      where id = v_membership.id returning * into v_membership;
+  else
+    insert into public.memberships (condominio_id, user_id, papel, status)
+    values (v_cond.id, (select auth.uid()), 'zelador', 'ativo')
+    returning * into v_membership;
+  end if;
+  return v_membership;
+end;
+$$;
+grant execute on function public.entrar_como_zelador(text) to authenticated;
+
+-- Passa a devolver também o código do zelador. O tipo de retorno mudou, então
+-- precisa de DROP antes do CREATE (o Postgres não troca colunas OUT via replace).
+drop function if exists public.obter_codigos_condominio(uuid);
+create or replace function public.obter_codigos_condominio(p_cond uuid)
+returns table (codigo_convite text, codigo_portaria text, codigo_zelador text)
+language plpgsql stable security definer set search_path = public as $$
+begin
+  if not public.is_gestor(p_cond) then raise exception 'Sem permissão'; end if;
+  return query select c.codigo_convite, c.codigo_portaria, c.codigo_zelador
+    from public.condominios c where c.id = p_cond;
+end;
+$$;
+grant execute on function public.obter_codigos_condominio(uuid) to authenticated;
+
+-- Zelador enxerga e registra manutenção (equipamentos: só leitura; manutenções:
+-- registra). Redefine as policies da seção 7.6 incluindo is_zelador.
+drop policy if exists equipamentos_select on public.equipamentos;
+create policy equipamentos_select on public.equipamentos for select to authenticated
+  using (public.is_conselho(condominio_id) or public.is_zelador(condominio_id));
+
+drop policy if exists manutencoes_select on public.manutencoes;
+create policy manutencoes_select on public.manutencoes for select to authenticated
+  using (public.is_conselho(condominio_id) or public.is_zelador(condominio_id));
+drop policy if exists manutencoes_write on public.manutencoes;
+create policy manutencoes_write on public.manutencoes for all to authenticated
+  using (public.is_gestor(condominio_id) or public.is_zelador(condominio_id))
+  with check (public.is_gestor(condominio_id) or public.is_zelador(condominio_id));
+
+-- Zelador é equipe operacional dos chamados: vê todos, comenta e muda status.
+-- Redefine as policies/trigger de chamados (seções 2 e 4) incluindo is_zelador.
+drop policy if exists chamados_select on public.chamados;
+create policy chamados_select on public.chamados for select to authenticated
+  using (public.is_member(condominio_id) and (autor_id = (select auth.uid()) or public.is_gestor(condominio_id) or public.is_zelador(condominio_id)));
+drop policy if exists chamados_update on public.chamados;
+create policy chamados_update on public.chamados for update to authenticated
+  using (autor_id = (select auth.uid()) or public.is_gestor(condominio_id) or public.is_zelador(condominio_id))
+  with check (autor_id = (select auth.uid()) or public.is_gestor(condominio_id) or public.is_zelador(condominio_id));
+
+create or replace function public.proteger_chamado_update()
+returns trigger language plpgsql set search_path = public as $$
+begin
+  if public.is_gestor(new.condominio_id) or public.is_zelador(new.condominio_id) then
+    return new;
+  end if;
+  if new.autor_id is distinct from old.autor_id
+     or new.responsavel_id is distinct from old.responsavel_id
+     or new.prioridade is distinct from old.prioridade then
+    raise exception 'Sem permissão para alterar autoria, responsável ou prioridade do chamado';
+  end if;
+  return new;
+end;
+$$;
+
+drop policy if exists eventos_select on public.chamado_eventos;
+create policy eventos_select on public.chamado_eventos for select to authenticated
+  using (exists (
+    select 1 from public.chamados c
+    where c.id = chamado_id and (c.autor_id = (select auth.uid()) or public.is_gestor(c.condominio_id) or public.is_zelador(c.condominio_id))
+  ));
+drop policy if exists eventos_insert on public.chamado_eventos;
+create policy eventos_insert on public.chamado_eventos for insert to authenticated
+  with check (autor_id = (select auth.uid()) and exists (
+    select 1 from public.chamados c
+    where c.id = chamado_id and (c.autor_id = (select auth.uid()) or public.is_gestor(c.condominio_id) or public.is_zelador(c.condominio_id))
+  ));
+
+-- 8.3 Agenda de manutenção — checklist por equipamento -----------------------
+-- Itens verificados na manutenção (ex.: extintores, caixa d'água): lista de
+-- { item, ok, observacao } no mesmo formato das vistorias de reserva.
+alter table public.manutencoes add column if not exists itens jsonb not null default '[]';
+
+-- 8.4 Caminho A — administradora e envio de contas ---------------------------
+-- O condomínio segue com uma administradora que efetua os pagamentos; o CondoOS
+-- registra a despesa e marca quando ela foi enviada para a administradora pagar.
+alter table public.condominios add column if not exists administradora text;
+alter table public.condominios add column if not exists administradora_contato text;
+
+-- Essas duas colunas NÃO são segredo (ao contrário dos códigos de acesso), então
+-- entram no grant de colunas de condominios (a seção 7.10 revogou tudo e concedeu
+-- só as não sensíveis). Precisa vir depois do 7.10 para não ser sobrescrito.
+grant select (administradora, administradora_contato) on public.condominios to authenticated;
+
+-- Marca de "enviado para a administradora pagar" numa despesa (null = ainda não).
+-- As colunas novas desta seção caem em tabelas que já têm o grant de tabela da
+-- seção 4b/7.7 (memberships, profiles, manutencoes, lancamentos) — não é preciso
+-- (nem seguro) reemitir "grant on all tables" aqui: isso reexporia as colunas
+-- de código secreto de condominios que a seção 7.10 acabou de proteger.
+alter table public.lancamentos_financeiros add column if not exists enviado_administradora_em timestamptz;
+
 -- Fim do setup.

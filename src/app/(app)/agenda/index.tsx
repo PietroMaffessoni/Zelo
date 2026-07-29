@@ -6,11 +6,11 @@ import { View } from 'react-native';
 import { AppHeader, AppText, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
-import { listarAssembleias, listarEventosAgenda } from '@/lib/db';
+import { listarAssembleias, listarEquipamentos, listarEventosAgenda } from '@/lib/db';
 import { formatDataHora } from '@/lib/format';
 import { tipoEventoLabel } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
-import { isGestor, type TipoEvento } from '@/lib/types';
+import { isGestor, veManutencao, type TipoEvento } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 type ItemAgenda = {
@@ -29,11 +29,17 @@ export default function Agenda() {
   const { condominioId, papel } = useAuth();
   const gestor = isGestor(papel);
 
+  const podeVerManutencao = veManutencao(papel);
+
   const { data, loading, refreshing, refetch } = useFetch(async () => {
     if (!condominioId) return [] as ItemAgenda[];
-    const [eventos, assembleias] = await Promise.all([
+    const [eventos, assembleias, equipamentos] = await Promise.all([
       listarEventosAgenda(condominioId),
       listarAssembleias(condominioId),
+      // Manutenções preventivas entram na agenda para quem a enxerga (gestor,
+      // conselho, zelador). Para os demais moradores, lista vazia (RLS bloqueia
+      // equipamentos de qualquer forma) — evitamos até a chamada.
+      podeVerManutencao ? listarEquipamentos(condominioId) : Promise.resolve([]),
     ]);
     const itens: ItemAgenda[] = [
       ...eventos.map((e) => ({
@@ -55,9 +61,20 @@ export default function Agenda() {
           tipo: 'assembleia' as TipoEvento,
           rota: `/(app)/assembleias/${a.id}`,
         })),
+      ...equipamentos
+        .filter((eq) => eq.proxima_manutencao)
+        .map((eq) => ({
+          id: `m-${eq.id}`,
+          titulo: `Manutenção — ${eq.nome}`,
+          descricao: eq.localizacao,
+          quando: dayjs(eq.proxima_manutencao).hour(9).minute(0).toISOString(),
+          local: eq.localizacao,
+          tipo: 'manutencao' as TipoEvento,
+          rota: `/(app)/manutencao/${eq.id}`,
+        })),
     ];
     return itens.sort((x, y) => new Date(x.quando).getTime() - new Date(y.quando).getTime());
-  }, [condominioId]);
+  }, [condominioId, podeVerManutencao]);
 
   const itens = data ?? [];
   const agora = Date.now();

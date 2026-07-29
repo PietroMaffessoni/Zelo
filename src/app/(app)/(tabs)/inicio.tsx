@@ -26,7 +26,8 @@ export default function Inicio() {
   const { profile, membershipAtual, condominioId, user, papel } = useAuth();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
-  const morador = !gestor && !porteiro;
+  const zelador = papel === 'zelador';
+  const morador = !gestor && !porteiro && !zelador;
   const cond = membershipAtual?.condominio;
   const unidadeId = membershipAtual?.unidade_id ?? null;
 
@@ -40,13 +41,15 @@ export default function Inicio() {
       };
     const [comunicados, resumo, resumoPort, resumoFin, assembleias] = await Promise.all([
       listarComunicados(condominioId, user.id),
-      gestor ? resumoGestor(condominioId) : Promise.resolve(null),
+      // Zelador reaproveita o resumo do gestor por chamados/manutenção (os demais
+      // contadores ficam ocultos no painel dele).
+      gestor || zelador ? resumoGestor(condominioId) : Promise.resolve(null),
       porteiro ? resumoPortaria(condominioId) : Promise.resolve(null),
       morador ? resumoFinanceiroMorador(condominioId, unidadeId) : Promise.resolve(null),
       listarAssembleias(condominioId),
     ]);
     return { comunicados, resumo, resumoPortaria: resumoPort, resumoFinanceiro: resumoFin, assembleias };
-  }, [condominioId, gestor, porteiro, morador, unidadeId]);
+  }, [condominioId, gestor, porteiro, zelador, morador, unidadeId]);
 
   const comunicados = dados.data?.comunicados ?? [];
   const resumo = dados.data?.resumo ?? null;
@@ -63,7 +66,7 @@ export default function Inicio() {
         <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={48} />
         <View style={{ flex: 1 }}>
           <AppText color="muted" variant="caption">
-            {gestor ? 'Painel do síndico' : porteiro ? 'Painel da portaria' : 'Bem-vindo(a)'}
+            {gestor ? 'Painel do síndico' : porteiro ? 'Painel da portaria' : zelador ? 'Painel do zelador' : 'Bem-vindo(a)'}
           </AppText>
           <AppText variant="subtitle" numberOfLines={1}>
             {primeiroNome(profile?.nome_completo) || 'Morador'}
@@ -205,7 +208,34 @@ export default function Inicio() {
             valor={resumo?.boletosAtrasados ?? 0}
             icon="cash"
             tone="danger"
-            onPress={() => router.push('/(app)/financeiro')}
+            onPress={() => router.push('/(app)/financeiro/inadimplencia')}
+          />
+          <StatCard
+            label="Manutenção vencida"
+            valor={resumo?.manutencoesVencidas ?? 0}
+            icon="construct"
+            tone={resumo && resumo.manutencoesVencidas > 0 ? 'danger' : 'success'}
+            onPress={() => router.push('/(app)/manutencao')}
+          />
+        </View>
+      ) : null}
+
+      {/* Dashboard do zelador */}
+      {zelador ? (
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, marginTop: spacing.lg }}>
+          <StatCard
+            label="Chamados abertos"
+            valor={resumo?.chamadosAbertos ?? 0}
+            icon="construct"
+            tone="warning"
+            onPress={() => router.push('/(app)/(tabs)/chamados')}
+          />
+          <StatCard
+            label="Manutenção vencida"
+            valor={resumo?.manutencoesVencidas ?? 0}
+            icon="build"
+            tone={resumo && resumo.manutencoesVencidas > 0 ? 'danger' : 'success'}
+            onPress={() => router.push('/(app)/manutencao')}
           />
         </View>
       ) : null}
@@ -258,6 +288,11 @@ export default function Inicio() {
           <>
             <ActionTile icon="cube" label="Nova encomenda" tone="warning" onPress={() => router.push('/(app)/portaria/encomenda-nova')} />
             <ActionTile icon="car" label="Veículos" tone="primary" onPress={() => router.push('/(app)/portaria/veiculos')} />
+          </>
+        ) : zelador ? (
+          <>
+            <ActionTile icon="construct" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
+            <ActionTile icon="build" label="Manutenção" tone="primary" onPress={() => router.push('/(app)/manutencao')} />
           </>
         ) : (
           <>

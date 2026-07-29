@@ -2,7 +2,7 @@ import { Redirect, Stack } from 'expo-router';
 
 import { Loading } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { useNotificacoesRealtime } from '@/lib/notificacoes';
+import { useLembretesManutencao, useNotificacoesRealtime } from '@/lib/notificacoes';
 import { useAppTheme } from '@/lib/theme';
 
 export default function AppLayout() {
@@ -10,6 +10,7 @@ export default function AppLayout() {
   const { palette } = useAppTheme();
 
   useNotificacoesRealtime(condominioId, user?.id ?? null, membershipAtual?.unidade_id ?? null, profile?.preferencias_notificacao, papel);
+  useLembretesManutencao(condominioId, papel);
 
   if (!ready) return <Loading />;
   if (!session) return <Redirect href="/(auth)/login" />;

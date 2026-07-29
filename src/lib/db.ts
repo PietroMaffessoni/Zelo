@@ -236,6 +236,23 @@ export async function getReserva(id: string): Promise<Reserva> {
   );
 }
 
+/**
+ * Reservas ativas (pendente/aprovada) de uma área que cruzam um intervalo — usada
+ * pela tela de nova reserva para mostrar os horários já ocupados (disponibilidade).
+ */
+export async function reservasDaArea(areaId: string, deISO: string, ateISO: string): Promise<Reserva[]> {
+  return unwrap(
+    await supabase
+      .from('reservas')
+      .select('id, inicio, fim, status')
+      .eq('area_id', areaId)
+      .in('status', ['pendente', 'aprovada'])
+      .lt('inicio', ateISO)
+      .gt('fim', deISO)
+      .order('inicio', { ascending: true }),
+  ) as Reserva[];
+}
+
 export async function criarReserva(input: {
   condominio_id: string;
   area_id: string;
@@ -442,6 +459,26 @@ export async function atualizarPapelMorador(membershipId: string, papel: 'morado
   await supabase.from('memberships').update({ papel }).eq('id', membershipId);
 }
 
+/** Atualiza a ficha cadastral (CPF/RG) de um morador — só o gestor, via RLS de memberships. */
+export async function atualizarDadosCadastrais(
+  membershipId: string,
+  dados: { cpf?: string | null; rg?: string | null },
+) {
+  await supabase.from('memberships').update(dados).eq('id', membershipId);
+}
+
+/** Todos os moradores ativos do condomínio (para a busca rápida do síndico). */
+export async function listarMoradores(condominioId: string): Promise<Membership[]> {
+  return unwrap(
+    await supabase
+      .from('memberships')
+      .select('*, profile:profiles(*), unidade:unidades(*)')
+      .eq('condominio_id', condominioId)
+      .eq('status', 'ativo')
+      .order('created_at', { ascending: true }),
+  ) as Membership[];
+}
+
 export async function removerMoradorDaUnidade(membershipId: string) {
   await supabase.from('memberships').update({ status: 'inativo' }).eq('id', membershipId);
 }
@@ -602,6 +639,12 @@ export async function gerarCodigoPortaria(condominioId: string): Promise<string>
   return data as string;
 }
 
+export async function gerarCodigoZelador(condominioId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('gerar_codigo_zelador', { p_cond: condominioId });
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
 export type ResumoPortaria = {
   encomendasAguardando: number;
   visitantesAutorizadosHoje: number;
@@ -711,6 +754,70 @@ export async function resumoFinanceiroMorador(condominioId: string, unidadeId: s
   const lancamentos = unwrap(await query) as { status: StatusFinanceiro; vencimento: string }[];
   const atrasados = lancamentos.filter((l) => l.status === 'atrasado' || l.vencimento < hoje).length;
   return { pendentes: lancamentos.length, atrasados };
+}
+
+// -------------------------------------------------------------- Inadimplência (gestor)
+export type UnidadeInadimplente = {
+  unidade: Unidade;
+  total: number;
+  quantidade: number;
+  maisAntigo: string; // vencimento em atraso mais antigo (YYYY-MM-DD)
+};
+
+/**
+ * Agrupa os boletos vencidos e não pagos por unidade — a visão de inadimplência do
+ * síndico. "Vencido" é o status efetivo: status 'atrasado' OU pendente com
+ * vencimento no passado (o mesmo critério de statusFinanceiroEfetivo).
+ */
+export async function inadimplencia(condominioId: string): Promise<UnidadeInadimplente[]> {
+  const hoje = new Date().toISOString().slice(0, 10);
+  const boletos = unwrap(
+    await supabase
+      .from('lancamentos_financeiros')
+      .select('valor, vencimento, status, unidade:unidades(*)')
+      .eq('condominio_id', condominioId)
+      .eq('tipo', 'boleto')
+      .in('status', ['pendente', 'atrasado'])
+      .not('unidade_id', 'is', null),
+    // unidade:unidades(*) é relação to-one → objeto único em runtime; o tipo inferido
+    // do supabase-js (sem schema tipado) o trata como array, daí o cast via unknown.
+  ) as unknown as { valor: number; vencimento: string; status: StatusFinanceiro; unidade: Unidade | null }[];
+
+  const mapa = new Map<string, UnidadeInadimplente>();
+  for (const b of boletos) {
+    const vencido = b.status === 'atrasado' || b.vencimento < hoje;
+    if (!vencido || !b.unidade) continue;
+    const g = mapa.get(b.unidade.id);
+    if (g) {
+      g.total += Number(b.valor);
+      g.quantidade += 1;
+      if (b.vencimento < g.maisAntigo) g.maisAntigo = b.vencimento;
+    } else {
+      mapa.set(b.unidade.id, { unidade: b.unidade, total: Number(b.valor), quantidade: 1, maisAntigo: b.vencimento });
+    }
+  }
+  return [...mapa.values()].sort((a, b) => b.total - a.total);
+}
+
+// ---------------------------------------------- Caminho A: contas para a administradora
+/**
+ * Marca (ou desmarca) despesas como "enviadas para a administradora pagar".
+ * Só o gestor edita lançamentos financeiros (RLS financeiro_write).
+ */
+export async function marcarDespesasEnviadas(ids: string[], enviado = true) {
+  if (ids.length === 0) return;
+  await supabase
+    .from('lancamentos_financeiros')
+    .update({ enviado_administradora_em: enviado ? new Date().toISOString() : null })
+    .in('id', ids);
+}
+
+/** Atualiza os dados da administradora do condomínio (nome e contato). Gestor via RLS. */
+export async function atualizarAdministradora(
+  condominioId: string,
+  dados: { administradora?: string | null; administradora_contato?: string | null },
+) {
+  await supabase.from('condominios').update(dados).eq('id', condominioId);
 }
 
 // ---------------------------------------------------------------------- Documentos
@@ -854,12 +961,13 @@ export type ResumoGestor = {
   solicitacoesAbertas: number;
   moradores: number;
   boletosAtrasados: number;
+  manutencoesVencidas: number;
 };
 
 export async function resumoGestor(condominioId: string): Promise<ResumoGestor> {
   const conta = (q: any) => q.then((r: any) => (r.count ?? 0) as number);
   const hoje = new Date().toISOString().slice(0, 10);
-  const [chamadosAbertos, reservasPendentes, solicitacoesAbertas, moradores, boletosAtrasados] = await Promise.all([
+  const [chamadosAbertos, reservasPendentes, solicitacoesAbertas, moradores, boletosAtrasados, manutencoesVencidas] = await Promise.all([
     conta(
       supabase
         .from('chamados')
@@ -896,8 +1004,16 @@ export async function resumoGestor(condominioId: string): Promise<ResumoGestor> 
         .eq('tipo', 'boleto')
         .or(`status.eq.atrasado,and(status.eq.pendente,vencimento.lt.${hoje})`),
     ),
+    conta(
+      supabase
+        .from('equipamentos')
+        .select('id', { count: 'exact', head: true })
+        .eq('condominio_id', condominioId)
+        .eq('ativo', true)
+        .lt('proxima_manutencao', hoje),
+    ),
   ]);
-  return { chamadosAbertos, reservasPendentes, solicitacoesAbertas, moradores, boletosAtrasados };
+  return { chamadosAbertos, reservasPendentes, solicitacoesAbertas, moradores, boletosAtrasados, manutencoesVencidas };
 }
 
 // ---------------------------------------------------------------------- Agenda / Eventos
@@ -983,10 +1099,13 @@ export async function registrarManutencao(input: {
   realizada_em: string;
   responsavel?: string | null;
   registrado_por: string;
+  itens?: ItemVistoria[];
   periodicidade_dias?: number | null;
 }): Promise<Manutencao> {
-  const { periodicidade_dias, ...resto } = input;
-  const manutencao = unwrap(await supabase.from('manutencoes').insert(resto).select('*').single()) as Manutencao;
+  const { periodicidade_dias, itens, ...resto } = input;
+  const manutencao = unwrap(
+    await supabase.from('manutencoes').insert({ ...resto, itens: itens ?? [] }).select('*').single(),
+  ) as Manutencao;
   const patch: Partial<Equipamento> = { ultima_manutencao: input.realizada_em };
   if (periodicidade_dias && periodicidade_dias > 0) {
     const base = new Date(input.realizada_em + 'T00:00:00');

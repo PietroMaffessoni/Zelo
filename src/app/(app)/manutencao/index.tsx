@@ -14,7 +14,7 @@ import { useFetch } from '@/lib/useFetch';
 
 export default function ManutencaoLista() {
   const router = useRouter();
-  const { tone } = useAppTheme();
+  const { tone, palette } = useAppTheme();
   const { condominioId, papel } = useAuth();
   const gestor = isGestor(papel);
 
@@ -24,11 +24,25 @@ export default function ManutencaoLista() {
   );
 
   const equipamentos = data ?? [];
+  const vencidas = equipamentos.filter((e) => manutencaoVencida(e.proxima_manutencao));
 
   return (
     <View style={{ flex: 1 }}>
       <Screen refreshing={refreshing} onRefresh={refetch}>
         <AppHeader title="Manutenção" back subtitle="Equipamentos e manutenção preventiva" />
+
+        {vencidas.length > 0 ? (
+          <Card style={{ backgroundColor: palette.dangerSoft, borderColor: palette.danger, marginBottom: spacing.md }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+              <Ionicons name="alert-circle" size={22} color={palette.danger} />
+              <AppText variant="label" style={{ color: palette.danger, flex: 1 }}>
+                {vencidas.length === 1
+                  ? '1 manutenção vencida — precisa de atenção'
+                  : `${vencidas.length} manutenções vencidas — precisam de atenção`}
+              </AppText>
+            </View>
+          </Card>
+        ) : null}
 
         {loading ? (
           <Loading />

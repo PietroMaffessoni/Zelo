@@ -85,6 +85,7 @@ export const papelLabel: Record<Papel, string> = {
   admin: 'Administrador',
   porteiro: 'Portaria',
   conselheiro: 'Conselheiro',
+  zelador: 'Zelador',
 };
 
 export const vinculoLabel: Meta<Vinculo> = {
@@ -208,6 +209,51 @@ export const statusProposta: Meta<StatusProposta> = {
   aprovada: { label: 'Aprovada', tone: 'success' },
   recusada: { label: 'Recusada', tone: 'danger' },
   arquivada: { label: 'Arquivada', tone: 'neutral' },
+};
+
+/**
+ * Roteiro de verificação sugerido por tipo de equipamento — vira o checklist
+ * exibido ao registrar uma manutenção (o zelador/síndico marca cada item como ok).
+ * Categorias sem template caem no registro livre (só descrição).
+ */
+export const checklistManutencao: Partial<Record<CategoriaEquipamento, string[]>> = {
+  incendio: [
+    'Extintores no prazo de validade',
+    'Manômetros na faixa verde',
+    'Sinalização e acesso desobstruídos',
+    'Mangueiras e hidrantes íntegros',
+    'Luzes de emergência funcionando',
+  ],
+  hidraulica: [
+    'Caixa d’água limpa e tampada',
+    'Sem vazamentos aparentes',
+    'Nível e boia funcionando',
+    'Registros e válvulas operando',
+  ],
+  bomba: [
+    'Bomba liga e desliga corretamente',
+    'Sem ruído ou vibração anormal',
+    'Sem vazamentos',
+    'Painel elétrico sem alarmes',
+  ],
+  piscina: [
+    'pH e cloro dentro do padrão',
+    'Água limpa e transparente',
+    'Bomba e filtro operando',
+    'Bordas e ralos íntegros',
+  ],
+  elevador: [
+    'Nivelamento nos andares',
+    'Portas abrindo/fechando bem',
+    'Botoeiras e iluminação ok',
+    'Interfone/alarme funcionando',
+  ],
+  gerador: [
+    'Nível de combustível ok',
+    'Partida automática testada',
+    'Bateria carregada',
+    'Sem vazamentos',
+  ],
 };
 
 /** Utilitário para transformar um mapa de metadados em opções de seleção. */

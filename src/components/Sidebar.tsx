@@ -10,7 +10,7 @@ import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { papelLabel } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
-import { isGestor as ehGestor } from '@/lib/types';
+import { isGestor as ehGestor, veManutencao } from '@/lib/types';
 
 type Item = { label: string; icon: keyof typeof Ionicons.glyphMap; href: Href; match: string };
 
@@ -24,19 +24,21 @@ export function Sidebar() {
   const { profile, papel, membershipAtual, signOut } = useAuth();
   const gestor = ehGestor(papel);
   const porteiro = papel === 'porteiro';
-  const morador = !gestor && !porteiro;
+  const zelador = papel === 'zelador';
+  const morador = !gestor && !porteiro && !zelador;
+  const equipe = porteiro || zelador;
   const unidadeId = membershipAtual?.unidade_id ?? null;
 
   const principais: Item[] = [
     { label: gestor ? 'Painel' : 'Início', icon: gestor ? 'grid-outline' : 'home-outline', href: '/(app)/(tabs)/inicio', match: 'inicio' },
-    ...(morador || gestor ? [{ label: 'Chamados', icon: 'construct-outline', href: '/(app)/(tabs)/chamados', match: 'chamados' } as Item] : []),
+    ...(morador || gestor || zelador ? [{ label: 'Chamados', icon: 'construct-outline', href: '/(app)/(tabs)/chamados', match: 'chamados' } as Item] : []),
     ...(morador ? [{ label: 'Reservas', icon: 'calendar-outline', href: '/(app)/(tabs)/reservas', match: 'reservas' } as Item] : []),
     ...(gestor || porteiro ? [{ label: 'Portaria', icon: 'people-circle-outline', href: '/(app)/(tabs)/portaria', match: 'portaria' } as Item] : []),
   ];
 
   const secundarios: Item[] = [
     { label: 'Comunicados', icon: 'megaphone-outline', href: '/(app)/comunicados', match: 'comunicados' },
-    ...(!porteiro
+    ...(!equipe
       ? ([
           { label: 'Central do morador', icon: 'documents-outline', href: '/(app)/central', match: 'central' },
           { label: 'Financeiro', icon: 'cash-outline', href: '/(app)/financeiro', match: 'financeiro' },
@@ -44,6 +46,7 @@ export function Sidebar() {
           { label: 'Advertências e multas', icon: 'alert-circle-outline', href: '/(app)/infracoes', match: 'infracoes' },
         ] as Item[])
       : []),
+    ...(veManutencao(papel) ? [{ label: 'Manutenção', icon: 'build-outline', href: '/(app)/manutencao', match: 'manutencao' } as Item] : []),
     { label: 'Documentos', icon: 'book-outline', href: '/(app)/documentos', match: 'documentos' },
     { label: 'Agenda', icon: 'calendar-number-outline', href: '/(app)/agenda', match: 'agenda' },
     { label: 'Achados e perdidos', icon: 'cube-outline', href: '/(app)/achados', match: 'achados' },
@@ -59,6 +62,8 @@ export function Sidebar() {
     ? [
         { label: 'Moradores e unidades', icon: 'people-outline', href: '/(app)/unidades', match: 'unidades' },
         { label: 'Áreas comuns', icon: 'business-outline', href: '/(app)/areas', match: 'areas' },
+        { label: 'Inadimplência', icon: 'trending-down-outline', href: '/(app)/financeiro/inadimplencia', match: 'inadimplencia' },
+        { label: 'Contas a pagar', icon: 'briefcase-outline', href: '/(app)/financeiro/administradora', match: 'administradora' },
       ]
     : [];
 
