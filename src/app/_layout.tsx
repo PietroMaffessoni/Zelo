@@ -1,5 +1,11 @@
 import '@/global.css';
 
+import {
+  PlusJakartaSans_600SemiBold,
+  PlusJakartaSans_700Bold,
+  PlusJakartaSans_800ExtraBold,
+  useFonts,
+} from '@expo-google-fonts/plus-jakarta-sans';
 import { Stack } from 'expo-router';
 import * as SplashScreen from 'expo-splash-screen';
 import { StatusBar } from 'expo-status-bar';
@@ -55,6 +61,16 @@ function AppShell() {
 }
 
 export default function RootLayout() {
+  // Segura o app na splash até a fonte de títulos carregar (evita "flash" do tipo
+  // do sistema trocando pela Plus Jakarta Sans). A splash já está travada por
+  // SplashScreen.preventAutoHideAsync() no topo do módulo.
+  const [fontesCarregadas] = useFonts({
+    PlusJakartaSans_600SemiBold,
+    PlusJakartaSans_700Bold,
+    PlusJakartaSans_800ExtraBold,
+  });
+  if (!fontesCarregadas) return null;
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>

@@ -1,5 +1,5 @@
 /**
- * Design tokens do CondoOS.
+ * Design tokens da Zelo.
  * Paleta clara e escura, moderna e acessível. Um único ponto de verdade para
  * cores, espaçamentos, tipografia, bordas e sombras.
  */
@@ -32,75 +32,73 @@ export type Palette = {
 export type ModoTema = 'light' | 'dark';
 
 const paletteLight: Palette = {
-  // Marca
-  primary: '#4F46E5',
-  primaryDark: '#4338CA',
-  primarySoft: '#EEF0FF',
+  // Marca — Zelo: azul-marinho profundo (confiança & instituição). Não é o índigo.
+  primary: '#12568F',
+  primaryDark: '#0E4373',
+  primarySoft: '#E2ECF6',
   onPrimary: '#FFFFFF',
 
-  // Neutros
-  background: '#F5F6FB',
+  // Neutros frios e limpos (papel levemente azulado)
+  background: '#F3F5F9',
   surface: '#FFFFFF',
-  surfaceAlt: '#F1F3F9',
-  border: '#E6E8F0',
-  borderStrong: '#D3D7E4',
+  surfaceAlt: '#EBEFF6',
+  border: '#E0E5EE',
+  borderStrong: '#C8D0DE',
 
-  // Texto
-  text: '#101828',
-  textMuted: '#5B6478',
-  // #667085 ~5:1 sobre branco (WCAG AA); o antigo #98A2B3 ficava em ~2.7:1
-  textSubtle: '#667085',
+  // Texto (quase-preto anavajado)
+  text: '#111C2B',
+  textMuted: '#516175',
+  textSubtle: '#7B8798',
 
-  // Semânticas
-  success: '#15803D',
-  successSoft: '#DCFCE7',
+  // Semânticas — agora contrastam com a primária azul (verde/vermelho/âmbar/teal)
+  success: '#2E7D46',
+  successSoft: '#DCF0E1',
   warning: '#B45309',
-  warningSoft: '#FEF3C7',
-  danger: '#DC2626',
-  dangerSoft: '#FEE2E2',
-  info: '#1D4ED8',
-  infoSoft: '#DBEAFE',
+  warningSoft: '#FBEBCB',
+  danger: '#C0392B',
+  dangerSoft: '#F7E1DD',
+  info: '#0E7490',
+  infoSoft: '#DEF0F3',
 
   // Utilitárias
-  overlay: 'rgba(16, 24, 40, 0.45)',
+  overlay: 'rgba(12, 22, 36, 0.45)',
   white: '#FFFFFF',
-  black: '#101828',
+  black: '#0C1626',
 };
 
 const paletteDark: Palette = {
-  // Marca
-  primary: '#818CF8',
-  primaryDark: '#A5B4FC',
-  primarySoft: 'rgba(129, 140, 248, 0.18)',
-  onPrimary: '#111127',
+  // Marca — Zelo: azul clareado (azure) para superfícies escuras.
+  primary: '#5AA6E8',
+  primaryDark: '#84BEF0',
+  primarySoft: 'rgba(90, 166, 232, 0.16)',
+  onPrimary: '#08121E',
 
-  // Neutros
-  background: '#0B0E16',
-  surface: '#161A26',
-  surfaceAlt: '#1F2433',
-  border: '#2B3142',
-  borderStrong: '#3B4257',
+  // Neutros escuros frios (azul-carvão)
+  background: '#0C121C',
+  surface: '#151D28',
+  surfaceAlt: '#1E2836',
+  border: '#2A3646',
+  borderStrong: '#3A4759',
 
   // Texto
-  text: '#F1F2F6',
-  textMuted: '#A2A9BD',
-  // Clareado de #6E7488 para ~4.6:1 sobre as superfícies escuras
-  textSubtle: '#868FA5',
+  text: '#EAF0F7',
+  textMuted: '#A2AEC0',
+  textSubtle: '#7E8B9E',
 
   // Semânticas
-  success: '#4ADE80',
-  successSoft: 'rgba(74, 222, 128, 0.16)',
-  warning: '#FBBF24',
-  warningSoft: 'rgba(251, 191, 36, 0.16)',
-  danger: '#F87171',
-  dangerSoft: 'rgba(248, 113, 113, 0.16)',
-  info: '#60A5FA',
-  infoSoft: 'rgba(96, 165, 250, 0.16)',
+  success: '#54CC82',
+  successSoft: 'rgba(84, 204, 130, 0.16)',
+  warning: '#F0B44E',
+  warningSoft: 'rgba(240, 180, 78, 0.16)',
+  danger: '#E8776B',
+  dangerSoft: 'rgba(232, 119, 107, 0.16)',
+  info: '#38BECF',
+  infoSoft: 'rgba(56, 190, 207, 0.16)',
 
   // Utilitárias
   overlay: 'rgba(0, 0, 0, 0.6)',
   white: '#FFFFFF',
-  black: '#0B0E16',
+  black: '#0C121C',
 };
 
 /**
@@ -149,23 +147,35 @@ export const fontWeight = {
   bold: '700',
 } as const;
 
+/**
+ * Famílias de fonte. Os títulos e o wordmark usam Plus Jakarta Sans (humanista,
+ * arredondada) — carregada no boot em src/app/_layout.tsx. O corpo segue no tipo
+ * do sistema (performance + legibilidade). Como cada arquivo já é de um peso
+ * específico, usa-se fontFamily (não fontWeight) para não gerar "falso-negrito".
+ */
+export const fonts = {
+  display: 'PlusJakartaSans_800ExtraBold',
+  bold: 'PlusJakartaSans_700Bold',
+  semibold: 'PlusJakartaSans_600SemiBold',
+} as const;
+
 export const shadow = {
   card: {
-    shadowColor: '#0B1221',
+    shadowColor: '#0B1B2E',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.06,
+    shadowOpacity: 0.08,
     shadowRadius: 16,
     elevation: 3,
   },
   soft: {
-    shadowColor: '#0B1221',
+    shadowColor: '#0B1B2E',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
+    shadowOpacity: 0.06,
     shadowRadius: 8,
     elevation: 2,
   },
   floating: {
-    shadowColor: '#312E81',
+    shadowColor: '#0A2440',
     shadowOffset: { width: 0, height: 8 },
     shadowOpacity: 0.24,
     shadowRadius: 16,

@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter, type Href } from 'expo-router';
 import { Pressable, ScrollView, View } from 'react-native';
 
+import { ZeloWordmark } from '@/components/Brand';
 import { Avatar } from '@/components/ui/Avatar';
 import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
@@ -87,9 +88,8 @@ export function Sidebar() {
       }}
     >
       <ScrollView contentContainerStyle={{ padding: spacing.md, gap: 2, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, paddingHorizontal: spacing.sm, paddingVertical: spacing.md }}>
-          <Ionicons name="business" size={22} color={palette.primary} />
-          <AppText variant="heading">CondoOS</AppText>
+        <View style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.md }}>
+          <ZeloWordmark size={24} />
         </View>
 
         {principais.map((it) => (

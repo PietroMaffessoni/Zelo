@@ -101,10 +101,10 @@ export function AppHeader({
   const router = useRouter();
   const { palette } = useAppTheme();
 
-  // Web: título da aba do navegador por rota (antes toda página ficava "CondoOS").
+  // Web: título da aba do navegador por rota (antes toda página ficava "Zelo").
   useEffect(() => {
     if (Platform.OS === 'web' && typeof document !== 'undefined') {
-      document.title = `${title} · CondoOS`;
+      document.title = `${title} · Zelo`;
     }
   }, [title]);
 

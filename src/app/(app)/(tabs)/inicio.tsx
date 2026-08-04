@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { Pressable, View } from 'react-native';
 
+import { ZeloMark } from '@/components/Brand';
 import { ActionTile, AppText, Avatar, Badge, Card, ErrorState, Screen, SkeletonList } from '@/components/ui';
 import { radius, spacing, type Tone } from '@/constants/theme';
 import { useAppTheme } from '@/lib/theme';
@@ -105,7 +106,7 @@ export default function Inicio() {
               justifyContent: 'center',
             }}
           >
-            <Ionicons name="business" size={24} color={palette.white} />
+            <ZeloMark height={26} color={palette.white} windowColor={palette.primary} />
           </View>
           <View style={{ flex: 1 }}>
             <AppText style={{ color: palette.white }} variant="subtitle" numberOfLines={1}>

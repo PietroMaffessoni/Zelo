@@ -203,7 +203,7 @@ export default function Mais() {
       </Card>
 
       <AppText color="subtle" center variant="caption" style={{ marginTop: spacing.xxl }}>
-        CondoOS · versão 1.0
+        Zelo · versão 1.0
       </AppText>
     </Screen>
   );
