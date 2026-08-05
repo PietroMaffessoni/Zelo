@@ -6,7 +6,7 @@ import { ZeloWordmark } from '@/components/Brand';
 import { Avatar } from '@/components/ui/Avatar';
 import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
-import { radius, spacing } from '@/constants/theme';
+import { radius, SIDEBAR_LARGURA, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { papelLabel } from '@/lib/labels';
@@ -81,7 +81,7 @@ export function Sidebar() {
   return (
     <View
       style={{
-        width: 264,
+        width: SIDEBAR_LARGURA,
         backgroundColor: palette.surface,
         borderRightWidth: 1,
         borderRightColor: palette.border,
@@ -123,7 +123,7 @@ export function Sidebar() {
               borderRadius: radius.md,
               backgroundColor: hovered ? palette.surfaceAlt : 'transparent',
             },
-            focusRing(focused, palette.primary),
+            focusRing(focused, palette.primary, true),
           ]}
         >
           <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={36} />
@@ -185,7 +185,7 @@ function NavLink({
           borderRadius: radius.md,
           backgroundColor: ativo ? palette.primarySoft : hovered ? palette.surfaceAlt : 'transparent',
         },
-        focusRing(focused, palette.primary),
+        focusRing(focused, palette.primary, true),
       ]}
     >
       <Ionicons name={item.icon} size={20} color={cor} />

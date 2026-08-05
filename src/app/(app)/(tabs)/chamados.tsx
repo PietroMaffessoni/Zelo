@@ -38,7 +38,7 @@ export default function ChamadosTab() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch} edges={['top']} maxWidth={920}>
+      <Screen refreshing={refreshing} onRefresh={refetch} edges={['top']}>
         <AppHeader
           title="Chamados"
           subtitle={gestor ? 'Todos os chamados do condomínio' : 'Seus chamados'}

@@ -1,9 +1,8 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform, useWindowDimensions, View } from 'react-native';
+import { Platform, useWindowDimensions } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { Sidebar } from '@/components/Sidebar';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import { isGestor } from '@/lib/types';
@@ -18,8 +17,8 @@ export default function TabsLayout() {
   const zelador = papel === 'zelador';
   const morador = !gestor && !porteiro && !zelador;
 
-  // Em telas largas (web/desktop) a navegação vira uma sidebar fixa e a tab bar
-  // inferior some — aproveita melhor a tela e evita o visual de "celular esticado".
+  // Em telas largas (web/desktop) a navegação vira a sidebar fixa (renderizada no
+  // layout de (app), que envolve todas as telas) e a tab bar inferior some.
   const desktop = Platform.OS === 'web' && width >= 1024;
 
   // Exibe 3–4 destinos de alto tráfego por papel; os demais ficam ocultos
@@ -30,7 +29,7 @@ export default function TabsLayout() {
     portaria: gestor || porteiro,
   };
 
-  const tabs = (
+  return (
     <Tabs
       tabBar={desktop ? () => null : undefined}
       screenOptions={{
@@ -91,15 +90,4 @@ export default function TabsLayout() {
       />
     </Tabs>
   );
-
-  if (desktop) {
-    return (
-      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: palette.background }}>
-        <Sidebar />
-        <View style={{ flex: 1 }}>{tabs}</View>
-      </View>
-    );
-  }
-
-  return tabs;
 }

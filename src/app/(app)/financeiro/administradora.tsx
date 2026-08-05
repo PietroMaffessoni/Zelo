@@ -108,7 +108,7 @@ export default function ContasAdministradora() {
   }
 
   return (
-    <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
+    <Screen refreshing={refreshing} onRefresh={refetch}>
       <AppHeader title="Contas a pagar" back subtitle="Envio para a administradora" onRefresh={refetch} />
 
       {/* Administradora */}

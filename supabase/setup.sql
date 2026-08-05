@@ -721,6 +721,9 @@ $$;
 -- Os códigos (convite/portaria) são segredos que dão acesso ao condomínio — a coluna
 -- não é mais exposta pelo select geral de condominios (ver seção 4), só por esta RPC,
 -- restrita a quem já é gestor daquele condomínio.
+-- DROP antes do CREATE: o Postgres não troca as colunas OUT via replace, e a seção 8
+-- redefine esta função com uma coluna a mais (ver obter_codigos_condominio mais abaixo).
+drop function if exists public.obter_codigos_condominio(uuid);
 create or replace function public.obter_codigos_condominio(p_cond uuid)
 returns table (codigo_convite text, codigo_portaria text)
 language plpgsql stable security definer set search_path = public as $$

@@ -5,10 +5,12 @@ import { radius, shadow, spacing, type Tone } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
 import { useAppTheme } from '@/lib/theme';
 
-/** Anel de foco para navegação por teclado (só web). */
-export function focusRing(focused: boolean, cor: string): ViewStyle {
+/** Anel de foco para navegação por teclado (só web). Use `inset` em listas bem
+ *  próximas (ex.: sidebar) para o anel ficar por dentro do item e não invadir o
+ *  vizinho. */
+export function focusRing(focused: boolean, cor: string, inset = false): ViewStyle {
   if (Platform.OS !== 'web' || !focused) return {};
-  return { outlineStyle: 'solid', outlineWidth: 2, outlineColor: cor, outlineOffset: 2 } as ViewStyle;
+  return { outlineStyle: 'solid', outlineWidth: 2, outlineColor: cor, outlineOffset: inset ? -2 : 2 } as ViewStyle;
 }
 
 export function Divider({ style }: { style?: ViewStyle }) {

@@ -23,7 +23,7 @@ export default function Inadimplencia() {
   const totalGeral = lista.reduce((s, u) => s + u.total, 0);
 
   return (
-    <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
+    <Screen refreshing={refreshing} onRefresh={refetch}>
       <AppHeader title="Inadimplência" back subtitle="Unidades com boletos vencidos" onRefresh={refetch} />
 
       {loading ? (

@@ -130,6 +130,10 @@ export const radius = {
   full: 999,
 } as const;
 
+// Largura da navegação lateral fixa (desktop). Compartilhada entre a própria
+// Sidebar e o cálculo de centralização do conteúdo em Layout.
+export const SIDEBAR_LARGURA = 264;
+
 export const fontSize = {
   xs: 12,
   sm: 13,

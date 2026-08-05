@@ -65,7 +65,7 @@ export async function listarComunicados(condominioId: string, userId: string): P
   const [comRes, leiRes] = await Promise.all([
     supabase
       .from('comunicados')
-      .select('*, autor:profiles(*)')
+      .select('*, autor:profiles!autor_id(*)')
       .eq('condominio_id', condominioId)
       .order('fixado', { ascending: false })
       .order('created_at', { ascending: false }),
@@ -77,7 +77,7 @@ export async function listarComunicados(condominioId: string, userId: string): P
 }
 
 export async function getComunicado(id: string): Promise<Comunicado> {
-  return unwrap(await supabase.from('comunicados').select('*, autor:profiles(*)').eq('id', id).single());
+  return unwrap(await supabase.from('comunicados').select('*, autor:profiles!autor_id(*)').eq('id', id).single());
 }
 
 export async function marcarComunicadoLido(comunicadoId: string, userId: string) {
@@ -123,7 +123,7 @@ export async function listarEventos(chamadoId: string): Promise<ChamadoEvento[]>
   return unwrap(
     await supabase
       .from('chamado_eventos')
-      .select('*, autor:profiles(*)')
+      .select('*, autor:profiles!autor_id(*)')
       .eq('chamado_id', chamadoId)
       .order('created_at', { ascending: true }),
   ) as ChamadoEvento[];
@@ -156,7 +156,7 @@ export async function comentarChamado(chamadoId: string, autorId: string, texto:
     await supabase
       .from('chamado_eventos')
       .insert({ chamado_id: chamadoId, autor_id: autorId, tipo: 'comentario', texto })
-      .select('*, autor:profiles(*)')
+      .select('*, autor:profiles!autor_id(*)')
       .single(),
   );
 }
@@ -1174,7 +1174,7 @@ export async function listarPropostas(condominioId: string, userId: string): Pro
   const propostas = unwrap(
     await supabase
       .from('propostas_pauta')
-      .select('*, autor:profiles(*)')
+      .select('*, autor:profiles!autor_id(*)')
       .eq('condominio_id', condominioId)
       .order('created_at', { ascending: false }),
   ) as PropostaPauta[];

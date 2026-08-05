@@ -26,7 +26,7 @@ export default function ComunicadosLista() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
+      <Screen refreshing={refreshing} onRefresh={refetch}>
         <AppHeader title="Comunicados" back subtitle="Avisos oficiais do condomínio" onRefresh={refetch} />
 
         {loading ? (

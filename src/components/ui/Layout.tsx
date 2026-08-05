@@ -11,14 +11,17 @@ import {
   View,
   type ViewStyle,
 } from 'react-native';
-import { SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { radius, spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { AppText } from '@/components/ui/Text';
 import { useAppTheme } from '@/lib/theme';
 
-const MAX_LARGURA = 680;
+// Largura única de conteúdo para TODAS as telas — mantém a coluna com a mesma
+// largura em qualquer página, sem "pular" ao navegar. Meio termo: aproveita mais
+// a tela que 760 sem esticar o conteúdo como 1120.
+const MAX_LARGURA = 940;
 
 /** Container base de tela: fundo, área segura, teclado e centralização no web. */
 export function Screen({
@@ -44,6 +47,8 @@ export function Screen({
   const conteudo = (
     <View
       style={[
+        // Coluna centralizada na área útil (ao lado da sidebar no desktop), com a
+        // mesma largura em todas as telas.
         { width: '100%', maxWidth, alignSelf: 'center', flex: scroll ? undefined : 1 },
         padded ? { paddingHorizontal: spacing.lg } : null,
         style,
@@ -171,7 +176,7 @@ export function AppHeader({
 export function Loading({ label }: { label?: string }) {
   const { palette } = useAppTheme();
   return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: spacing.xl, gap: spacing.md }}>
+    <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxxl, paddingHorizontal: spacing.xl, gap: spacing.md }}>
       <ActivityIndicator size="large" color={palette.primary} />
       {label ? (
         <AppText color="muted" variant="body">
@@ -195,14 +200,13 @@ export function EmptyState({
   actionLabel?: string;
   onAction?: () => void;
 }) {
-  const insets = useSafeAreaInsets();
   const { palette } = useAppTheme();
   return (
     <View
       style={{
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: spacing.xxxl + insets.top,
+        paddingVertical: spacing.xxxl,
         paddingHorizontal: spacing.xl,
         gap: spacing.sm,
       }}

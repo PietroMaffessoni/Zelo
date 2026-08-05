@@ -30,7 +30,7 @@ export default function FinanceiroLista() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
+      <Screen refreshing={refreshing} onRefresh={refetch}>
         <AppHeader
           title="Financeiro"
           back

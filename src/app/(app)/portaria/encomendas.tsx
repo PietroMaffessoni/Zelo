@@ -64,7 +64,7 @@ export default function PortariaEncomendas() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
+      <Screen refreshing={refreshing} onRefresh={refetch}>
         <AppHeader title="Encomendas" back onRefresh={refetch} />
 
         {loading ? (

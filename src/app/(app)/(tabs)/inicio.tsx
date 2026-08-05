@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
 import { ZeloMark } from '@/components/Brand';
 import { ActionTile, AppText, Avatar, Badge, Card, ErrorState, Screen, SkeletonList } from '@/components/ui';
@@ -73,24 +73,6 @@ export default function Inicio() {
             {primeiroNome(profile?.nome_completo) || 'Morador'}
           </AppText>
         </View>
-        {!porteiro ? (
-          <Pressable
-            onPress={() => router.push('/(app)/chamados/novo')}
-            hitSlop={8}
-            accessibilityRole="button"
-            accessibilityLabel="Abrir chamado"
-            style={{
-              width: 42,
-              height: 42,
-              borderRadius: radius.full,
-              backgroundColor: palette.warningSoft,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="warning-outline" size={22} color={palette.warning} />
-          </Pressable>
-        ) : null}
       </View>
 
       {/* Cartão do condomínio */}

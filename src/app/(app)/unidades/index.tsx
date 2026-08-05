@@ -83,7 +83,7 @@ export default function UnidadesLista() {
 
   return (
     <View style={{ flex: 1 }}>
-      <Screen refreshing={refreshing} onRefresh={refetch} maxWidth={920}>
+      <Screen refreshing={refreshing} onRefresh={refetch}>
         <AppHeader title="Moradores e unidades" back subtitle="Unidades do condomínio" onRefresh={refetch} />
 
         {!loading && unidades.length > 0 ? (
