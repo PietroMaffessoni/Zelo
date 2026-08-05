@@ -5,5 +5,5 @@ export { Card } from './Card';
 export { Input } from './Input';
 export { Avatar } from './Avatar';
 export { Screen, AppHeader, Loading, EmptyState, ErrorState } from './Layout';
-export { Divider, Chip, Segmented, ListItem, Fab, ActionTile } from './controls';
+export { Divider, Chip, Segmented, ListItem, Fab, ActionTile, ActionRow } from './controls';
 export { Skeleton, SkeletonCard, SkeletonList } from './Skeleton';

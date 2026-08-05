@@ -258,3 +258,69 @@ export function ActionTile({
     </Pressable>
   );
 }
+
+/** Ação rápida em formato de linha de menu: ícone à esquerda, título + descrição e
+ *  um chevron à direita. Ocupa a largura toda — pensado para empilhar verticalmente
+ *  (ex.: "Ações rápidas" do morador), diferente do `ActionTile` (grade lado a lado). */
+export function ActionRow({
+  icon,
+  label,
+  descricao,
+  tone = 'primary',
+  onPress,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  descricao?: string;
+  tone?: Tone;
+  onPress: () => void;
+}) {
+  const { palette, tone: tones } = useAppTheme();
+  const t = tones[tone];
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      style={({ pressed, hovered, focused }: any) => [
+        {
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.md,
+          paddingVertical: spacing.md,
+          paddingHorizontal: spacing.md,
+          borderRadius: radius.lg,
+          backgroundColor: hovered ? palette.surfaceAlt : palette.surface,
+          borderWidth: 1,
+          borderColor: hovered ? palette.borderStrong : palette.border,
+          opacity: pressed ? 0.8 : 1,
+        },
+        focusRing(focused, palette.primary),
+      ]}
+    >
+      <View
+        style={{
+          width: 44,
+          height: 44,
+          borderRadius: radius.md,
+          backgroundColor: t.bg,
+          alignItems: 'center',
+          justifyContent: 'center',
+        }}
+      >
+        <Ionicons name={icon} size={22} color={t.fg} />
+      </View>
+      <View style={{ flex: 1 }}>
+        <AppText variant="label" numberOfLines={1} style={{ color: palette.text }}>
+          {label}
+        </AppText>
+        {descricao ? (
+          <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 2 }}>
+            {descricao}
+          </AppText>
+        ) : null}
+      </View>
+      <Ionicons name="chevron-forward" size={18} color={palette.textSubtle} />
+    </Pressable>
+  );
+}

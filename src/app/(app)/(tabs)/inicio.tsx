@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { ZeloMark } from '@/components/Brand';
-import { ActionTile, AppText, Avatar, Badge, Card, ErrorState, Screen, SkeletonList } from '@/components/ui';
+import { ActionRow, ActionTile, AppText, Avatar, Badge, Card, ErrorState, Screen, SkeletonList } from '@/components/ui';
 import { radius, spacing, type Tone } from '@/constants/theme';
 import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
@@ -260,30 +260,47 @@ export default function Inicio() {
       <AppText variant="subtitle" style={{ marginTop: spacing.xl, marginBottom: spacing.md }}>
         Ações rápidas
       </AppText>
-      <View style={{ flexDirection: 'row', gap: spacing.md }}>
-        {gestor ? (
-          <>
-            <ActionTile icon="megaphone" label="Publicar aviso" tone="primary" onPress={() => router.push('/(app)/comunicados/novo')} />
-            <ActionTile icon="construct" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
-            <ActionTile icon="cube" label="Achados" tone="info" onPress={() => router.push('/(app)/achados')} />
-          </>
-        ) : porteiro ? (
-          <>
-            <ActionTile icon="cube" label="Nova encomenda" tone="warning" onPress={() => router.push('/(app)/portaria/encomenda-nova')} />
-            <ActionTile icon="car" label="Veículos" tone="primary" onPress={() => router.push('/(app)/portaria/veiculos')} />
-          </>
-        ) : zelador ? (
-          <>
-            <ActionTile icon="construct" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
-            <ActionTile icon="build" label="Manutenção" tone="primary" onPress={() => router.push('/(app)/manutencao')} />
-          </>
-        ) : (
-          <>
-            <ActionTile icon="construct" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
-            <ActionTile icon="calendar" label="Reservas" tone="info" onPress={() => router.push('/(app)/(tabs)/reservas')} />
-          </>
-        )}
-      </View>
+      {gestor ? (
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          <ActionTile icon="megaphone" label="Publicar aviso" tone="primary" onPress={() => router.push('/(app)/comunicados/novo')} />
+          <ActionTile icon="construct" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
+          <ActionTile icon="cube" label="Achados" tone="info" onPress={() => router.push('/(app)/achados')} />
+        </View>
+      ) : porteiro ? (
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          <ActionTile icon="cube" label="Nova encomenda" tone="warning" onPress={() => router.push('/(app)/portaria/encomenda-nova')} />
+          <ActionTile icon="car" label="Veículos" tone="primary" onPress={() => router.push('/(app)/portaria/veiculos')} />
+        </View>
+      ) : zelador ? (
+        <View style={{ flexDirection: 'row', gap: spacing.md }}>
+          <ActionTile icon="construct" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
+          <ActionTile icon="build" label="Manutenção" tone="primary" onPress={() => router.push('/(app)/manutencao')} />
+        </View>
+      ) : (
+        <View style={{ gap: spacing.sm }}>
+          <ActionRow
+            icon="construct"
+            label="Chamados"
+            descricao="Abrir e acompanhar solicitações"
+            tone="warning"
+            onPress={() => router.push('/(app)/(tabs)/chamados')}
+          />
+          <ActionRow
+            icon="calendar"
+            label="Reservas"
+            descricao="Reservar áreas comuns"
+            tone="info"
+            onPress={() => router.push('/(app)/(tabs)/reservas')}
+          />
+          <ActionRow
+            icon="cash"
+            label="Financeiro"
+            descricao="2ª via de boleto e despesas"
+            tone="success"
+            onPress={() => router.push('/(app)/financeiro')}
+          />
+        </View>
+      )}
 
       {/* Comunicados recentes */}
       <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: spacing.xl, marginBottom: spacing.sm }}>
