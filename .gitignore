@@ -42,7 +42,7 @@ example
 /ios
 /android
 
-# Variáveis de ambiente do CondoOS
+# Variáveis de ambiente do Zelo
 .env
 
 # Build de exportação web

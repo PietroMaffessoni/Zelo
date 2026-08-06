@@ -1,5 +1,5 @@
 /**
- * Tipos de domínio do CondoOS — espelham as tabelas do Supabase.
+ * Tipos de domínio do Zelo — espelham as tabelas do Supabase.
  * Mantidos manualmente em sincronia com supabase/setup.sql.
  */
 
@@ -90,7 +90,7 @@ export type Condominio = {
   uf: string | null;
   endereco: string | null;
   cnpj: string | null;
-  // Administradora que efetua os pagamentos (Caminho A: o CondoOS substitui o
+  // Administradora que efetua os pagamentos (Caminho A: o Zelo substitui o
   // Imodolo e convive com a administradora). Colunas não sensíveis, legíveis por
   // membros (setup.sql seção 8.4).
   administradora?: string | null;

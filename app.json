@@ -1,14 +1,14 @@
 {
   "expo": {
     "name": "Zelo",
-    "slug": "condoos",
+    "slug": "zelo",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "condoos",
+    "scheme": "zelo",
     "userInterfaceStyle": "automatic",
     "ios": {
-      "bundleIdentifier": "com.pitroibas.condoos",
+      "bundleIdentifier": "com.pitroibas.zelo",
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false
       }

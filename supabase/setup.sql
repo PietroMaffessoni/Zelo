@@ -1,5 +1,5 @@
  -- ============================================================================
---  CondoOS — Setup completo do banco de dados (Supabase / PostgreSQL)
+--  Zelo — Setup completo do banco de dados (Supabase / PostgreSQL)
 --  Cole este arquivo inteiro no SQL Editor do seu projeto Supabase e execute.
 --  É seguro rodar mais de uma vez (idempotente).
 -- ============================================================================
@@ -1797,7 +1797,7 @@ create policy eventos_insert on public.chamado_eventos for insert to authenticat
 alter table public.manutencoes add column if not exists itens jsonb not null default '[]';
 
 -- 8.4 Caminho A — administradora e envio de contas ---------------------------
--- O condomínio segue com uma administradora que efetua os pagamentos; o CondoOS
+-- O condomínio segue com uma administradora que efetua os pagamentos; o Zelo
 -- registra a despesa e marca quando ela foi enviada para a administradora pagar.
 alter table public.condominios add column if not exists administradora text;
 alter table public.condominios add column if not exists administradora_contato text;
@@ -1813,5 +1813,25 @@ grant select (administradora, administradora_contato) on public.condominios to a
 -- (nem seguro) reemitir "grant on all tables" aqui: isso reexporia as colunas
 -- de código secreto de condominios que a seção 7.10 acabou de proteger.
 alter table public.lancamentos_financeiros add column if not exists enviado_administradora_em timestamptz;
+
+-- 8.5 Telefone no cadastro ----------------------------------------------------
+-- A tela de criar conta passou a coletar telefone (contato para porteiro/síndico).
+-- Vem via options.data no signUp -> raw_user_meta_data; o trigger copia para o
+-- perfil junto de nome/e-mail. Só grava no insert (não sobrescreve edição feita
+-- depois em /perfil, que é a fonte da verdade a partir dali).
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, nome_completo, telefone, email)
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'nome_completo', ''),
+    nullif(new.raw_user_meta_data->>'telefone', ''),
+    new.email
+  )
+  on conflict (id) do update set email = excluded.email;
+  return new;
+end;
+$$;
 
 -- Fim do setup.

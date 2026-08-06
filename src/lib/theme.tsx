@@ -4,7 +4,7 @@ import { Platform, useColorScheme } from 'react-native';
 
 import { aplicarTema, palette, tone, type ModoTema, type Palette, type Tone } from '@/constants/theme';
 
-const CHAVE_TEMA = 'condoos.tema';
+const CHAVE_TEMA = 'zelo.tema';
 
 /**
  * No web, lê o tema de forma síncrona do localStorage já na primeira renderização.

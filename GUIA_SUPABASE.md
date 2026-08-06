@@ -1,4 +1,4 @@
-# 🚀 Guia de configuração — CondoOS
+# 🚀 Guia de configuração — Zelo
 
 Este guia leva o app do zero até rodando na nuvem. Leva ~10 minutos e **não exige saber programar**.
 
@@ -9,7 +9,7 @@ Este guia leva o app do zero até rodando na nuvem. Leva ~10 minutos e **não ex
 1. Acesse **https://supabase.com** e clique em **Start your project** (login com GitHub ou e-mail).
 2. Clique em **New project**.
 3. Preencha:
-   - **Name:** `condoos` (ou o nome que quiser)
+   - **Name:** `zelo` (ou o nome que quiser)
    - **Database Password:** crie uma senha forte e **guarde-a**.
    - **Region:** escolha **South America (São Paulo)** para menor latência no Brasil.
 4. Clique em **Create new project** e aguarde ~2 minutos até o projeto ficar pronto.
@@ -46,7 +46,7 @@ Por padrão o Supabase exige confirmação de e-mail. Para testar sem fricção:
 2. Copie dois valores:
    - **Project URL** (algo como `https://abcdefgh.supabase.co`)
    - **anon public key** (uma chave longa)
-3. Na pasta **`condoos`**, copie o arquivo **`.env.example`** para **`.env`**.
+3. Na pasta **`zelo`**, copie o arquivo **`.env.example`** para **`.env`**.
 4. Preencha:
    ```
    EXPO_PUBLIC_SUPABASE_URL=https://abcdefgh.supabase.co
@@ -58,7 +58,7 @@ Por padrão o Supabase exige confirmação de e-mail. Para testar sem fricção:
 
 ## Passo 5 — Rodar o app
 
-Dentro da pasta `condoos`, no terminal:
+Dentro da pasta `zelo`, no terminal:
 
 ```bash
 npm install      # só na primeira vez

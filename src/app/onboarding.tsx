@@ -138,7 +138,7 @@ export default function Onboarding() {
   return (
     <Screen>
       <View style={{ marginTop: spacing.xxl, marginBottom: spacing.lg }}>
-        <AppText variant="title">Olá, {profile?.nome_completo?.split(' ')[0] || 'bem-vindo'} 👋</AppText>
+        <AppText variant="title">Bem-vindo, {profile?.nome_completo || ''}</AppText>
         <AppText color="muted" style={{ marginTop: spacing.xs }}>
           Vamos conectar você a um condomínio para começar.
         </AppText>

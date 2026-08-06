@@ -5,7 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Membership, Papel, Profile, Vinculo } from '@/lib/types';
 
-const CHAVE_CONDOMINIO = 'condoos.condominio_atual';
+const CHAVE_CONDOMINIO = 'zelo.condominio_atual';
 
 type AuthState = {
   ready: boolean;
@@ -20,7 +20,7 @@ type AuthState = {
   papel: Papel | null;
 
   signIn: (email: string, senha: string) => Promise<{ error?: string }>;
-  signUp: (nome: string, email: string, senha: string) => Promise<{ error?: string }>;
+  signUp: (nome: string, email: string, senha: string, telefone?: string) => Promise<{ error?: string }>;
   resetarSenha: (email: string) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   selecionarCondominio: (id: string) => Promise<void>;
@@ -132,11 +132,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error ? traduzErro(error.message) : undefined };
   }, []);
 
-  const signUp: AuthState['signUp'] = useCallback(async (nome, email, senha) => {
+  const signUp: AuthState['signUp'] = useCallback(async (nome, email, senha, telefone) => {
     const { error } = await supabase.auth.signUp({
       email: email.trim(),
       password: senha,
-      options: { data: { nome_completo: nome.trim() } },
+      options: { data: { nome_completo: nome.trim(), telefone: telefone?.trim() || null } },
     });
     return { error: error ? traduzErro(error.message) : undefined };
   }, []);

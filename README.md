@@ -1,4 +1,4 @@
-# CondoOS — o sistema operacional do condomínio
+# Zelo — o sistema operacional do condomínio
 
 Plataforma completa de gestão de condomínios: **um único app** para moradores e síndicos,
 rodando em **Android, iOS e navegador** a partir do mesmo código.
@@ -39,7 +39,7 @@ Cada usuário pode pertencer a vários condomínios, com papéis distintos (**mo
 **admin**, **portaria**). As permissões são garantidas no banco, não só na interface.
 
 ```
-condoos/
+zelo/
 ├── src/
 │   ├── app/            # telas (rotas por arquivo)
 │   │   ├── (auth)/     # login, cadastro
