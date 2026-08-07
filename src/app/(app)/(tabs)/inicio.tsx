@@ -76,26 +76,26 @@ export default function Inicio() {
       </View>
 
       {/* Cartão do condomínio */}
-      <Card style={{ backgroundColor: palette.primary, borderColor: palette.primary }}>
+      <Card>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
           <View
             style={{
               width: 44,
               height: 44,
               borderRadius: radius.md,
-              backgroundColor: 'rgba(255,255,255,0.18)',
+              backgroundColor: palette.primarySoft,
               alignItems: 'center',
               justifyContent: 'center',
             }}
           >
-            <ZeloMark height={26} color={palette.white} windowColor={palette.primary} />
+            <ZeloMark height={26} color={palette.primary} windowColor={palette.surface} />
           </View>
           <View style={{ flex: 1 }}>
-            <AppText style={{ color: palette.white }} variant="subtitle" numberOfLines={1}>
+            <AppText variant="subtitle" numberOfLines={1}>
               {cond?.nome ?? 'Meu condomínio'}
             </AppText>
             {cond?.cidade ? (
-              <AppText style={{ color: 'rgba(255,255,255,0.8)' }} variant="caption">
+              <AppText color="muted" variant="caption">
                 {cond.cidade}
                 {cond.uf ? ` · ${cond.uf}` : ''}
               </AppText>
@@ -108,24 +108,24 @@ export default function Inicio() {
               marginTop: spacing.md,
               paddingTop: spacing.md,
               borderTopWidth: 1,
-              borderTopColor: 'rgba(255,255,255,0.2)',
+              borderTopColor: palette.border,
               flexDirection: 'row',
               alignItems: 'center',
               justifyContent: 'space-between',
             }}
           >
-            <AppText style={{ color: 'rgba(255,255,255,0.85)' }} variant="caption">
+            <AppText color="muted" variant="caption">
               Código para moradores entrarem
             </AppText>
             <View
               style={{
-                backgroundColor: 'rgba(255,255,255,0.2)',
+                backgroundColor: palette.primarySoft,
                 paddingHorizontal: spacing.md,
                 paddingVertical: 4,
                 borderRadius: radius.sm,
               }}
             >
-              <AppText style={{ color: palette.white, fontWeight: '700', letterSpacing: 2 }}>
+              <AppText style={{ color: palette.primary, fontWeight: '700', letterSpacing: 2 }}>
                 {cond.codigo_convite}
               </AppText>
             </View>

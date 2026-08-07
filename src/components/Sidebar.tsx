@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter, type Href } from 'expo-router';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { ZeloWordmark } from '@/components/Brand';
@@ -9,8 +10,10 @@ import { AppText } from '@/components/ui/Text';
 import { radius, SIDEBAR_LARGURA, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
+import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
 import { papelLabel } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
+import { useToast } from '@/lib/toast';
 import { isGestor as ehGestor, veManutencao } from '@/lib/types';
 
 type Item = { label: string; icon: keyof typeof Ionicons.glyphMap; href: Href; match: string };
@@ -110,6 +113,8 @@ export function Sidebar() {
           </>
         ) : null}
 
+        {gestor ? <CodigosAcesso /> : null}
+
         <View style={{ flex: 1, minHeight: spacing.lg }} />
 
         <Pressable
@@ -143,6 +148,162 @@ export function Sidebar() {
           onPress={sair}
         />
       </ScrollView>
+    </View>
+  );
+}
+
+/** Códigos de acesso do condomínio. No mobile eles moram na aba "Mais"; como no
+ *  desktop essa aba não existe, a sidebar precisa expô-los — sem isso o síndico
+ *  não tem por onde gerar o código da portaria nem o da zeladoria. */
+function CodigosAcesso() {
+  const { condominioId, membershipAtual } = useAuth();
+  const condominio = membershipAtual?.condominio;
+
+  return (
+    <>
+      <SectionLabel>CÓDIGOS DE ACESSO</SectionLabel>
+      <CodigoLinha icon="key-outline" label="Convite (morador)" codigo={condominio?.codigo_convite} />
+      <CodigoLinha
+        icon="shield-checkmark-outline"
+        label="Portaria"
+        codigo={condominio?.codigo_portaria}
+        gerar={condominioId ? () => gerarCodigoPortaria(condominioId) : undefined}
+      />
+      <CodigoLinha
+        icon="construct-outline"
+        label="Zeladoria"
+        codigo={condominio?.codigo_zelador}
+        gerar={condominioId ? () => gerarCodigoZelador(condominioId) : undefined}
+      />
+    </>
+  );
+}
+
+/**
+ * Uma linha de código. Toque copia; gerar só acontece quando ainda não há código,
+ * ou pelo botão de reciclar — que confirma antes, porque as RPCs `gerar_codigo_*`
+ * sobrescrevem o código anterior e invalidam o que já foi distribuído.
+ */
+function CodigoLinha({
+  icon,
+  label,
+  codigo,
+  gerar,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  codigo?: string | null;
+  /** Ausente no código de convite, que nasce junto com o condomínio. */
+  gerar?: () => Promise<string>;
+}) {
+  const { palette } = useAppTheme();
+  const { recarregar } = useAuth();
+  const confirmar = useConfirm();
+  const toast = useToast();
+  const [ocupado, setOcupado] = useState(false);
+
+  async function executarGeracao() {
+    if (!gerar || ocupado) return;
+    setOcupado(true);
+    try {
+      await gerar();
+      await recarregar();
+      toast.sucesso(`Código de ${label.toLowerCase()} gerado.`);
+    } catch (e) {
+      // O finally garante que a linha nunca fica presa em "Gerando..." — é o que
+      // acontece quando a RPC não existe (seção do setup.sql ainda não aplicada).
+      toast.erro(e instanceof Error ? e.message : 'Não foi possível gerar o código.');
+    } finally {
+      setOcupado(false);
+    }
+  }
+
+  async function regerar() {
+    const ok = await confirmar({
+      titulo: `Gerar novo código de ${label.toLowerCase()}?`,
+      mensagem:
+        'O código atual para de funcionar imediatamente. Quem já entrou mantém o acesso, mas quem ainda não usou vai precisar do código novo.',
+      confirmar: 'Gerar novo',
+      cancelar: 'Cancelar',
+      destrutivo: true,
+    });
+    if (ok) await executarGeracao();
+  }
+
+  async function aoTocar() {
+    if (ocupado) return;
+    if (!codigo) return executarGeracao();
+    // A sidebar só roda no web, então a Clipboard API do navegador resolve —
+    // não compensa trazer expo-clipboard só por isso. Sem permissão, o toast
+    // mostra o código por mais tempo para copiar à mão.
+    const clipboard = (globalThis as any)?.navigator?.clipboard;
+    try {
+      if (!clipboard?.writeText) throw new Error('sem clipboard');
+      await clipboard.writeText(codigo);
+      toast.sucesso('Código copiado.');
+    } catch {
+      toast.show(codigo, { duracao: 6000 });
+    }
+  }
+
+  const interativo = !!codigo || !!gerar;
+  const texto = ocupado ? 'Gerando...' : (codigo ?? (gerar ? 'Gerar código' : '—'));
+
+  return (
+    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+      <Pressable
+        onPress={aoTocar}
+        disabled={!interativo}
+        accessibilityRole="button"
+        accessibilityLabel={codigo ? `Copiar código de ${label}` : `Gerar código de ${label}`}
+        style={({ hovered, focused }: any) => [
+          {
+            flex: 1,
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: spacing.md,
+            paddingHorizontal: spacing.sm,
+            paddingVertical: 8,
+            borderRadius: radius.md,
+            backgroundColor: hovered && interativo ? palette.surfaceAlt : 'transparent',
+          },
+          focusRing(focused, palette.primary, true),
+        ]}
+      >
+        <Ionicons name={icon} size={20} color={palette.textMuted} />
+        <View style={{ flex: 1 }}>
+          <AppText variant="caption" color="subtle" numberOfLines={1}>
+            {label}
+          </AppText>
+          <AppText
+            variant="label"
+            numberOfLines={1}
+            style={{ color: codigo && !ocupado ? palette.text : palette.textSubtle, letterSpacing: codigo ? 1 : 0 }}
+          >
+            {texto}
+          </AppText>
+        </View>
+        {codigo && !ocupado ? <Ionicons name="copy-outline" size={16} color={palette.textSubtle} /> : null}
+      </Pressable>
+
+      {codigo && gerar ? (
+        <Pressable
+          onPress={regerar}
+          disabled={ocupado}
+          accessibilityRole="button"
+          accessibilityLabel={`Gerar novo código de ${label}`}
+          style={({ hovered, focused }: any) => [
+            {
+              padding: spacing.sm,
+              borderRadius: radius.md,
+              backgroundColor: hovered ? palette.surfaceAlt : 'transparent',
+            },
+            focusRing(focused, palette.primary, true),
+          ]}
+        >
+          <Ionicons name="refresh-outline" size={16} color={palette.textSubtle} />
+        </Pressable>
+      ) : null}
     </View>
   );
 }
