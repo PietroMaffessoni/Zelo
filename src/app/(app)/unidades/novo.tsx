@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -6,9 +5,10 @@ import { AppHeader, AppText, Button, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarUnidade } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 
 export default function NovaUnidade() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId } = useAuth();
   const [bloco, setBloco] = useState('');
   const [numero, setNumero] = useState('');
@@ -30,7 +30,7 @@ export default function NovaUnidade() {
         fracao_ideal: fracaoIdeal.trim() ? Number(fracaoIdeal.replace(',', '.')) : null,
         observacoes: observacoes.trim() || null,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message?.includes('duplicate') ? 'Essa unidade já existe.' : e?.message ?? 'Não foi possível cadastrar.');
       setSalvando(false);

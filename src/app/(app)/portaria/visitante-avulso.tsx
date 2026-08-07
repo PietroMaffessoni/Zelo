@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -7,10 +6,11 @@ import { spacing } from '@/constants/theme';
 import { UnidadeSeletor } from '@/components/UnidadeSeletor';
 import { useAuth } from '@/lib/auth';
 import { listarUnidades, registrarEntradaVisitante } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 import { useFetch } from '@/lib/useFetch';
 
 export default function VisitanteAvulso() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const [unidadeId, setUnidadeId] = useState<string | null>(null);
   const [nome, setNome] = useState('');
@@ -36,7 +36,7 @@ export default function VisitanteAvulso() {
         observacao: observacao.trim() || null,
         registrado_por: user.id,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível registrar a entrada.');
       setSalvando(false);

@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import {
   ActivityIndicator,
@@ -16,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { radius, spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { AppText } from '@/components/ui/Text';
+import { useVoltar } from '@/lib/navegacao';
 import { useAppTheme } from '@/lib/theme';
 
 // Largura única de conteúdo para TODAS as telas — mantém a coluna com a mesma
@@ -103,7 +103,7 @@ export function AppHeader({
   /** Só no web: exibe um botão de atualizar (pull-to-refresh não existe no navegador). */
   onRefresh?: () => void;
 }) {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { palette } = useAppTheme();
 
   // Web: título da aba do navegador por rota (antes toda página ficava "Zelo").
@@ -125,7 +125,7 @@ export function AppHeader({
     >
       {back ? (
         <Pressable
-          onPress={() => (onBack ? onBack() : router.back())}
+          onPress={() => (onBack ? onBack() : voltar())}
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Voltar"

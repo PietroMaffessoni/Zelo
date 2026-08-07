@@ -61,19 +61,34 @@ function unwrap<T>({ data, error }: { data: T | null; error: any }): T {
 }
 
 // ---------------------------------------------------------------- Comunicados
+/**
+ * Grupo de destaque: fixado+urgente > fixado > urgente > demais. Um urgente sobe
+ * acima de qualquer aviso comum, por mais recente que o outro seja, e a urgência
+ * também desempata entre os que o síndico fixou à mão.
+ */
+function grupoComunicado(c: Comunicado): number {
+  const urgente = c.prioridade === 'alta';
+  if (c.fixado) return urgente ? 0 : 1;
+  return urgente ? 2 : 3;
+}
+
 export async function listarComunicados(condominioId: string, userId: string): Promise<Comunicado[]> {
   const [comRes, leiRes] = await Promise.all([
     supabase
       .from('comunicados')
       .select('*, autor:profiles!autor_id(*)')
       .eq('condominio_id', condominioId)
-      .order('fixado', { ascending: false })
       .order('created_at', { ascending: false }),
     supabase.from('comunicado_leituras').select('comunicado_id').eq('user_id', userId),
   ]);
   const comunicados = unwrap(comRes) as Comunicado[];
   const lidos = new Set((leiRes.data ?? []).map((l: any) => l.comunicado_id));
-  return comunicados.map((c) => ({ ...c, lido: lidos.has(c.id) }));
+  // O agrupamento não é uma coluna, então não dá para pedir ao PostgREST: ordena
+  // aqui. O sort do JS é estável, então dentro de cada grupo vale o created_at
+  // desc que já veio do servidor.
+  return comunicados
+    .map((c) => ({ ...c, lido: lidos.has(c.id) }))
+    .sort((a, b) => grupoComunicado(a) - grupoComunicado(b));
 }
 
 export async function getComunicado(id: string): Promise<Comunicado> {
@@ -96,6 +111,11 @@ export async function criarComunicado(input: {
   fixado?: boolean;
 }) {
   return unwrap(await supabase.from('comunicados').insert(input).select('*').single());
+}
+
+/** Fixa/desafixa um comunicado no topo da lista (gestor). */
+export async function fixarComunicado(id: string, fixado: boolean) {
+  return unwrap(await supabase.from('comunicados').update({ fixado }).eq('id', id).select('*').single());
 }
 
 // ------------------------------------------------------------------- Chamados

@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -7,12 +6,13 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarVeiculo } from '@/lib/db';
 import { tipoVeiculoLabel } from '@/lib/labels';
+import { useVoltar } from '@/lib/navegacao';
 import type { TipoVeiculo } from '@/lib/types';
 
 const tipos: TipoVeiculo[] = ['carro', 'moto', 'outro'];
 
 export default function NovoVeiculo() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user, membershipAtual } = useAuth();
   const unidadeId = membershipAtual?.unidade_id ?? null;
 
@@ -40,7 +40,7 @@ export default function NovoVeiculo() {
         tipo,
         vaga: vaga.trim() || null,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message?.includes('duplicate') ? 'Esse veículo já está cadastrado.' : e?.message ?? 'Não foi possível cadastrar.');
       setSalvando(false);

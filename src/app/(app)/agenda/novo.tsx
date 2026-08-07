@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -8,12 +7,13 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarEvento } from '@/lib/db';
 import { opcoes, tipoEventoLabel } from '@/lib/labels';
+import { useVoltar } from '@/lib/navegacao';
 import { type TipoEvento } from '@/lib/types';
 
 const HORAS = Array.from({ length: 17 }, (_, i) => i + 7);
 
 export default function NovoEvento() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const [tipo, setTipo] = useState<TipoEvento>('evento');
   const [titulo, setTitulo] = useState('');
@@ -49,7 +49,7 @@ export default function NovoEvento() {
         local: local.trim() || null,
         criado_por: user.id,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível salvar o evento.');
       setSalvando(false);

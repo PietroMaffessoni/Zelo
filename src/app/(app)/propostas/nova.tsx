@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -6,9 +5,10 @@ import { AppHeader, AppText, Button, Card, Input, Screen } from '@/components/ui
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarProposta } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 
 export default function NovaProposta() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user, membershipAtual } = useAuth();
   const [titulo, setTitulo] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -29,7 +29,7 @@ export default function NovaProposta() {
         titulo: titulo.trim(),
         descricao: descricao.trim(),
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível enviar a proposta.');
       setSalvando(false);

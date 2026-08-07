@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -8,11 +7,12 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarInfracao, listarUnidades } from '@/lib/db';
 import { motivoInfracao, opcoes } from '@/lib/labels';
+import { useVoltar } from '@/lib/navegacao';
 import { type MotivoInfracao, type TipoInfracao } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function NovaInfracao() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const { data: unidades, loading } = useFetch(async () => (condominioId ? listarUnidades(condominioId) : []), [condominioId]);
 
@@ -42,7 +42,7 @@ export default function NovaInfracao() {
         valor: valorNum,
         aplicada_por: user.id,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível aplicar a infração.');
       setSalvando(false);

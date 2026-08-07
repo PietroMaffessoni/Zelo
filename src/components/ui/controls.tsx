@@ -24,11 +24,14 @@ export function Chip({
   selected,
   onPress,
   icon,
+  shape = 'pill',
 }: {
   label: string;
   selected?: boolean;
   onPress?: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
+  /** `box` usa o mesmo arredondamento dos campos de formulário. */
+  shape?: 'pill' | 'box';
 }) {
   const { palette } = useAppTheme();
   return (
@@ -46,7 +49,7 @@ export function Chip({
           minHeight: 40,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
-          borderRadius: radius.full,
+          borderRadius: shape === 'box' ? radius.md : radius.full,
           borderWidth: 1.5,
           borderColor: selected ? palette.primary : hovered ? palette.borderStrong : palette.border,
           backgroundColor: selected ? palette.primarySoft : hovered ? palette.surfaceAlt : palette.surface,
@@ -69,10 +72,12 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
+  shape = 'pill',
 }: {
   options: { value: T; label: string }[];
   value: T;
   onChange: (v: T) => void;
+  shape?: 'pill' | 'box';
 }) {
   return (
     <ScrollView
@@ -81,7 +86,13 @@ export function Segmented<T extends string>({
       contentContainerStyle={{ gap: spacing.sm, paddingVertical: 2 }}
     >
       {options.map((o) => (
-        <Chip key={o.value} label={o.label} selected={o.value === value} onPress={() => onChange(o.value)} />
+        <Chip
+          key={o.value}
+          label={o.label}
+          selected={o.value === value}
+          onPress={() => onChange(o.value)}
+          shape={shape}
+        />
       ))}
     </ScrollView>
   );

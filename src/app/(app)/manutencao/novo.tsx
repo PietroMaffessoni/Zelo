@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
@@ -8,6 +7,7 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarEquipamento } from '@/lib/db';
 import { categoriaEquipamento, opcoes } from '@/lib/labels';
+import { useVoltar } from '@/lib/navegacao';
 import { type CategoriaEquipamento } from '@/lib/types';
 
 const PERIODOS = [
@@ -18,7 +18,7 @@ const PERIODOS = [
 ];
 
 export default function NovoEquipamento() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId } = useAuth();
   const [nome, setNome] = useState('');
   const [categoria, setCategoria] = useState<CategoriaEquipamento>('elevador');
@@ -46,7 +46,7 @@ export default function NovoEquipamento() {
         periodicidade_dias: periodicidade,
         proxima_manutencao: proximaData,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível salvar.');
       setSalvando(false);

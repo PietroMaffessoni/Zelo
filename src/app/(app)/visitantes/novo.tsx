@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -7,9 +6,10 @@ import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarVisitanteAutorizado } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 
 export default function NovoVisitante() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user, membershipAtual } = useAuth();
   const unidadeId = membershipAtual?.unidade_id ?? null;
 
@@ -50,7 +50,7 @@ export default function NovoVisitante() {
         data_inicio: dataInicio,
         data_fim: variosDias ? dataFim : null,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível autorizar o visitante.');
       setSalvando(false);

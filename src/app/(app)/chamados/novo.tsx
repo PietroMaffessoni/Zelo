@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -9,6 +8,7 @@ import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarChamado } from '@/lib/db';
 import { hapticError, hapticSuccess } from '@/lib/haptics';
+import { useVoltar } from '@/lib/navegacao';
 import { escolherImagem, enviarArquivo } from '@/lib/storage';
 import * as L from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
@@ -27,7 +27,7 @@ const prioridades: { value: Prioridade; label: string }[] = [
 ];
 
 export default function NovoChamado() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { palette } = useAppTheme();
   const toast = useToast();
   const { condominioId, user, membershipAtual } = useAuth();
@@ -74,7 +74,7 @@ export default function NovoChamado() {
       });
       toast.sucesso('Chamado aberto ✓');
       hapticSuccess();
-      router.back();
+      voltar();
     } catch (e: any) {
       toast.erro(e?.message ?? 'Não foi possível abrir o chamado.');
       hapticError();

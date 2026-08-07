@@ -1,5 +1,5 @@
 import dayjs from 'dayjs';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -9,6 +9,7 @@ import { useAuth } from '@/lib/auth';
 import { criarReserva, listarAreas, reservasDaArea } from '@/lib/db';
 import { formatMoeda } from '@/lib/format';
 import { hapticError, hapticSuccess } from '@/lib/haptics';
+import { useVoltar } from '@/lib/navegacao';
 import { useAppTheme } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
 import { useFetch } from '@/lib/useFetch';
@@ -22,7 +23,7 @@ function horaDe(valor: string | null | undefined, padrao: number): number {
 }
 
 export default function NovaReserva() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const toast = useToast();
   const { palette, tone } = useAppTheme();
   const { area: areaParam } = useLocalSearchParams<{ area?: string }>();
@@ -153,7 +154,7 @@ export default function NovaReserva() {
       });
       toast.sucesso(areaSelecionada.requer_aprovacao ? 'Reserva enviada para aprovação ✓' : 'Reserva confirmada ✓');
       hapticSuccess();
-      router.back();
+      voltar();
     } catch (e: any) {
       toast.erro(e?.message ?? 'Não foi possível reservar.');
       hapticError();

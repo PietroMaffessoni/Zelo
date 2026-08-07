@@ -36,6 +36,7 @@ export default function AssembleiasLista() {
         <Segmented
           value={filtro}
           onChange={setFiltro}
+          shape="box"
           options={[
             { value: 'proximas', label: 'Próximas' },
             { value: 'encerradas', label: 'Encerradas' },

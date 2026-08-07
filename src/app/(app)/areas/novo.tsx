@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -6,9 +5,10 @@ import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarArea } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 
 export default function NovaArea() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId } = useAuth();
   const [nome, setNome] = useState('');
   const [descricao, setDescricao] = useState('');
@@ -34,7 +34,7 @@ export default function NovaArea() {
         taxa_uso: taxaUso.trim() ? Number(taxaUso.replace(',', '.')) : 0,
         limite_mensal_por_unidade: limite.trim() ? Number(limite) : null,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível cadastrar a área.');
       setSalvando(false);

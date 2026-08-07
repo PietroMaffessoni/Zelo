@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import dayjs from 'dayjs';
-import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
@@ -9,10 +8,11 @@ import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarAchado } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 import { enviarArquivo, escolherImagem } from '@/lib/storage';
 
 export default function NovoAchado() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const [foto, setFoto] = useState<string | null>(null);
   const [titulo, setTitulo] = useState('');
@@ -55,7 +55,7 @@ export default function NovoAchado() {
         foto_url,
         data_encontrado: dia,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível registrar.');
       setSalvando(false);

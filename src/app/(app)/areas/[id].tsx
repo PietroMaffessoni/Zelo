@@ -1,15 +1,16 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
 import { AppHeader, AppText, Button, Chip, Input, Loading, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { atualizarArea, getArea } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 import { useFetch } from '@/lib/useFetch';
 
 export default function EditarArea() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
+  const voltar = useVoltar();
   const { data: area, loading } = useFetch(() => getArea(id), [id]);
 
   const [nome, setNome] = useState('');
@@ -47,7 +48,7 @@ export default function EditarArea() {
         taxa_uso: taxaUso.trim() ? Number(taxaUso.replace(',', '.')) : 0,
         limite_mensal_por_unidade: limite.trim() ? Number(limite) : null,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível salvar.');
       setSalvando(false);

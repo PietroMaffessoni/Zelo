@@ -1,5 +1,4 @@
 import dayjs from 'dayjs';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -9,6 +8,7 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarLancamento, listarUnidades } from '@/lib/db';
 import { categoriaFinanceira } from '@/lib/labels';
+import { useVoltar } from '@/lib/navegacao';
 import { enviarArquivo, escolherDocumento } from '@/lib/storage';
 import { type CategoriaFinanceira, type TipoLancamento } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
@@ -25,7 +25,7 @@ const categorias: CategoriaFinanceira[] = [
 ];
 
 export default function NovoLancamento() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const [tipo, setTipo] = useState<TipoLancamento>('boleto');
   const [unidadeId, setUnidadeId] = useState<string | null>(null);
@@ -70,7 +70,7 @@ export default function NovoLancamento() {
         observacao: observacao.trim() || null,
         criado_por: user.id,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível salvar o lançamento.');
       setSalvando(false);

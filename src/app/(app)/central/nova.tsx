@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -6,6 +5,7 @@ import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarSolicitacao } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 import * as L from '@/lib/labels';
 import type { SolicitacaoCategoria } from '@/lib/types';
 
@@ -15,7 +15,7 @@ const categorias = (Object.keys(L.solicitacaoCategoria) as SolicitacaoCategoria[
 }));
 
 export default function NovaSolicitacao() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const [categoria, setCategoria] = useState<SolicitacaoCategoria>('boleto');
   const [titulo, setTitulo] = useState('');
@@ -36,7 +36,7 @@ export default function NovaSolicitacao() {
         titulo: titulo.trim(),
         descricao: descricao.trim(),
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível enviar.');
       setSalvando(false);

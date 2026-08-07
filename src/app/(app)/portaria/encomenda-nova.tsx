@@ -1,6 +1,5 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
@@ -9,11 +8,12 @@ import { UnidadeSeletor } from '@/components/UnidadeSeletor';
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarEncomenda, listarUnidades } from '@/lib/db';
+import { useVoltar } from '@/lib/navegacao';
 import { enviarArquivo, escolherImagem } from '@/lib/storage';
 import { useFetch } from '@/lib/useFetch';
 
 export default function NovaEncomenda() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const [unidadeId, setUnidadeId] = useState<string | null>(null);
   const [descricao, setDescricao] = useState('');
@@ -45,7 +45,7 @@ export default function NovaEncomenda() {
         foto_url,
         registrado_por: user.id,
       });
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível registrar a encomenda.');
       setSalvando(false);

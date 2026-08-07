@@ -1,4 +1,3 @@
-import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
@@ -7,24 +6,24 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarComunicado } from '@/lib/db';
 import { hapticError, hapticSuccess } from '@/lib/haptics';
+import { useVoltar } from '@/lib/navegacao';
 import { useAppTheme } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
 import type { Prioridade } from '@/lib/types';
 
 const prioridades: { value: Prioridade; label: string }[] = [
   { value: 'baixa', label: 'Informativo' },
-  { value: 'media', label: 'Normal' },
   { value: 'alta', label: 'Urgente' },
 ];
 
 export default function NovoComunicado() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { palette } = useAppTheme();
   const toast = useToast();
   const { condominioId, user } = useAuth();
   const [titulo, setTitulo] = useState('');
   const [corpo, setCorpo] = useState('');
-  const [prioridade, setPrioridade] = useState<Prioridade>('media');
+  const [prioridade, setPrioridade] = useState<Prioridade>('baixa');
   const [fixado, setFixado] = useState(false);
   const [erros, setErros] = useState<{ titulo?: string; corpo?: string }>({});
   const [salvando, setSalvando] = useState(false);
@@ -51,7 +50,7 @@ export default function NovoComunicado() {
       });
       toast.sucesso('Comunicado publicado ✓');
       hapticSuccess();
-      router.back();
+      voltar();
     } catch (e: any) {
       toast.erro(e?.message ?? 'Não foi possível publicar.');
       hapticError();
@@ -92,7 +91,7 @@ export default function NovoComunicado() {
           <AppText variant="label" color="muted">
             Prioridade
           </AppText>
-          <Segmented options={prioridades} value={prioridade} onChange={setPrioridade} />
+          <Segmented options={prioridades} value={prioridade} onChange={setPrioridade} shape="box" />
         </View>
 
         <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

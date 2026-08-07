@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -7,13 +7,14 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarDocumento, vincularAta } from '@/lib/db';
 import { categoriaDocumento } from '@/lib/labels';
+import { useVoltar } from '@/lib/navegacao';
 import { enviarArquivo, escolherDocumento } from '@/lib/storage';
 import { type CategoriaDocumento } from '@/lib/types';
 
 const categorias: CategoriaDocumento[] = ['convencao', 'regimento_interno', 'ata', 'edital', 'financeiro', 'outros'];
 
 export default function NovoDocumento() {
-  const router = useRouter();
+  const voltar = useVoltar();
   const { assembleiaId, categoria: categoriaParam } = useLocalSearchParams<{ assembleiaId?: string; categoria?: CategoriaDocumento }>();
   const { condominioId, user } = useAuth();
   const [categoria, setCategoria] = useState<CategoriaDocumento>(assembleiaId ? 'ata' : categoriaParam ?? 'convencao');
@@ -48,7 +49,7 @@ export default function NovoDocumento() {
         publicado_por: user.id,
       });
       if (assembleiaId) await vincularAta(assembleiaId, documento.id);
-      router.back();
+      voltar();
     } catch (e: any) {
       setErro(e?.message ?? 'Não foi possível publicar o documento.');
       setSalvando(false);
