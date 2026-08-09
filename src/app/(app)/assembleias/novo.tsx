@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -7,6 +6,7 @@ import { AppHeader, AppText, Button, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarAssembleia } from '@/lib/db';
+import { mascaraData, mascaraHora, parseData } from '@/lib/format';
 
 export default function NovaAssembleia() {
   const router = useRouter();
@@ -23,7 +23,7 @@ export default function NovaAssembleia() {
 
   async function salvar() {
     if (!titulo.trim()) return setErro('Informe o título da assembleia.');
-    const dataHora = dayjs(`${data} ${hora}`, 'DD/MM/YYYY HH:mm', true);
+    const dataHora = parseData(data, hora);
     if (!dataHora.isValid()) return setErro('Informe data e hora válidas (DD/MM/AAAA e HH:MM).');
     if (!condominioId || !user) return;
 
@@ -55,10 +55,24 @@ export default function NovaAssembleia() {
         <Input label="Descrição (opcional)" placeholder="Contexto da convocação..." value={descricao} onChangeText={setDescricao} multiline />
         <View style={{ flexDirection: 'row', gap: spacing.md }}>
           <View style={{ flex: 1 }}>
-            <Input label="Data" placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" value={data} onChangeText={setData} />
+            <Input
+              label="Data"
+              placeholder="DD/MM/AAAA"
+              keyboardType="number-pad"
+              maxLength={10}
+              value={data}
+              onChangeText={(v) => setData(mascaraData(v))}
+            />
           </View>
           <View style={{ flex: 1 }}>
-            <Input label="Hora" placeholder="HH:MM" keyboardType="numbers-and-punctuation" value={hora} onChangeText={setHora} />
+            <Input
+              label="Hora"
+              placeholder="HH:MM"
+              keyboardType="number-pad"
+              maxLength={5}
+              value={hora}
+              onChangeText={(v) => setHora(mascaraHora(v))}
+            />
           </View>
         </View>
         <Input label="Local (opcional)" placeholder="Ex.: Salão de festas" value={local} onChangeText={setLocal} />

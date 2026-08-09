@@ -7,6 +7,7 @@ import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { gerarBoletosMensais } from '@/lib/db';
+import { mascaraCompetencia, mascaraData, parseData } from '@/lib/format';
 import { categoriaFinanceira } from '@/lib/labels';
 import { type CategoriaFinanceira } from '@/lib/types';
 
@@ -27,7 +28,7 @@ export default function GerarBoletosMensais() {
     if (!descricao.trim()) return setErro('Descreva a cobrança.');
     const valorNumero = Number(valor.replace(',', '.'));
     if (!valor || Number.isNaN(valorNumero) || valorNumero <= 0) return setErro('Informe um valor válido.');
-    const dataVencimento = dayjs(vencimento, 'DD/MM/YYYY', true);
+    const dataVencimento = parseData(vencimento);
     if (!dataVencimento.isValid()) return setErro('Informe o vencimento no formato DD/MM/AAAA.');
     if (!condominioId) return;
 
@@ -68,10 +69,24 @@ export default function GerarBoletosMensais() {
             <Input label="Valor (R$)" placeholder="350,00" keyboardType="decimal-pad" value={valor} onChangeText={setValor} />
           </View>
           <View style={{ flex: 1 }}>
-            <Input label="Vencimento" placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" value={vencimento} onChangeText={setVencimento} />
+            <Input
+              label="Vencimento"
+              placeholder="DD/MM/AAAA"
+              keyboardType="number-pad"
+              maxLength={10}
+              value={vencimento}
+              onChangeText={(v) => setVencimento(mascaraData(v))}
+            />
           </View>
         </View>
-        <Input label="Competência (opcional)" placeholder="MM/AAAA" value={competencia} onChangeText={setCompetencia} />
+        <Input
+          label="Competência (opcional)"
+          placeholder="MM/AAAA"
+          keyboardType="number-pad"
+          maxLength={7}
+          value={competencia}
+          onChangeText={(v) => setCompetencia(mascaraCompetencia(v))}
+        />
 
         {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
 

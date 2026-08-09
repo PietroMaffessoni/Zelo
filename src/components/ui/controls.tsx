@@ -18,20 +18,18 @@ export function Divider({ style }: { style?: ViewStyle }) {
   return <View style={[{ height: 1, backgroundColor: palette.border }, style]} />;
 }
 
-/** Pílula selecionável (categorias, filtros). */
+/** Opção selecionável (categorias, filtros). Usa o mesmo arredondamento dos
+ *  campos de formulário (`radius.md`) para ficar igual aos campos de texto. */
 export function Chip({
   label,
   selected,
   onPress,
   icon,
-  shape = 'pill',
 }: {
   label: string;
   selected?: boolean;
   onPress?: () => void;
   icon?: keyof typeof Ionicons.glyphMap;
-  /** `box` usa o mesmo arredondamento dos campos de formulário. */
-  shape?: 'pill' | 'box';
 }) {
   const { palette } = useAppTheme();
   return (
@@ -49,7 +47,7 @@ export function Chip({
           minHeight: 40,
           paddingHorizontal: spacing.md,
           paddingVertical: spacing.sm,
-          borderRadius: shape === 'box' ? radius.md : radius.full,
+          borderRadius: radius.md,
           borderWidth: 1.5,
           borderColor: selected ? palette.primary : hovered ? palette.borderStrong : palette.border,
           backgroundColor: selected ? palette.primarySoft : hovered ? palette.surfaceAlt : palette.surface,
@@ -72,12 +70,10 @@ export function Segmented<T extends string>({
   options,
   value,
   onChange,
-  shape = 'pill',
 }: {
   options: { value: T; label: string }[];
   value: T;
   onChange: (v: T) => void;
-  shape?: 'pill' | 'box';
 }) {
   return (
     <ScrollView
@@ -91,7 +87,6 @@ export function Segmented<T extends string>({
           label={o.label}
           selected={o.value === value}
           onPress={() => onChange(o.value)}
-          shape={shape}
         />
       ))}
     </ScrollView>

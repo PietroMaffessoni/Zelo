@@ -157,7 +157,7 @@ export default function UnidadeDetalhe() {
                         style={{
                           paddingHorizontal: spacing.md,
                           paddingVertical: 6,
-                          borderRadius: radius.full,
+                          borderRadius: radius.md,
                           borderWidth: 1.5,
                           borderColor: ativo ? tones[meta.tone].fg : palette.border,
                           backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,

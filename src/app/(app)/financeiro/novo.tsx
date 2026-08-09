@@ -1,4 +1,3 @@
-import dayjs from 'dayjs';
 import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
@@ -7,6 +6,7 @@ import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarLancamento, listarUnidades } from '@/lib/db';
+import { mascaraData, parseData } from '@/lib/format';
 import { categoriaFinanceira } from '@/lib/labels';
 import { useVoltar } from '@/lib/navegacao';
 import { enviarArquivo, escolherDocumento } from '@/lib/storage';
@@ -49,7 +49,7 @@ export default function NovoLancamento() {
     if (!descricao.trim()) return setErro('Descreva o lançamento.');
     const valorNumero = Number(valor.replace(',', '.'));
     if (!valor || Number.isNaN(valorNumero) || valorNumero <= 0) return setErro('Informe um valor válido.');
-    const dataVencimento = dayjs(vencimento, 'DD/MM/YYYY', true);
+    const dataVencimento = parseData(vencimento);
     if (!dataVencimento.isValid()) return setErro('Informe o vencimento no formato DD/MM/AAAA.');
     if (tipo === 'boleto' && !unidadeId) return setErro('Selecione a unidade do boleto.');
     if (!condominioId || !user) return;
@@ -105,7 +105,14 @@ export default function NovoLancamento() {
             <Input label="Valor (R$)" placeholder="350,00" keyboardType="decimal-pad" value={valor} onChangeText={setValor} />
           </View>
           <View style={{ flex: 1 }}>
-            <Input label="Vencimento" placeholder="DD/MM/AAAA" keyboardType="numbers-and-punctuation" value={vencimento} onChangeText={setVencimento} />
+            <Input
+              label="Vencimento"
+              placeholder="DD/MM/AAAA"
+              keyboardType="number-pad"
+              maxLength={10}
+              value={vencimento}
+              onChangeText={(v) => setVencimento(mascaraData(v))}
+            />
           </View>
         </View>
         <Input label="Observação (opcional)" placeholder="Detalhes adicionais..." value={observacao} onChangeText={setObservacao} multiline />

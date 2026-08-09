@@ -91,7 +91,7 @@ export default function NovoComunicado() {
           <AppText variant="label" color="muted">
             Prioridade
           </AppText>
-          <Segmented options={prioridades} value={prioridade} onChange={setPrioridade} shape="box" />
+          <Segmented options={prioridades} value={prioridade} onChange={setPrioridade} />
         </View>
 
         <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>

@@ -93,7 +93,7 @@ export default function SolicitacaoDetalhe() {
                   style={{
                     paddingHorizontal: spacing.md,
                     paddingVertical: spacing.sm,
-                    borderRadius: radius.full,
+                    borderRadius: radius.md,
                     borderWidth: 1.5,
                     borderColor: ativo ? tones[meta.tone].fg : palette.border,
                     backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,

@@ -87,7 +87,7 @@ export default function Propostas() {
                         gap: 6,
                         paddingHorizontal: spacing.md,
                         paddingVertical: spacing.sm,
-                        borderRadius: radius.full,
+                        borderRadius: radius.md,
                         borderWidth: 1.5,
                         borderColor: p.apoiada ? palette.primary : palette.border,
                         backgroundColor: p.apoiada ? palette.primarySoft : 'transparent',
