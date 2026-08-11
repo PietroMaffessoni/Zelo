@@ -1,14 +1,14 @@
 import { useState } from 'react';
-import { ScrollView, View } from 'react-native';
+import { View } from 'react-native';
 
-import { AppHeader, AppText, Button, Chip, Input, Loading, Screen, Segmented } from '@/components/ui';
+import { AppHeader, AppText, Button, Input, Loading, Screen, Segmented } from '@/components/ui';
 import { UnidadeSeletor } from '@/components/UnidadeSeletor';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarInfracao, listarUnidades } from '@/lib/db';
-import { motivoInfracao, opcoes } from '@/lib/labels';
+import { mascaraMoeda, parseMoeda } from '@/lib/format';
 import { useVoltar } from '@/lib/navegacao';
-import { type MotivoInfracao, type TipoInfracao } from '@/lib/types';
+import { type TipoInfracao } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function NovaInfracao() {
@@ -18,7 +18,7 @@ export default function NovaInfracao() {
 
   const [unidadeId, setUnidadeId] = useState<string | null>(null);
   const [tipo, setTipo] = useState<TipoInfracao>('advertencia');
-  const [motivo, setMotivo] = useState<MotivoInfracao>('barulho');
+  const [motivo, setMotivo] = useState('');
   const [descricao, setDescricao] = useState('');
   const [valor, setValor] = useState('');
   const [erro, setErro] = useState<string | null>(null);
@@ -26,8 +26,9 @@ export default function NovaInfracao() {
 
   async function aplicar() {
     if (!unidadeId) return setErro('Selecione a unidade.');
+    if (!motivo.trim()) return setErro('Escreva o motivo.');
     if (!descricao.trim()) return setErro('Descreva a infração.');
-    const valorNum = tipo === 'multa' ? Number(valor.replace(',', '.')) : null;
+    const valorNum = tipo === 'multa' ? parseMoeda(valor) : null;
     if (tipo === 'multa' && (!valorNum || valorNum <= 0)) return setErro('Informe o valor da multa.');
     if (!condominioId || !user) return;
     setSalvando(true);
@@ -37,7 +38,7 @@ export default function NovaInfracao() {
         condominio_id: condominioId,
         unidade_id: unidadeId,
         tipo,
-        motivo,
+        motivo: motivo.trim(),
         descricao: descricao.trim(),
         valor: valorNum,
         aplicada_por: user.id,
@@ -66,14 +67,13 @@ export default function NovaInfracao() {
 
         <UnidadeSeletor unidades={unidades ?? []} value={unidadeId} onChange={setUnidadeId} />
 
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Motivo</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
-            {opcoes(motivoInfracao).map((o) => (
-              <Chip key={o.value} label={o.label} icon={motivoInfracao[o.value].icon as any} selected={motivo === o.value} onPress={() => setMotivo(o.value)} />
-            ))}
-          </ScrollView>
-        </View>
+        <Input
+          label="Motivo"
+          placeholder="Ex.: Barulho após as 22h"
+          value={motivo}
+          onChangeText={setMotivo}
+          maxLength={80}
+        />
 
         <Input
           label="Descrição"
@@ -86,11 +86,11 @@ export default function NovaInfracao() {
 
         {tipo === 'multa' ? (
           <Input
-            label="Valor da multa (R$)"
-            placeholder="Ex.: 150,00"
+            label="Valor da multa"
+            placeholder="R$ 0,00"
             value={valor}
-            onChangeText={setValor}
-            keyboardType="decimal-pad"
+            onChangeText={(v) => setValor(mascaraMoeda(v))}
+            keyboardType="number-pad"
             hint="Gera automaticamente um boleto de multa para a unidade."
           />
         ) : null}

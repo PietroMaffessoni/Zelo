@@ -86,6 +86,22 @@ export function formatMoeda(valor?: number | null): string {
   return new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(valor ?? 0);
 }
 
+/** Máscara de digitação de moeda: os dígitos entram pela direita como centavos
+ *  e o campo já mostra "R$ 1.234,56" enquanto o usuário digita. Use no
+ *  `onChangeText` e leia o número com [parseMoeda]. */
+export function mascaraMoeda(valor: string): string {
+  // sem os zeros à esquerda o campo volta a ficar vazio ao apagar tudo
+  const d = valor.replace(/\D/g, '').replace(/^0+/, '').slice(0, 11);
+  if (!d) return '';
+  return formatMoeda(Number(d) / 100);
+}
+
+/** Lê o número de um campo formatado por [mascaraMoeda]. */
+export function parseMoeda(valor: string): number {
+  const d = valor.replace(/\D/g, '');
+  return d ? Number(d) / 100 : 0;
+}
+
 export function primeiroNome(nome?: string | null): string {
   if (!nome) return '';
   return nome.trim().split(/\s+/)[0];

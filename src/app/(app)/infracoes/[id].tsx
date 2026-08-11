@@ -7,7 +7,7 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { contestarInfracao, getInfracao, responderInfracao } from '@/lib/db';
 import { formatDataHora, formatMoeda } from '@/lib/format';
-import { motivoInfracao, statusInfracao, tipoInfracaoLabel } from '@/lib/labels';
+import { statusInfracao, tipoInfracaoLabel } from '@/lib/labels';
 import { isGestor, type StatusInfracao } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
@@ -33,7 +33,6 @@ export default function InfracaoDetalhe() {
 
   const tMeta = tipoInfracaoLabel[inf.tipo];
   const sMeta = statusInfracao[inf.status];
-  const mMeta = motivoInfracao[inf.motivo];
   const daMinhaUnidade = !!membershipAtual?.unidade_id && inf.unidade_id === membershipAtual.unidade_id;
   const podeContestar = daMinhaUnidade && !gestor && inf.status === 'aplicada';
 
@@ -57,7 +56,7 @@ export default function InfracaoDetalhe() {
 
   return (
     <Screen>
-      <AppHeader title={tMeta.label} back subtitle={mMeta.label} />
+      <AppHeader title={tMeta.label} back subtitle={inf.motivo} />
       <View style={{ gap: spacing.lg }}>
         <Card>
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: spacing.sm }}>

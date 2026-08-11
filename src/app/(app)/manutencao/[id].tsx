@@ -9,7 +9,7 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { getEquipamento, listarManutencoes, registrarManutencao } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
-import { categoriaEquipamento, checklistManutencao } from '@/lib/labels';
+import { checklistDaCategoria, metaEquipamento } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
 import { manutencaoVencida, podeManutencao, type ItemVistoria } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
@@ -34,7 +34,7 @@ export default function EquipamentoDetalhe() {
   const [erro, setErro] = useState<string | null>(null);
 
   const template = useMemo(
-    () => (data?.equipamento ? checklistManutencao[data.equipamento.categoria] ?? [] : []),
+    () => (data?.equipamento ? checklistDaCategoria(data.equipamento.categoria) : []),
     [data?.equipamento],
   );
 
@@ -48,7 +48,7 @@ export default function EquipamentoDetalhe() {
   }
 
   const { equipamento: eq, historico } = data;
-  const meta = categoriaEquipamento[eq.categoria];
+  const meta = metaEquipamento(eq.categoria);
   const vencida = manutencaoVencida(eq.proxima_manutencao);
 
   async function registrar() {

@@ -7,7 +7,7 @@ import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarEquipamentos } from '@/lib/db';
 import { formatData } from '@/lib/format';
-import { categoriaEquipamento } from '@/lib/labels';
+import { metaEquipamento } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
 import { isGestor, manutencaoVencida } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
@@ -55,7 +55,7 @@ export default function ManutencaoLista() {
         ) : (
           <View style={{ gap: spacing.md }}>
             {equipamentos.map((eq) => {
-              const meta = categoriaEquipamento[eq.categoria];
+              const meta = metaEquipamento(eq.categoria);
               const t = tone[meta.tone];
               const vencida = manutencaoVencida(eq.proxima_manutencao);
               return (

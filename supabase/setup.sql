@@ -1364,9 +1364,12 @@ end $$;
 -- 7.1 Ajustes em tabelas existentes ------------------------------------------
 
 -- Papel "conselheiro" (auxiliar do síndico: enxerga a gestão, não a altera).
+-- A lista precisa incluir TODOS os papéis já criados por seções posteriores
+-- (o 'zelador' da 8.2): num banco que já tem zelador, recriar o check só com os
+-- papéis daqui derruba a rodada inteira do setup antes de chegar na 8.2.
 alter table public.memberships drop constraint if exists memberships_papel_check;
 alter table public.memberships add constraint memberships_papel_check
-  check (papel in ('morador','sindico','admin','porteiro','conselheiro'));
+  check (papel in ('morador','sindico','admin','porteiro','conselheiro','zelador'));
 
 -- Comprovante de pagamento anexado a uma reserva (bucket privado 'financeiro').
 alter table public.reservas add column if not exists comprovante_path text;
@@ -1397,8 +1400,8 @@ create table if not exists public.equipamentos (
   id uuid primary key default gen_random_uuid(),
   condominio_id uuid not null references public.condominios(id) on delete cascade,
   nome text not null,
-  categoria text not null default 'outros'
-    check (categoria in ('elevador','bomba','gerador','portao','incendio','piscina','jardim','eletrica','hidraulica','outros')),
+  -- Texto livre: o síndico escreve a categoria ao cadastrar (ver 8.7).
+  categoria text not null default '',
   localizacao text,
   periodicidade_dias int,
   ultima_manutencao date,
@@ -1427,8 +1430,8 @@ create table if not exists public.infracoes (
   condominio_id uuid not null references public.condominios(id) on delete cascade,
   unidade_id uuid references public.unidades(id) on delete set null,
   tipo text not null default 'advertencia' check (tipo in ('advertencia','multa')),
-  motivo text not null default 'outros'
-    check (motivo in ('barulho','area_comum','animais','obras','estacionamento','lixo','seguranca','outros')),
+  -- Texto livre: o síndico escreve o motivo ao aplicar (ver 8.6).
+  motivo text not null default '',
   descricao text not null,
   valor numeric(10,2),
   status text not null default 'aplicada'
@@ -1833,5 +1836,48 @@ begin
   return new;
 end;
 $$;
+
+-- 8.6 Motivo da infração vira texto livre -------------------------------------
+-- Antes o motivo era uma lista fixa (barulho, area_comum, ...) escolhida em
+-- chips. O síndico passou a escrever o motivo com as próprias palavras, tanto
+-- na advertência quanto na multa — então o check sai e a coluna fica texto puro.
+alter table public.infracoes drop constraint if exists infracoes_motivo_check;
+alter table public.infracoes alter column motivo set default '';
+
+-- Converte os motivos antigos (slug) no texto que a tela mostrava, para as
+-- infrações já aplicadas não aparecerem como "area_comum" na lista.
+update public.infracoes set motivo = case motivo
+  when 'barulho' then 'Barulho'
+  when 'area_comum' then 'Uso de área comum'
+  when 'animais' then 'Animais'
+  when 'obras' then 'Obras'
+  when 'estacionamento' then 'Estacionamento'
+  when 'lixo' then 'Descarte de lixo'
+  when 'seguranca' then 'Segurança'
+  when 'outros' then 'Outros'
+end
+where motivo in ('barulho','area_comum','animais','obras','estacionamento','lixo','seguranca','outros');
+
+-- 8.7 Categoria do equipamento vira texto livre -------------------------------
+-- Mesma história do motivo da infração (8.6): a categoria era uma lista fixa em
+-- chips e passou a ser escrita pelo síndico no cadastro. O app ainda reconhece
+-- os termos clássicos ("Elevador", "Incêndio") para dar ícone e checklist.
+alter table public.equipamentos drop constraint if exists equipamentos_categoria_check;
+alter table public.equipamentos alter column categoria set default '';
+
+-- Converte as categorias antigas (slug) no texto que a tela mostrava.
+update public.equipamentos set categoria = case categoria
+  when 'elevador' then 'Elevador'
+  when 'bomba' then 'Bomba d''água'
+  when 'gerador' then 'Gerador'
+  when 'portao' then 'Portão'
+  when 'incendio' then 'Combate a incêndio'
+  when 'piscina' then 'Piscina'
+  when 'jardim' then 'Jardim'
+  when 'eletrica' then 'Elétrica'
+  when 'hidraulica' then 'Hidráulica'
+  when 'outros' then 'Outros'
+end
+where categoria in ('elevador','bomba','gerador','portao','incendio','piscina','jardim','eletrica','hidraulica','outros');
 
 -- Fim do setup.

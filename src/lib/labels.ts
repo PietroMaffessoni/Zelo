@@ -9,7 +9,6 @@ import type {
   ChamadoStatus,
   EncomendaStatus,
   EspeciePet,
-  MotivoInfracao,
   Papel,
   Prioridade,
   ReservaStatus,
@@ -167,6 +166,12 @@ export const tipoEventoLabel: Meta<TipoEvento> = {
   outro: { label: 'Outro', tone: 'neutral', icon: 'ellipse-outline' },
 };
 
+/**
+ * Categorias conhecidas de equipamento. A categoria em si virou texto livre (o
+ * síndico escreve o que quiser ao cadastrar) — este mapa só existe para dar
+ * ícone/cor e checklist às categorias clássicas quando o texto bate com uma
+ * delas. Use [metaEquipamento] e [checklistDaCategoria], nunca o mapa direto.
+ */
 export const categoriaEquipamento: Meta<CategoriaEquipamento> = {
   elevador: { label: 'Elevador', tone: 'primary', icon: 'swap-vertical-outline' },
   bomba: { label: 'Bomba d’água', tone: 'info', icon: 'water-outline' },
@@ -183,17 +188,6 @@ export const categoriaEquipamento: Meta<CategoriaEquipamento> = {
 export const tipoInfracaoLabel: Meta<TipoInfracao> = {
   advertencia: { label: 'Advertência', tone: 'warning', icon: 'alert-circle-outline' },
   multa: { label: 'Multa', tone: 'danger', icon: 'cash-outline' },
-};
-
-export const motivoInfracao: Meta<MotivoInfracao> = {
-  barulho: { label: 'Barulho', tone: 'warning', icon: 'volume-high-outline' },
-  area_comum: { label: 'Uso de área comum', tone: 'info', icon: 'business-outline' },
-  animais: { label: 'Animais', tone: 'success', icon: 'paw-outline' },
-  obras: { label: 'Obras', tone: 'primary', icon: 'hammer-outline' },
-  estacionamento: { label: 'Estacionamento', tone: 'primary', icon: 'car-outline' },
-  lixo: { label: 'Descarte de lixo', tone: 'warning', icon: 'trash-outline' },
-  seguranca: { label: 'Segurança', tone: 'danger', icon: 'shield-outline' },
-  outros: { label: 'Outros', tone: 'neutral', icon: 'ellipsis-horizontal-outline' },
 };
 
 export const statusInfracao: Meta<StatusInfracao> = {
@@ -255,6 +249,38 @@ export const checklistManutencao: Partial<Record<CategoriaEquipamento, string[]>
     'Sem vazamentos',
   ],
 };
+
+/** Minúsculas, sem acento e sem pontuação — só para comparar termos. */
+function normalizar(txt: string): string {
+  return txt.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '').replace(/[^a-z0-9]/g, '');
+}
+
+/** Casa a categoria escrita à mão com uma das conhecidas: "Incêndio", "incendio"
+ *  e "INCENDIO" caem todas em `incendio`. Devolve null quando é termo próprio. */
+function chaveEquipamento(categoria: string): CategoriaEquipamento | null {
+  const alvo = normalizar(categoria);
+  if (!alvo) return null;
+  const chaves = Object.keys(categoriaEquipamento) as CategoriaEquipamento[];
+  return chaves.find((k) => k === alvo || normalizar(categoriaEquipamento[k].label) === alvo) ?? null;
+}
+
+/** Rótulo/ícone/cor da categoria de um equipamento. Categoria escrita à mão
+ *  aparece como o síndico digitou, com ícone genérico de manutenção. */
+export function metaEquipamento(categoria: string): { label: string; tone: Tone; icon: string } {
+  const chave = chaveEquipamento(categoria);
+  const meta = chave ? categoriaEquipamento[chave] : null;
+  return {
+    label: meta ? meta.label : categoria.trim() || 'Equipamento',
+    tone: meta ? meta.tone : 'neutral',
+    icon: meta?.icon ?? 'construct-outline',
+  };
+}
+
+/** Checklist sugerido para a categoria escrita — vazio quando não reconhece. */
+export function checklistDaCategoria(categoria: string): string[] {
+  const chave = chaveEquipamento(categoria);
+  return (chave && checklistManutencao[chave]) || [];
+}
 
 /** Utilitário para transformar um mapa de metadados em opções de seleção. */
 export function opcoes<T extends string>(meta: Record<T, { label: string }>) {

@@ -57,6 +57,8 @@ export type AssembleiaStatus = 'convocada' | 'em_andamento' | 'encerrada' | 'can
 
 export type TipoEvento = 'evento' | 'assembleia' | 'manutencao' | 'obra' | 'reuniao' | 'lazer' | 'outro';
 
+/** Categorias clássicas de equipamento — só para ícone/checklist sugerido, já
+ *  que o campo `categoria` do equipamento é texto livre. */
 export type CategoriaEquipamento =
   | 'elevador'
   | 'bomba'
@@ -70,15 +72,6 @@ export type CategoriaEquipamento =
   | 'outros';
 
 export type TipoInfracao = 'advertencia' | 'multa';
-export type MotivoInfracao =
-  | 'barulho'
-  | 'area_comum'
-  | 'animais'
-  | 'obras'
-  | 'estacionamento'
-  | 'lixo'
-  | 'seguranca'
-  | 'outros';
 export type StatusInfracao = 'aplicada' | 'contestada' | 'anulada' | 'confirmada' | 'paga';
 
 export type StatusProposta = 'sugerida' | 'aprovada' | 'recusada' | 'arquivada';
@@ -454,7 +447,9 @@ export type Equipamento = {
   id: string;
   condominio_id: string;
   nome: string;
-  categoria: CategoriaEquipamento;
+  /** Escrita pelo síndico ao cadastrar (texto livre). Quando o termo bate com
+   *  uma [CategoriaEquipamento] conhecida, ganha ícone e checklist próprios. */
+  categoria: string;
   localizacao: string | null;
   periodicidade_dias: number | null;
   ultima_manutencao: string | null;
@@ -483,7 +478,8 @@ export type Infracao = {
   condominio_id: string;
   unidade_id: string | null;
   tipo: TipoInfracao;
-  motivo: MotivoInfracao;
+  /** Escrito pelo síndico ao aplicar (texto livre, não é mais uma lista fixa). */
+  motivo: string;
   descricao: string;
   valor: number | null;
   status: StatusInfracao;

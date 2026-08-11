@@ -5,7 +5,7 @@ import { Platform } from 'react-native';
 
 import { listarEquipamentos } from '@/lib/db';
 import { supabase } from '@/lib/supabase';
-import { categoriaEquipamento } from '@/lib/labels';
+import { metaEquipamento } from '@/lib/labels';
 import { podeManutencao, type Equipamento, type Papel, type PreferenciasNotificacao } from '@/lib/types';
 
 Notifications.setNotificationHandler({
@@ -98,7 +98,7 @@ export async function sincronizarLembretesManutencao(equipamentos: Equipamento[]
     const agora = Date.now();
     for (const eq of equipamentos) {
       if (!eq.proxima_manutencao || !eq.ativo) continue;
-      const rotulo = categoriaEquipamento[eq.categoria]?.label ?? 'Manutenção';
+      const rotulo = metaEquipamento(eq.categoria).label;
       for (const diasAntes of [3, 0]) {
         const quando = lembreteEm(eq.proxima_manutencao, diasAntes);
         if (quando.getTime() <= agora) continue;

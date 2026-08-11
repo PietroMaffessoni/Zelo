@@ -6,7 +6,7 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarInfracoes } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
-import { motivoInfracao, statusInfracao, tipoInfracaoLabel } from '@/lib/labels';
+import { statusInfracao, tipoInfracaoLabel } from '@/lib/labels';
 import { isConselho, isGestor } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
@@ -45,7 +45,6 @@ export default function InfracoesLista() {
             {infracoes.map((inf) => {
               const tMeta = tipoInfracaoLabel[inf.tipo];
               const sMeta = statusInfracao[inf.status];
-              const mMeta = motivoInfracao[inf.motivo];
               return (
                 <Card key={inf.id} onPress={() => router.push(`/(app)/infracoes/${inf.id}`)}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
@@ -59,8 +58,8 @@ export default function InfracoesLista() {
                     {inf.descricao}
                   </AppText>
                   <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-                    <AppText color="muted" variant="caption">
-                      {mMeta.label}
+                    <AppText color="muted" variant="caption" numberOfLines={1} style={{ flex: 1 }}>
+                      {inf.motivo}
                       {inf.unidade ? ` · ${inf.unidade.bloco ? 'Bloco ' + inf.unidade.bloco + ' · ' : ''}Un. ${inf.unidade.numero}` : ''}
                     </AppText>
                     {inf.valor ? <AppText variant="label">{formatMoeda(inf.valor)}</AppText> : null}

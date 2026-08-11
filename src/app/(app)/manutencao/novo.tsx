@@ -1,14 +1,13 @@
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarEquipamento } from '@/lib/db';
-import { categoriaEquipamento, opcoes } from '@/lib/labels';
+import { mascaraData, parseData } from '@/lib/format';
 import { useVoltar } from '@/lib/navegacao';
-import { type CategoriaEquipamento } from '@/lib/types';
 
 const PERIODOS = [
   { value: 30, label: 'Mensal' },
@@ -21,18 +20,35 @@ export default function NovoEquipamento() {
   const voltar = useVoltar();
   const { condominioId } = useAuth();
   const [nome, setNome] = useState('');
-  const [categoria, setCategoria] = useState<CategoriaEquipamento>('elevador');
+  const [categoria, setCategoria] = useState('');
   const [localizacao, setLocalizacao] = useState('');
   const [fornecedor, setFornecedor] = useState('');
   const [periodicidade, setPeriodicidade] = useState<number | null>(90);
-  const [dias, setDias] = useState(30);
+  // "Outra": a periodicidade sai de um campo em dias em vez dos chips.
+  const [outraPeriodicidade, setOutraPeriodicidade] = useState(false);
+  const [dias, setDias] = useState('');
+  const [proxima, setProxima] = useState(dayjs().add(90, 'day').format('DD/MM/YYYY'));
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
 
-  const proximaData = useMemo(() => dayjs().add(dias, 'day').format('YYYY-MM-DD'), [dias]);
+  /** A data sugerida acompanha a periodicidade escolhida — o síndico pode editar. */
+  function escolherPeriodo(valor: number | null) {
+    setPeriodicidade(valor);
+    if (valor) setProxima(dayjs().add(valor, 'day').format('DD/MM/YYYY'));
+  }
+
+  function mudarDias(texto: string) {
+    const limpo = texto.replace(/\D/g, '').slice(0, 4);
+    setDias(limpo);
+    escolherPeriodo(limpo ? Number(limpo) : null);
+  }
 
   async function salvar() {
     if (!nome.trim()) return setErro('Informe o nome do equipamento.');
+    if (!categoria.trim()) return setErro('Informe a categoria do equipamento.');
+    if (outraPeriodicidade && !periodicidade) return setErro('Informe a periodicidade em dias.');
+    const data = parseData(proxima);
+    if (!data.isValid()) return setErro('Informe a próxima manutenção no formato DD/MM/AAAA.');
     if (!condominioId) return;
     setSalvando(true);
     setErro(null);
@@ -40,11 +56,11 @@ export default function NovoEquipamento() {
       await criarEquipamento({
         condominio_id: condominioId,
         nome: nome.trim(),
-        categoria,
+        categoria: categoria.trim(),
         localizacao: localizacao.trim() || null,
         fornecedor: fornecedor.trim() || null,
         periodicidade_dias: periodicidade,
-        proxima_manutencao: proximaData,
+        proxima_manutencao: data.format('YYYY-MM-DD'),
       });
       voltar();
     } catch (e: any) {
@@ -59,14 +75,13 @@ export default function NovoEquipamento() {
       <View style={{ gap: spacing.lg }}>
         <Input label="Nome" placeholder="Ex.: Elevador social — Torre A" value={nome} onChangeText={setNome} />
 
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Categoria</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
-            {opcoes(categoriaEquipamento).map((o) => (
-              <Chip key={o.value} label={o.label} icon={categoriaEquipamento[o.value].icon as any} selected={categoria === o.value} onPress={() => setCategoria(o.value)} />
-            ))}
-          </ScrollView>
-        </View>
+        <Input
+          label="Categoria"
+          placeholder="Ex.: Elevador, Bomba d’água, Portão..."
+          value={categoria}
+          onChangeText={setCategoria}
+          maxLength={40}
+        />
 
         <Input label="Localização (opcional)" placeholder="Ex.: Subsolo, casa de máquinas" value={localizacao} onChangeText={setLocalizacao} />
         <Input label="Fornecedor / empresa (opcional)" placeholder="Ex.: Otis, ThyssenKrupp..." value={fornecedor} onChangeText={setFornecedor} />
@@ -75,19 +90,39 @@ export default function NovoEquipamento() {
           <AppText variant="label" color="muted">Periodicidade da manutenção</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {PERIODOS.map((p) => (
-              <Chip key={p.value} label={p.label} selected={periodicidade === p.value} onPress={() => { setPeriodicidade(p.value); setDias(p.value); }} />
+              <Chip
+                key={p.value}
+                label={p.label}
+                selected={!outraPeriodicidade && periodicidade === p.value}
+                onPress={() => { setOutraPeriodicidade(false); escolherPeriodo(p.value); }}
+              />
             ))}
+            <Chip
+              label="Outra"
+              selected={outraPeriodicidade}
+              onPress={() => { setOutraPeriodicidade(true); escolherPeriodo(dias ? Number(dias) : null); }}
+            />
           </ScrollView>
+          {outraPeriodicidade ? (
+            <Input
+              placeholder="A cada quantos dias? Ex.: 45"
+              value={dias}
+              onChangeText={mudarDias}
+              keyboardType="number-pad"
+              hint={periodicidade ? `A cada ${periodicidade} dia(s).` : undefined}
+            />
+          ) : null}
         </View>
 
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Próxima manutenção em</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
-            {[7, 15, 30, 60, 90, 180].map((d) => (
-              <Chip key={d} label={dayjs().add(d, 'day').format('DD/MM/YY')} selected={dias === d} onPress={() => setDias(d)} />
-            ))}
-          </ScrollView>
-        </View>
+        <Input
+          label="Próxima manutenção"
+          placeholder="DD/MM/AAAA"
+          keyboardType="number-pad"
+          maxLength={10}
+          value={proxima}
+          onChangeText={(v) => setProxima(mascaraData(v))}
+          hint="Sugerida pela periodicidade — pode alterar."
+        />
 
         {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
         <Button title="Cadastrar equipamento" icon="checkmark" onPress={salvar} loading={salvando} size="lg" />

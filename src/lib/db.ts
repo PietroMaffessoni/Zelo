@@ -27,7 +27,6 @@ import type {
   LancamentoFinanceiro,
   Manutencao,
   Membership,
-  MotivoInfracao,
   Pet,
   PreferenciasNotificacao,
   Prioridade,
@@ -1083,7 +1082,7 @@ export async function getEquipamento(id: string): Promise<Equipamento> {
 export async function criarEquipamento(input: {
   condominio_id: string;
   nome: string;
-  categoria: CategoriaEquipamento;
+  categoria: string;
   localizacao?: string | null;
   periodicidade_dias?: number | null;
   proxima_manutencao?: string | null;
@@ -1155,7 +1154,7 @@ export async function criarInfracao(input: {
   condominio_id: string;
   unidade_id: string;
   tipo: TipoInfracao;
-  motivo: MotivoInfracao;
+  motivo: string;
   descricao: string;
   valor?: number | null;
   aplicada_por: string;
