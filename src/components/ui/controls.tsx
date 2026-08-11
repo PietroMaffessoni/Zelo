@@ -5,11 +5,30 @@ import { radius, shadow, spacing, type Tone } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
 import { useAppTheme } from '@/lib/theme';
 
+/** O react-native-web marca `focused` em qualquer foco, inclusive no clique do
+ *  mouse — então o anel ficava preso em volta do item depois de selecionar. Aqui
+ *  guardamos a modalidade do último input para imitar o `:focus-visible` do
+ *  navegador: só quem chegou pelo teclado vê o anel. O style é reavaliado no
+ *  evento de foco, que sempre vem depois do keydown/pointerdown. */
+let focoPorTeclado = false;
+if (Platform.OS === 'web' && typeof document !== 'undefined') {
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Tab' || e.key.startsWith('Arrow')) focoPorTeclado = true;
+  }, true);
+  document.addEventListener('pointerdown', () => {
+    focoPorTeclado = false;
+  }, true);
+}
+
+// `none` não está no ViewStyle do RN (só existe no web), daí o cast.
+const semAnel = { outlineStyle: 'none', outlineWidth: 0 } as unknown as ViewStyle;
+
 /** Anel de foco para navegação por teclado (só web). Use `inset` em listas bem
  *  próximas (ex.: sidebar) para o anel ficar por dentro do item e não invadir o
  *  vizinho. */
 export function focusRing(focused: boolean, cor: string, inset = false): ViewStyle {
-  if (Platform.OS !== 'web' || !focused) return {};
+  if (Platform.OS !== 'web') return {};
+  if (!focused || !focoPorTeclado) return semAnel;
   return { outlineStyle: 'solid', outlineWidth: 2, outlineColor: cor, outlineOffset: inset ? -2 : 2 } as ViewStyle;
 }
 
