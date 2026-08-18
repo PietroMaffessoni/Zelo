@@ -31,21 +31,21 @@ export default function NovoDocumento() {
 
   async function publicar() {
     if (!titulo.trim()) return setErro('Informe o título do documento.');
-    if (!arquivo) return setErro('Selecione o arquivo (PDF ou imagem).');
     if (!condominioId || !user) return;
 
     setSalvando(true);
     setErro(null);
     try {
-      const arquivo_path = await enviarArquivo('documentos', arquivo.uri, condominioId, arquivo.nome);
+      // O anexo é opcional: há documentos que se resolvem só com título e descrição.
+      const arquivo_path = arquivo ? await enviarArquivo('documentos', arquivo.uri, condominioId, arquivo.nome) : null;
       const documento = await criarDocumento({
         condominio_id: condominioId,
         categoria,
         titulo: titulo.trim(),
         descricao: descricao.trim() || null,
         arquivo_path,
-        arquivo_nome: arquivo.nome,
-        tamanho_bytes: arquivo.tamanho,
+        arquivo_nome: arquivo?.nome ?? null,
+        tamanho_bytes: arquivo?.tamanho ?? null,
         publicado_por: user.id,
       });
       if (assembleiaId) await vincularAta(assembleiaId, documento.id);
@@ -73,11 +73,16 @@ export default function NovoDocumento() {
         <Input label="Descrição (opcional)" placeholder="Detalhes sobre o documento..." value={descricao} onChangeText={setDescricao} multiline />
 
         <Button
-          title={arquivo ? arquivo.nome : 'Selecionar arquivo (PDF ou imagem)'}
+          title={arquivo ? arquivo.nome : 'Anexar arquivo (opcional)'}
           variant="secondary"
           icon="document-attach-outline"
           onPress={selecionarArquivo}
         />
+        {arquivo ? (
+          <Button title="Remover arquivo" variant="ghost" size="sm" icon="close" onPress={() => setArquivo(null)} />
+        ) : (
+          <AppText color="subtle" variant="caption">PDF ou imagem. Sem anexo, o documento fica só com título e descrição.</AppText>
+        )}
 
         {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
 

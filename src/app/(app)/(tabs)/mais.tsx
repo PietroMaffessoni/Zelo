@@ -83,7 +83,7 @@ export default function Mais() {
           </>
         ) : null}
         <Divider />
-        <ListItem icon="book-outline" iconTone="info" title="Regimento interno" subtitle="Regimento interno do condomínio" onPress={() => router.push('/(app)/documentos')} />
+        <ListItem icon="book-outline" iconTone="info" title="Documentos" subtitle="Regimento, convenção, atas e editais" onPress={() => router.push('/(app)/documentos')} />
         {!equipe ? (
           <>
             <Divider />

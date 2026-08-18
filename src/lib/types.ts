@@ -376,7 +376,8 @@ export type Documento = {
   categoria: CategoriaDocumento;
   titulo: string;
   descricao: string | null;
-  arquivo_path: string;
+  /** null = documento só de texto (título + descrição), sem anexo. */
+  arquivo_path: string | null;
   arquivo_nome: string | null;
   tamanho_bytes: number | null;
   publicado_por: string | null;

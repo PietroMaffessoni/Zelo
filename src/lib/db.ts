@@ -855,7 +855,7 @@ export async function criarDocumento(input: {
   categoria: CategoriaDocumento;
   titulo: string;
   descricao?: string | null;
-  arquivo_path: string;
+  arquivo_path?: string | null;
   arquivo_nome?: string | null;
   tamanho_bytes?: number | null;
   publicado_por: string;

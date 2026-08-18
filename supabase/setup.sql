@@ -1880,4 +1880,9 @@ update public.equipamentos set categoria = case categoria
 end
 where categoria in ('elevador','bomba','gerador','portao','incendio','piscina','jardim','eletrica','hidraulica','outros');
 
+-- 8.8 Documento sem arquivo ---------------------------------------------------
+-- Nem todo documento precisa de PDF: avisos e regras curtas se resolvem só com
+-- título e descrição. O anexo passa a ser opcional (null = documento de texto).
+alter table public.documentos alter column arquivo_path drop not null;
+
 -- Fim do setup.
