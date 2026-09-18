@@ -10,9 +10,6 @@ abaixo dizem **onde** e **como** mexer.
   (prédio no “l”, opções de logo e nome, paleta, tipografia e mockup). Abra no navegador.
 - **[apresentacao-conceitos-iniciais.html](apresentacao-conceitos-iniciais.html)** — as
   explorações iniciais de ícone (folha/casa/escudo), mantidas como histórico.
-- Versões online (alternam tema claro/escuro):
-  - Final: https://claude.ai/code/artifact/5554c8e8-af29-4459-839c-36f05e56311c
-  - Conceitos: https://claude.ai/code/artifact/c68b0ff6-4b3b-431e-8dae-13fa68f60380
 
 ---
 
