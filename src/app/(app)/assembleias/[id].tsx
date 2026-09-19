@@ -157,7 +157,7 @@ export default function AssembleiaDetalhe() {
         <Card style={{ marginBottom: spacing.md, gap: spacing.md }}>
           <Input label="Título da pauta" placeholder="Ex.: Aprovação do orçamento 2026" value={tituloPauta} onChangeText={setTituloPauta} />
           <Input label="Descrição (opcional)" value={descricaoPauta} onChangeText={setDescricaoPauta} multiline />
-          <AppText variant="label" color="muted">Opções de voto</AppText>
+          <AppText variant="label">Opções de voto</AppText>
           {opcoesPauta.map((o, i) => (
             <Input key={i} placeholder={`Opção ${i + 1}`} value={o} onChangeText={(t) => alterarOpcaoPauta(i, t)} />
           ))}
@@ -202,14 +202,18 @@ export default function AssembleiaDetalhe() {
                         key={o.id}
                         disabled={!podeVotar || votando === o.id}
                         onPress={() => votarNaOpcao(p, o.id)}
-                        style={{
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: votei }}
+                        accessibilityLabel={`${o.texto}: ${o.votos ?? 0} votos, ${pct}%`}
+                        style={({ hovered }: any) => ({
                           borderRadius: radius.md,
-                          borderWidth: 1.5,
-                          borderColor: votei ? palette.primary : palette.border,
+                          borderWidth: 1,
+                          borderColor: votei ? palette.primary : hovered && podeVotar ? palette.borderStrong : palette.border,
                           backgroundColor: votei ? palette.primarySoft : palette.surface,
-                          padding: spacing.md,
+                          paddingVertical: spacing.sm + 2,
+                          paddingHorizontal: spacing.md,
                           overflow: 'hidden',
-                        }}
+                        })}
                       >
                         <View
                           style={{
@@ -225,7 +229,7 @@ export default function AssembleiaDetalhe() {
                           <AppText variant="label" style={{ color: votei ? palette.primary : palette.text }}>
                             {o.texto} {votei ? '✓' : ''}
                           </AppText>
-                          <AppText color="muted" variant="caption">
+                          <AppText color="muted" variant="caption" style={{ fontVariant: ['tabular-nums'] }}>
                             {o.votos ?? 0} · {pct}%
                           </AppText>
                         </View>

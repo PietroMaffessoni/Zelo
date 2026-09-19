@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Card, Loading, Screen } from '@/components/ui';
-import { radius, spacing, type Tone } from '@/constants/theme';
+import { AppHeader, AppText, Loading, Panel, Row, Screen } from '@/components/ui';
+import { spacing, type Tone } from '@/constants/theme';
 import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import { resumoPortaria } from '@/lib/db';
@@ -25,7 +25,7 @@ export default function PortariaHub() {
       {loading ? (
         <Loading />
       ) : (
-        <View style={{ gap: spacing.md, marginTop: spacing.sm }}>
+        <Panel style={{ marginTop: spacing.sm }}>
           <HubTile
             icon="people-outline"
             tone="info"
@@ -49,12 +49,20 @@ export default function PortariaHub() {
             legenda="Consultar cadastro por placa ou unidade"
             onPress={() => router.push('/(app)/portaria/veiculos')}
           />
-        </View>
+        </Panel>
       )}
     </Screen>
   );
 }
 
+/**
+ * Destino da portaria com o respectivo contador.
+ *
+ * Eram três cards flutuantes, cada um com um bloco colorido de 48px e um número
+ * grande do outro lado — três pequenos painéis para o que é, na prática, um menu
+ * de três itens. Vira linha dentro de um painel só: o número fica na direita,
+ * tabular, onde o porteiro sempre o encontra no mesmo lugar ao trocar de turno.
+ */
 function HubTile({
   icon,
   tone = 'primary',
@@ -70,31 +78,24 @@ function HubTile({
   legenda: string;
   onPress: () => void;
 }) {
-  const { tone: tones } = useAppTheme();
-  const t = tones[tone];
+  const { palette } = useAppTheme();
   return (
-    <Card onPress={onPress}>
+    <Row onPress={onPress} accessibilityLabel={`${titulo}. ${legenda}`}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <View
-          style={{
-            width: 48,
-            height: 48,
-            borderRadius: radius.md,
-            backgroundColor: t.bg,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name={icon} size={24} color={t.fg} />
-        </View>
+        <Ionicons name={icon} size={19} color={palette.textSubtle} style={{ width: 22, textAlign: 'center' }} />
         <View style={{ flex: 1 }}>
           <AppText variant="subtitle">{titulo}</AppText>
           <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>
             {legenda}
           </AppText>
         </View>
-        {valor !== undefined ? <AppText variant="title">{valor}</AppText> : null}
+        {valor !== undefined ? (
+          <AppText variant="metric" style={{ color: valor > 0 ? palette.text : palette.textSubtle }}>
+            {valor}
+          </AppText>
+        ) : null}
+        <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
       </View>
-    </Card>
+    </Row>
   );
 }

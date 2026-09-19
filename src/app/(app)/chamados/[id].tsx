@@ -4,7 +4,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Card, Divider, Input, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Avatar, Badge, Input, Loading, MetaLine, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { alterarStatusChamado, comentarChamado, getChamado, listarEventos } from '@/lib/db';
@@ -85,23 +85,42 @@ export default function ChamadoDetalhe() {
         </ScrollView>
       ) : null}
 
-      <Card style={{ marginTop: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <Avatar nome={chamado.autor?.nome_completo} url={chamado.autor?.avatar_url} size={38} />
+      {/* Quem abriu e quando: contexto do registro, marcado por fios em vez de
+          mais uma caixa dentro da página. */}
+      <View
+        style={{
+          marginTop: spacing.lg,
+          paddingVertical: spacing.md,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderColor: palette.border,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+        }}
+      >
+        <Avatar nome={chamado.autor?.nome_completo} url={chamado.autor?.avatar_url} size={32} />
         <View style={{ flex: 1 }}>
-          <AppText variant="label">{chamado.autor?.nome_completo || 'Morador'}</AppText>
-          <AppText color="subtle" variant="caption">
-            {chamado.unidade ? `${chamado.unidade.bloco ? chamado.unidade.bloco + ' · ' : ''}${chamado.unidade.numero} · ` : ''}
-            {formatDataHora(chamado.created_at)}
+          <AppText variant="subtitle" numberOfLines={1}>
+            {chamado.autor?.nome_completo || 'Morador'}
           </AppText>
+          <MetaLine
+            color="subtle"
+            style={{ marginTop: 1 }}
+            itens={[
+              chamado.unidade
+                ? `${chamado.unidade.bloco ? chamado.unidade.bloco + ' · ' : ''}${chamado.unidade.numero}`
+                : null,
+              formatDataHora(chamado.created_at),
+            ]}
+          />
         </View>
-      </Card>
+      </View>
 
       {/* Controle de status (gestor) */}
       {gestor ? (
-        <View style={{ marginTop: spacing.lg }}>
-          <AppText variant="label" color="muted" style={{ marginBottom: spacing.sm }}>
-            Alterar status
-          </AppText>
+        <Section>
+          <SectionHeader title="Alterar status" />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {statusOrdem.map((s) => {
               const meta = L.chamadoStatus[s];
@@ -111,14 +130,19 @@ export default function ChamadoDetalhe() {
                   key={s}
                   disabled={mudando}
                   onPress={() => mudarStatus(s)}
-                  style={{
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm,
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: ativo }}
+                  accessibilityLabel={meta.label}
+                  style={({ hovered }: any) => ({
+                    minHeight: 32,
+                    justifyContent: 'center',
+                    paddingHorizontal: spacing.md - 1,
+                    paddingVertical: 6,
                     borderRadius: radius.md,
-                    borderWidth: 1.5,
-                    borderColor: ativo ? tones[meta.tone].fg : palette.border,
-                    backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,
-                  }}
+                    borderWidth: 1,
+                    borderColor: ativo ? tones[meta.tone].fg : hovered ? palette.borderStrong : palette.border,
+                    backgroundColor: ativo ? tones[meta.tone].bg : hovered ? palette.surfaceAlt : palette.surface,
+                  })}
                 >
                   <AppText variant="label" style={{ color: ativo ? tones[meta.tone].fg : palette.textMuted }}>
                     {meta.label}
@@ -127,21 +151,20 @@ export default function ChamadoDetalhe() {
               );
             })}
           </View>
-        </View>
+        </Section>
       ) : null}
 
       {/* Histórico */}
-      <AppText variant="subtitle" style={{ marginTop: spacing.xl, marginBottom: spacing.md }}>
-        Histórico
-      </AppText>
-      <Card>
-        {eventos.map((e, i) => (
-          <View key={e.id}>
-            {i > 0 ? <Divider style={{ marginVertical: spacing.sm }} /> : null}
-            <EventoLinha evento={e} />
-          </View>
-        ))}
-      </Card>
+      <Section>
+        <SectionHeader title="Histórico" />
+        <Panel>
+          {eventos.map((e) => (
+            <Row key={e.id} compact>
+              <EventoLinha evento={e} />
+            </Row>
+          ))}
+        </Panel>
+      </Section>
 
       {/* Novo comentário */}
       <View style={{ marginTop: spacing.lg, flexDirection: 'row', gap: spacing.sm, alignItems: 'flex-end' }}>
@@ -151,16 +174,18 @@ export default function ChamadoDetalhe() {
         <Pressable
           onPress={enviarComentario}
           disabled={enviando || !comentario.trim()}
+          accessibilityRole="button"
+          accessibilityLabel="Enviar comentário"
           style={{
-            width: 50,
-            height: 50,
+            width: 44,
+            height: 44,
             borderRadius: radius.md,
-            backgroundColor: comentario.trim() ? palette.primary : palette.borderStrong,
+            backgroundColor: comentario.trim() ? palette.primary : palette.surfaceAlt,
             alignItems: 'center',
             justifyContent: 'center',
           }}
         >
-          <Ionicons name="send" size={20} color={palette.white} />
+          <Ionicons name="send" size={17} color={comentario.trim() ? palette.onPrimary : palette.textSubtle} />
         </Pressable>
       </View>
     </Screen>
@@ -178,17 +203,10 @@ function EventoLinha({ evento }: { evento: ChamadoEvento }) {
           : 'chatbubble-outline';
   return (
     <View style={{ flexDirection: 'row', gap: spacing.sm, paddingVertical: 4 }}>
-      <View
-        style={{
-          width: 32,
-          height: 32,
-          borderRadius: radius.full,
-          backgroundColor: palette.surfaceAlt,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Ionicons name={icon as any} size={16} color={palette.textMuted} />
+      {/* O disco cinza atrás de cada ícone virava uma coluna de bolhas ao longo
+          do histórico. O ícone sozinho já ancora a linha. */}
+      <View style={{ width: 20, alignItems: 'center', paddingTop: 2 }}>
+        <Ionicons name={icon as any} size={15} color={palette.textSubtle} />
       </View>
       <View style={{ flex: 1 }}>
         <AppText variant="label">{primeiroNome(evento.autor?.nome_completo) || 'Sistema'}</AppText>

@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, Card, Loading, Screen, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { atualizarStatusLancamento, getLancamento } from '@/lib/db';
@@ -101,11 +101,11 @@ export default function FinanceiroDetalhe() {
             gap: spacing.sm,
             padding: spacing.md,
             borderRadius: radius.md,
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderColor: palette.border,
           }}
         >
-          <Ionicons name="document-attach-outline" size={20} color={palette.primary} />
+          <Ionicons name="document-attach-outline" size={17} color={palette.primary} />
           <AppText color="primary" variant="label">
             {abrindoAnexo ? 'Abrindo...' : 'Ver comprovante/boleto anexado'}
           </AppText>
@@ -114,9 +114,7 @@ export default function FinanceiroDetalhe() {
 
       {gestor ? (
         <View style={{ marginTop: spacing.xl }}>
-          <AppText variant="label" color="muted" style={{ marginBottom: spacing.sm }}>
-            Alterar status
-          </AppText>
+          <SectionHeader title="Alterar status" />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {statusOrdem.map((s) => {
               const meta = statusFinanceiro[s];
@@ -126,14 +124,19 @@ export default function FinanceiroDetalhe() {
                   key={s}
                   disabled={mudando}
                   onPress={() => mudarStatus(s)}
-                  style={{
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm,
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: ativo }}
+                  accessibilityLabel={meta.label}
+                  style={({ hovered }: any) => ({
+                    minHeight: 32,
+                    justifyContent: 'center',
+                    paddingHorizontal: spacing.md - 1,
+                    paddingVertical: 6,
                     borderRadius: radius.md,
-                    borderWidth: 1.5,
-                    borderColor: ativo ? tones[meta.tone].fg : palette.border,
-                    backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,
-                  }}
+                    borderWidth: 1,
+                    borderColor: ativo ? tones[meta.tone].fg : hovered ? palette.borderStrong : palette.border,
+                    backgroundColor: ativo ? tones[meta.tone].bg : hovered ? palette.surfaceAlt : palette.surface,
+                  })}
                 >
                   <AppText variant="label" style={{ color: ativo ? tones[meta.tone].fg : palette.textMuted }}>
                     {meta.label}

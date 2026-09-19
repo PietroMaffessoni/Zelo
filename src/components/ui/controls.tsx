@@ -32,13 +32,17 @@ export function focusRing(focused: boolean, cor: string, inset = false): ViewSty
   return { outlineStyle: 'solid', outlineWidth: 2, outlineColor: cor, outlineOffset: inset ? -2 : 2 } as ViewStyle;
 }
 
-export function Divider({ style }: { style?: ViewStyle }) {
+export function Divider({ style, inset }: { style?: ViewStyle; inset?: number }) {
   const { palette } = useAppTheme();
-  return <View style={[{ height: 1, backgroundColor: palette.border }, style]} />;
+  return <View style={[{ height: 1, backgroundColor: palette.border, marginLeft: inset ?? 0 }, style]} />;
 }
 
-/** Opção selecionável (categorias, filtros). Usa o mesmo arredondamento dos
- *  campos de formulário (`radius.md`) para ficar igual aos campos de texto. */
+/**
+ * Opção selecionável (categorias, filtros). Mais baixa e mais discreta que antes:
+ * um filtro é um controle de apoio, não o assunto da tela. O selecionado carrega
+ * a cor da marca — é justamente para marcar escolha e estado ativo que a primária
+ * existe.
+ */
 export function Chip({
   label,
   selected,
@@ -63,11 +67,11 @@ export function Chip({
           flexDirection: 'row',
           alignItems: 'center',
           gap: 6,
-          minHeight: 40,
-          paddingHorizontal: spacing.md,
-          paddingVertical: spacing.sm,
+          minHeight: 32,
+          paddingHorizontal: spacing.md - 1,
+          paddingVertical: 6,
           borderRadius: radius.md,
-          borderWidth: 1.5,
+          borderWidth: 1,
           borderColor: selected ? palette.primary : hovered ? palette.borderStrong : palette.border,
           backgroundColor: selected ? palette.primarySoft : hovered ? palette.surfaceAlt : palette.surface,
         },
@@ -75,7 +79,7 @@ export function Chip({
       ]}
     >
       {icon ? (
-        <Ionicons name={icon} size={15} color={selected ? palette.primary : palette.textMuted} />
+        <Ionicons name={icon} size={14} color={selected ? palette.primary : palette.textSubtle} />
       ) : null}
       <AppText variant="label" style={{ color: selected ? palette.primary : palette.textMuted }}>
         {label}
@@ -98,7 +102,7 @@ export function Segmented<T extends string>({
     <ScrollView
       horizontal
       showsHorizontalScrollIndicator={false}
-      contentContainerStyle={{ gap: spacing.sm, paddingVertical: 2 }}
+      contentContainerStyle={{ gap: spacing.sm - 2, paddingVertical: 2 }}
     >
       {options.map((o) => (
         <Chip
@@ -112,7 +116,17 @@ export function Segmented<T extends string>({
   );
 }
 
-/** Linha de lista com ícone colorido, título, subtítulo e ação. */
+/**
+ * Linha de lista com ícone, título, subtítulo e ação.
+ *
+ * O quadrado colorido de 42px que antecedia cada linha saiu: repetido dez vezes
+ * numa tela de menu ele criava um mosaico em que nada se destacava, e gastava o
+ * vocabulário de cores (verde, âmbar, vermelho) em navegação — de modo que, quando
+ * um selo de status realmente urgente aparecia, ele já não tinha para onde gritar.
+ * O ícone agora é neutro e serve de âncora de leitura; a cor fica guardada para
+ * estado. `iconTone` continua aceito para não alterar nenhuma chamada existente,
+ * e só pinta quando o tom de fato comunica risco.
+ */
 export function ListItem({
   icon,
   iconTone = 'primary',
@@ -131,7 +145,7 @@ export function ListItem({
   chevron?: boolean;
 }) {
   const { palette, tone: tones } = useAppTheme();
-  const t = tones[iconTone];
+  const corIcone = iconTone === 'danger' ? tones.danger.fg : palette.textSubtle;
   return (
     <Pressable
       onPress={onPress}
@@ -143,49 +157,50 @@ export function ListItem({
           alignItems: 'center',
           gap: spacing.md,
           minHeight: 44,
-          paddingVertical: spacing.md,
-          paddingHorizontal: hovered && onPress ? spacing.sm : 0,
-          marginHorizontal: hovered && onPress ? -spacing.sm : 0,
+          paddingVertical: spacing.md - 1,
+          paddingHorizontal: hovered && onPress ? spacing.md : 0,
+          marginHorizontal: hovered && onPress ? -spacing.md : 0,
           borderRadius: radius.md,
           backgroundColor: hovered && onPress ? palette.surfaceAlt : 'transparent',
           opacity: pressed && onPress ? 0.7 : 1,
         },
-        focusRing(focused, palette.primary),
+        focusRing(focused, palette.primary, true),
       ]}
     >
       {icon ? (
-        <View
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: radius.md,
-            backgroundColor: t.bg,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name={icon} size={20} color={t.fg} />
+        <View style={{ width: 22, alignItems: 'center' }}>
+          <Ionicons name={icon} size={19} color={corIcone} />
         </View>
       ) : null}
       <View style={{ flex: 1 }}>
-        <AppText variant="subtitle" numberOfLines={1}>
+        <AppText
+          variant="subtitle"
+          numberOfLines={1}
+          style={iconTone === 'danger' ? { color: tones.danger.fg } : undefined}
+        >
           {title}
         </AppText>
         {subtitle ? (
-          <AppText variant="caption" color="muted" numberOfLines={1}>
+          <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 1 }}>
             {subtitle}
           </AppText>
         ) : null}
       </View>
       {right}
       {chevron && onPress && !right ? (
-        <Ionicons name="chevron-forward" size={20} color={palette.textSubtle} />
+        <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
       ) : null}
     </Pressable>
   );
 }
 
-/** Botão de ação flutuante (canto inferior direito). */
+
+/**
+ * Ação principal ancorada no canto inferior. Deixou de ser um círculo/pílula
+ * flutuante para virar um botão retangular de canto suave — o mesmo desenho dos
+ * outros botões do produto, só que fixo na tela. Mantém `shadow.floating` porque
+ * aqui a elevação é real: ele passa por cima do conteúdo que rola sob ele.
+ */
 export function Fab({
   icon = 'add',
   onPress,
@@ -201,27 +216,27 @@ export function Fab({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label ?? 'Adicionar'}
-      style={({ pressed, focused }: any) => [
+      style={({ pressed, hovered, focused }: any) => [
         {
           position: 'absolute',
           right: spacing.lg,
-          bottom: spacing.xl,
-          height: 56,
-          borderRadius: radius.full,
-          backgroundColor: palette.primary,
+          bottom: spacing.lg + 4,
+          height: 46,
+          borderRadius: label ? radius.md : radius.full,
+          backgroundColor: hovered ? palette.primaryDark : palette.primary,
           flexDirection: 'row',
           alignItems: 'center',
           justifyContent: 'center',
-          gap: spacing.sm,
-          paddingHorizontal: label ? spacing.xl : 0,
-          width: label ? undefined : 56,
+          gap: spacing.sm - 2,
+          paddingHorizontal: label ? spacing.lg : 0,
+          width: label ? undefined : 46,
           opacity: pressed ? 0.9 : 1,
         },
         shadow.floating,
         focusRing(focused, palette.primary),
       ]}
     >
-      <Ionicons name={icon} size={26} color={palette.onPrimary} />
+      <Ionicons name={icon} size={label ? 18 : 24} color={palette.onPrimary} />
       {label ? (
         <AppText variant="label" style={{ color: palette.onPrimary }}>
           {label}
@@ -231,7 +246,11 @@ export function Fab({
   );
 }
 
-/** Quadrado de ação rápida (grid do início). */
+/**
+ * Atalho em grade (ações rápidas do início). Sem o bloco colorido de 48px: o que
+ * identifica o atalho é o nome dele, e o ícone só ajuda a achar de relance.
+ * `tone` permanece na assinatura para não mexer nas chamadas existentes.
+ */
 export function ActionTile({
   icon,
   label,
@@ -243,8 +262,7 @@ export function ActionTile({
   tone?: Tone;
   onPress: () => void;
 }) {
-  const { palette, tone: tones } = useAppTheme();
-  const t = tones[tone];
+  const { palette } = useAppTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -253,40 +271,32 @@ export function ActionTile({
       style={({ pressed, hovered, focused }: any) => [
         {
           flex: 1,
-          alignItems: 'center',
+          alignItems: 'flex-start',
           gap: spacing.sm,
-          paddingVertical: spacing.lg,
+          paddingVertical: spacing.md + 2,
+          paddingHorizontal: spacing.md,
           borderRadius: radius.lg,
           backgroundColor: hovered ? palette.surfaceAlt : palette.surface,
           borderWidth: 1,
           borderColor: hovered ? palette.borderStrong : palette.border,
-          opacity: pressed ? 0.8 : 1,
+          opacity: pressed ? 0.85 : 1,
         },
         focusRing(focused, palette.primary),
       ]}
     >
-      <View
-        style={{
-          width: 48,
-          height: 48,
-          borderRadius: radius.md,
-          backgroundColor: t.bg,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Ionicons name={icon} size={24} color={t.fg} />
-      </View>
-      <AppText variant="label" center numberOfLines={2} style={{ color: palette.text }}>
+      <Ionicons name={icon} size={19} color={palette.textMuted} />
+      <AppText variant="label" numberOfLines={2} style={{ color: palette.text }}>
         {label}
       </AppText>
     </Pressable>
   );
 }
 
-/** Ação rápida em formato de linha de menu: ícone à esquerda, título + descrição e
- *  um chevron à direita. Ocupa a largura toda — pensado para empilhar verticalmente
- *  (ex.: "Ações rápidas" do morador), diferente do `ActionTile` (grade lado a lado). */
+/**
+ * Atalho em linha (ações rápidas do morador): ocupa a largura toda e empilha.
+ * Pensado para viver dentro de um `Panel`, por isso não carrega borda própria —
+ * o fio de divisão do painel já separa um do outro.
+ */
 export function ActionRow({
   icon,
   label,
@@ -300,8 +310,7 @@ export function ActionRow({
   tone?: Tone;
   onPress: () => void;
 }) {
-  const { palette, tone: tones } = useAppTheme();
-  const t = tones[tone];
+  const { palette } = useAppTheme();
   return (
     <Pressable
       onPress={onPress}
@@ -313,39 +322,27 @@ export function ActionRow({
           alignItems: 'center',
           gap: spacing.md,
           paddingVertical: spacing.md,
-          paddingHorizontal: spacing.md,
-          borderRadius: radius.lg,
-          backgroundColor: hovered ? palette.surfaceAlt : palette.surface,
-          borderWidth: 1,
-          borderColor: hovered ? palette.borderStrong : palette.border,
-          opacity: pressed ? 0.8 : 1,
+          paddingHorizontal: spacing.lg,
+          backgroundColor: hovered ? palette.surfaceAlt : 'transparent',
+          opacity: pressed ? 0.85 : 1,
         },
-        focusRing(focused, palette.primary),
+        focusRing(focused, palette.primary, true),
       ]}
     >
-      <View
-        style={{
-          width: 44,
-          height: 44,
-          borderRadius: radius.md,
-          backgroundColor: t.bg,
-          alignItems: 'center',
-          justifyContent: 'center',
-        }}
-      >
-        <Ionicons name={icon} size={22} color={t.fg} />
+      <View style={{ width: 22, alignItems: 'center' }}>
+        <Ionicons name={icon} size={19} color={palette.textSubtle} />
       </View>
       <View style={{ flex: 1 }}>
-        <AppText variant="label" numberOfLines={1} style={{ color: palette.text }}>
+        <AppText variant="subtitle" numberOfLines={1}>
           {label}
         </AppText>
         {descricao ? (
-          <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 2 }}>
+          <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 1 }}>
             {descricao}
           </AppText>
         ) : null}
       </View>
-      <Ionicons name="chevron-forward" size={18} color={palette.textSubtle} />
+      <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
     </Pressable>
   );
 }

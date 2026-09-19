@@ -87,7 +87,7 @@ export default function NovoEquipamento() {
         <Input label="Fornecedor / empresa (opcional)" placeholder="Ex.: Otis, ThyssenKrupp..." value={fornecedor} onChangeText={setFornecedor} />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Periodicidade da manutenção</AppText>
+          <AppText variant="label">Periodicidade da manutenção</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {PERIODOS.map((p) => (
               <Chip

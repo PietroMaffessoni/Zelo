@@ -38,26 +38,28 @@ export function UnidadeSeletor({
         style={{
           flexDirection: 'row',
           alignItems: 'center',
-          borderWidth: 1.5,
+          borderWidth: 1,
           borderColor: palette.border,
           borderRadius: radius.md,
           paddingHorizontal: spacing.md,
-          minHeight: 50,
+          backgroundColor: palette.surface,
+          minHeight: 44,
         }}
       >
-        <AppText style={{ flex: 1 }} color={selecionada ? 'default' : 'subtle'}>
+        <AppText variant="body" style={{ flex: 1 }} color={selecionada ? 'default' : 'subtle'}>
           {selecionada
             ? `${selecionada.bloco ? 'Bloco ' + selecionada.bloco + ' · ' : ''}Unidade ${selecionada.numero}`
             : 'Selecionar unidade'}
         </AppText>
-        <Ionicons name={aberto ? 'chevron-up' : 'chevron-down'} size={18} color={palette.textSubtle} />
+        <Ionicons name={aberto ? 'chevron-up' : 'chevron-down'} size={16} color={palette.textSubtle} />
       </Pressable>
       {aberto ? (
         <View
           style={{
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderColor: palette.border,
             borderRadius: radius.md,
+            backgroundColor: palette.surface,
             padding: spacing.sm,
             gap: spacing.xs,
           }}

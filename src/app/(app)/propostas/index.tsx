@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, Button, EmptyState, Fab, Loading, Panel, Row, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { alternarApoioProposta, listarPropostas, responderProposta } from '@/lib/db';
@@ -57,11 +57,11 @@ export default function Propostas() {
             onAction={() => router.push('/(app)/propostas/nova')}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {propostas.map((p) => {
               const sMeta = statusProposta[p.status];
               return (
-                <Card key={p.id}>
+                <Row key={p.id}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 4 }}>
                     <Badge label={sMeta.label} tone={sMeta.tone} />
                     <AppText color="subtle" variant="caption" style={{ marginLeft: 'auto' }}>
@@ -69,7 +69,9 @@ export default function Propostas() {
                     </AppText>
                   </View>
                   <AppText variant="subtitle">{p.titulo}</AppText>
-                  <AppText color="muted" style={{ marginTop: 2 }} numberOfLines={4}>{p.descricao}</AppText>
+                  <AppText color="muted" variant="caption" style={{ marginTop: 3 }} numberOfLines={4}>
+                    {p.descricao}
+                  </AppText>
 
                   {p.resposta_gestor ? (
                     <AppText color="primary" variant="caption" style={{ marginTop: spacing.sm }}>
@@ -81,19 +83,23 @@ export default function Propostas() {
                     <Pressable
                       onPress={() => apoiar(p)}
                       disabled={ocupado === p.id}
-                      style={{
+                      accessibilityRole="button"
+                      accessibilityState={{ selected: !!p.apoiada }}
+                      accessibilityLabel={`Apoiar ${p.titulo}`}
+                      style={({ hovered }: any) => ({
                         flexDirection: 'row',
                         alignItems: 'center',
                         gap: 6,
-                        paddingHorizontal: spacing.md,
-                        paddingVertical: spacing.sm,
+                        minHeight: 32,
+                        paddingHorizontal: spacing.md - 1,
+                        paddingVertical: 6,
                         borderRadius: radius.md,
-                        borderWidth: 1.5,
-                        borderColor: p.apoiada ? palette.primary : palette.border,
-                        backgroundColor: p.apoiada ? palette.primarySoft : 'transparent',
-                      }}
+                        borderWidth: 1,
+                        borderColor: p.apoiada ? palette.primary : hovered ? palette.borderStrong : palette.border,
+                        backgroundColor: p.apoiada ? palette.primarySoft : hovered ? palette.surfaceAlt : palette.surface,
+                      })}
                     >
-                      <Ionicons name={p.apoiada ? 'heart' : 'heart-outline'} size={16} color={p.apoiada ? palette.primary : palette.textMuted} />
+                      <Ionicons name={p.apoiada ? 'heart' : 'heart-outline'} size={14} color={p.apoiada ? palette.primary : palette.textMuted} />
                       <AppText variant="label" style={{ color: p.apoiada ? palette.primary : palette.textMuted }}>
                         Apoiar · {p.apoios ?? 0}
                       </AppText>
@@ -106,10 +112,10 @@ export default function Propostas() {
                       </View>
                     ) : null}
                   </View>
-                </Card>
+                </Row>
               );
             })}
-          </View>
+          </Panel>
         )}
       </Screen>
       <Fab icon="add" label="Propor" onPress={() => router.push('/(app)/propostas/nova')} />

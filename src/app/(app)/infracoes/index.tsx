@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarInfracoes } from '@/lib/db';
@@ -41,33 +41,44 @@ export default function InfracoesLista() {
             description={gestor ? 'Aplique advertências ou multas quando necessário.' : 'Sua unidade não possui advertências ou multas.'}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {infracoes.map((inf) => {
               const tMeta = tipoInfracaoLabel[inf.tipo];
               const sMeta = statusInfracao[inf.status];
+              const unidade = inf.unidade
+                ? `${inf.unidade.bloco ? 'Bloco ' + inf.unidade.bloco + ' · ' : ''}Un. ${inf.unidade.numero}`
+                : null;
               return (
-                <Card key={inf.id} onPress={() => router.push(`/(app)/infracoes/${inf.id}`)}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                    <Badge label={tMeta.label} tone={tMeta.tone} />
-                    <Badge label={sMeta.label} tone={sMeta.tone} />
-                    <AppText color="subtle" variant="caption" style={{ marginLeft: 'auto' }}>
-                      {formatData(inf.created_at)}
-                    </AppText>
+                <Row key={inf.id} onPress={() => router.push(`/(app)/infracoes/${inf.id}`)} accessibilityLabel={inf.descricao}>
+                  {/*
+                    Dos dois selos que abriam o registro, só o status continua selo:
+                    é o que muda com o tempo e decide o que fazer. O tipo (advertência
+                    ou multa) desceu para a linha de metadados, junto do motivo e da
+                    unidade — continua visível, sem competir pelo mesmo destaque.
+                  */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+                    <View style={{ flex: 1 }}>
+                      <AppText variant="subtitle" numberOfLines={2}>
+                        {inf.descricao}
+                      </AppText>
+                      <MetaLine
+                        style={{ marginTop: 3 }}
+                        itens={[tMeta.label, inf.motivo, unidade, formatData(inf.created_at)]}
+                      />
+                    </View>
+                    <View style={{ alignItems: 'flex-end', gap: 5 }}>
+                      {inf.valor ? (
+                        <AppText variant="label" style={{ fontVariant: ['tabular-nums'], fontSize: 14 }}>
+                          {formatMoeda(inf.valor)}
+                        </AppText>
+                      ) : null}
+                      <Badge label={sMeta.label} tone={sMeta.tone} />
+                    </View>
                   </View>
-                  <AppText variant="subtitle" numberOfLines={2} style={{ marginTop: 6 }}>
-                    {inf.descricao}
-                  </AppText>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 4 }}>
-                    <AppText color="muted" variant="caption" numberOfLines={1} style={{ flex: 1 }}>
-                      {inf.motivo}
-                      {inf.unidade ? ` · ${inf.unidade.bloco ? 'Bloco ' + inf.unidade.bloco + ' · ' : ''}Un. ${inf.unidade.numero}` : ''}
-                    </AppText>
-                    {inf.valor ? <AppText variant="label">{formatMoeda(inf.valor)}</AppText> : null}
-                  </View>
-                </Card>
+                </Row>
               );
             })}
-          </View>
+          </Panel>
         )}
       </Screen>
       {gestor ? <Fab icon="add" label="Aplicar" onPress={() => router.push('/(app)/infracoes/nova')} /> : null}

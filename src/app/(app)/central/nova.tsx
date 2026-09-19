@@ -49,7 +49,7 @@ export default function NovaSolicitacao() {
 
       <View style={{ gap: spacing.lg }}>
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Tipo de solicitação</AppText>
+          <AppText variant="label">Tipo de solicitação</AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {categorias.map((c) => (
               <Chip

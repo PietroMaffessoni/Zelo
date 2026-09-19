@@ -3,8 +3,8 @@ import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppText, Button, Card, Chip, Input, Loading, Screen } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { AppText, Button, Card, Chip, Input, Loading, Panel, Row, Screen } from '@/components/ui';
+import { palette, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { vinculoLabel } from '@/lib/labels';
 import type { Vinculo } from '@/lib/types';
@@ -52,22 +52,14 @@ export default function Onboarding() {
     return (
       <Screen>
         <View style={{ marginTop: spacing.xxl, alignItems: 'center', gap: spacing.md }}>
-          <View
-            style={{
-              width: 72,
-              height: 72,
-              borderRadius: radius.full,
-              backgroundColor: palette.primarySoft,
-              alignItems: 'center',
-              justifyContent: 'center',
-            }}
-          >
-            <Ionicons name="time-outline" size={34} color={palette.primary} />
-          </View>
+          {/* Um disco de 72px com ícone de 34 é o desenho que faz qualquer tela de
+              espera parecer template. O ícone sozinho, na medida do texto, informa
+              o mesmo e deixa o recado — que é o que importa aqui — em primeiro plano. */}
+          <Ionicons name="time-outline" size={22} color={palette.textSubtle} />
           <AppText variant="title" center>
             Aguardando aprovação
           </AppText>
-          <AppText color="muted" center style={{ marginTop: spacing.xs }}>
+          <AppText color="muted" variant="caption" center style={{ marginTop: spacing.xs, maxWidth: 360 }}>
             Seu pedido para entrar em{' '}
             <AppText weight="semibold">{membershipsPendentes[0].condominio?.nome ?? 'o condomínio'}</AppText> foi
             enviado ao síndico. Assim que ele aprovar, você terá acesso automaticamente.
@@ -145,45 +137,49 @@ export default function Onboarding() {
       </View>
 
       {modo === 'escolha' ? (
-        <View style={{ gap: spacing.md }}>
-          <OpcaoCard
-            icon="business"
-            titulo="Administrar um condomínio"
-            descricao="Sou síndico ou administrador e quero criar o condomínio."
-            onPress={() => {
-              setErro(null);
-              setModo('criar');
-            }}
-          />
-          <OpcaoCard
-            icon="home"
-            titulo="Entrar como morador"
-            descricao="Tenho um código de convite do meu condomínio."
-            onPress={() => {
-              setErro(null);
-              setModo('entrar');
-            }}
-          />
-          <OpcaoCard
-            icon="shield-checkmark"
-            titulo="Sou da portaria"
-            descricao="Tenho um código de acesso da equipe de portaria."
-            onPress={() => {
-              setErro(null);
-              setModo('portaria');
-            }}
-          />
-          <OpcaoCard
-            icon="construct"
-            titulo="Sou zelador"
-            descricao="Tenho um código de acesso da equipe de zeladoria."
-            onPress={() => {
-              setErro(null);
-              setModo('zelador');
-            }}
-          />
+        <View>
+          <Panel>
+            <OpcaoCard
+              icon="business"
+              titulo="Administrar um condomínio"
+              descricao="Sou síndico ou administrador e quero criar o condomínio."
+              onPress={() => {
+                setErro(null);
+                setModo('criar');
+              }}
+            />
+            <OpcaoCard
+              icon="home"
+              titulo="Entrar como morador"
+              descricao="Tenho um código de convite do meu condomínio."
+              onPress={() => {
+                setErro(null);
+                setModo('entrar');
+              }}
+            />
+            <OpcaoCard
+              icon="shield-checkmark"
+              titulo="Sou da portaria"
+              descricao="Tenho um código de acesso da equipe de portaria."
+              onPress={() => {
+                setErro(null);
+                setModo('portaria');
+              }}
+            />
+            <OpcaoCard
+              icon="construct"
+              titulo="Sou zelador"
+              descricao="Tenho um código de acesso da equipe de zeladoria."
+              onPress={() => {
+                setErro(null);
+                setModo('zelador');
+              }}
+            />
+          </Panel>
           <Pressable onPress={signOut} style={{ alignSelf: 'center', marginTop: spacing.lg }}>
-            <AppText color="muted">Sair da conta</AppText>
+            <AppText color="muted" variant="caption">
+              Sair da conta
+            </AppText>
           </Pressable>
         </View>
       ) : modo === 'criar' ? (
@@ -280,29 +276,20 @@ function OpcaoCard({
   onPress: () => void;
 }) {
   return (
-    <Card onPress={onPress}>
+    <Row onPress={onPress} accessibilityLabel={`${titulo}. ${descricao}`}>
       <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
-        <View
-          style={{
-            width: 52,
-            height: 52,
-            borderRadius: radius.md,
-            backgroundColor: palette.primarySoft,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name={icon} size={26} color={palette.primary} />
-        </View>
+        {/* Sem o bloco de 52px na cor da marca: as quatro opções tinham o mesmo
+            azul, então a cor não distinguia nada — só pesava. */}
+        <Ionicons name={icon} size={20} color={palette.textSubtle} style={{ width: 24, textAlign: 'center' }} />
         <View style={{ flex: 1 }}>
           <AppText variant="subtitle">{titulo}</AppText>
           <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>
             {descricao}
           </AppText>
         </View>
-        <Ionicons name="chevron-forward" size={22} color={palette.textSubtle} />
+        <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
       </View>
-    </Card>
+    </Row>
   );
 }
 

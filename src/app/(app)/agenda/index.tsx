@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import dayjs from 'dayjs';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarAssembleias, listarEquipamentos, listarEventosAgenda } from '@/lib/db';
@@ -25,7 +25,7 @@ type ItemAgenda = {
 
 export default function Agenda() {
   const router = useRouter();
-  const { palette, tone } = useAppTheme();
+  const { palette } = useAppTheme();
   const { condominioId, papel } = useAuth();
   const gestor = isGestor(papel);
 
@@ -105,48 +105,57 @@ export default function Agenda() {
         ) : (
           grupos.map((g) => (
             <View key={g.mes} style={{ marginBottom: spacing.xl }}>
-              <AppText variant="label" color="muted" style={{ textTransform: 'capitalize', marginBottom: spacing.sm }}>
-                {g.mes}
-              </AppText>
-              <View style={{ gap: spacing.md }}>
+              <SectionHeader title={g.mes} />
+              <Panel>
                 {g.itens.map((it) => {
                   const meta = tipoEventoLabel[it.tipo];
-                  const t = tone[meta.tone];
                   const d = dayjs(it.quando);
                   return (
-                    <Card key={it.id} onPress={it.rota ? () => router.push(it.rota as any) : undefined}>
-                      <View style={{ flexDirection: 'row', gap: spacing.md }}>
+                    <Row
+                      key={it.id}
+                      onPress={it.rota ? () => router.push(it.rota as any) : undefined}
+                      accessibilityLabel={it.titulo}
+                      compact
+                    >
+                      {/*
+                        O bloco de data continua — numa agenda ele é a âncora que
+                        permite varrer a coluna pelo dia. O que saiu foi a cor: com
+                        um fundo diferente por tipo de evento, a régua de datas virava
+                        um mosaico e deixava de funcionar como régua.
+                      */}
+                      <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
                         <View
                           style={{
-                            width: 52,
+                            width: 46,
                             borderRadius: radius.md,
-                            backgroundColor: t.bg,
+                            backgroundColor: palette.surfaceAlt,
                             alignItems: 'center',
                             justifyContent: 'center',
-                            paddingVertical: spacing.sm,
+                            paddingVertical: 6,
                           }}
                         >
-                          <AppText variant="title" style={{ color: t.fg }}>{d.format('DD')}</AppText>
-                          <AppText variant="caption" style={{ color: t.fg, textTransform: 'uppercase' }}>{d.format('MMM')}</AppText>
+                          <AppText variant="subtitle" style={{ fontVariant: ['tabular-nums'] }}>
+                            {d.format('DD')}
+                          </AppText>
+                          <AppText variant="caption" color="muted" style={{ textTransform: 'uppercase' }}>
+                            {d.format('MMM')}
+                          </AppText>
                         </View>
                         <View style={{ flex: 1 }}>
-                          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 2 }}>
-                            <Ionicons name={(meta.icon ?? 'ellipse-outline') as any} size={14} color={t.fg} />
-                            <AppText variant="caption" style={{ color: t.fg }}>{meta.label}</AppText>
-                          </View>
-                          <AppText variant="subtitle" numberOfLines={1}>{it.titulo}</AppText>
-                          <AppText color="muted" variant="caption">{formatDataHora(it.quando)}</AppText>
-                          {it.local ? (
-                            <AppText color="subtle" variant="caption" numberOfLines={1}>
-                              <Ionicons name="location-outline" size={12} color={palette.textSubtle} /> {it.local}
-                            </AppText>
-                          ) : null}
+                          <AppText variant="subtitle" numberOfLines={1}>
+                            {it.titulo}
+                          </AppText>
+                          <MetaLine
+                            style={{ marginTop: 2 }}
+                            itens={[meta.label, formatDataHora(it.quando), it.local]}
+                          />
                         </View>
+                        {it.rota ? <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} /> : null}
                       </View>
-                    </Card>
+                    </Row>
                   );
                 })}
-              </View>
+              </Panel>
             </View>
           ))
         )}

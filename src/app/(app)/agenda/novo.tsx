@@ -61,7 +61,7 @@ export default function NovoEvento() {
       <AppHeader title="Novo evento" back />
       <View style={{ gap: spacing.lg }}>
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Tipo</AppText>
+          <AppText variant="label">Tipo</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {opcoes(tipoEventoLabel).map((o) => (
               <Chip key={o.value} label={o.label} icon={tipoEventoLabel[o.value].icon as any} selected={tipo === o.value} onPress={() => setTipo(o.value)} />
@@ -74,7 +74,7 @@ export default function NovoEvento() {
         <Input label="Descrição (opcional)" placeholder="Detalhes do evento..." value={descricao} onChangeText={setDescricao} multiline />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Dia</AppText>
+          <AppText variant="label">Dia</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {dias.map((d) => (
               <Chip key={d.value} label={d.label} selected={dia === d.value} onPress={() => setDia(d.value)} />
@@ -83,7 +83,7 @@ export default function NovoEvento() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Horário</AppText>
+          <AppText variant="label">Horário</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {HORAS.map((h) => (
               <Chip key={h} label={`${h}h`} selected={hora === h} onPress={() => setHora(h)} />

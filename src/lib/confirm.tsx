@@ -62,18 +62,24 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
                 width: '100%',
                 maxWidth: 400,
                 backgroundColor: palette.surface,
-                borderRadius: radius.lg,
+                borderRadius: radius.xl,
                 borderWidth: 1,
                 borderColor: palette.border,
-                padding: spacing.xl,
-                gap: spacing.md,
+                padding: spacing.xl - 2,
+                gap: spacing.sm,
               },
+              // Um diálogo modal de fato paira sobre a página: aqui a sombra
+              // trabalha, separando a decisão do conteúdo que ficou atrás.
               shadow.floating,
             ]}
           >
-            <AppText variant="subtitle">{opcoes?.titulo}</AppText>
-            {opcoes?.mensagem ? <AppText color="muted">{opcoes.mensagem}</AppText> : null}
-            <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm }}>
+            <AppText variant="heading">{opcoes?.titulo}</AppText>
+            {opcoes?.mensagem ? (
+              <AppText color="muted" variant="caption">
+                {opcoes.mensagem}
+              </AppText>
+            ) : null}
+            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
               <View style={{ flex: 1 }}>
                 <Button title={opcoes?.cancelar ?? 'Cancelar'} variant="secondary" onPress={() => responder(false)} />
               </View>

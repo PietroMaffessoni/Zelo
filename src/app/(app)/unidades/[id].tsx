@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, Input, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, Input, Loading, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import {
@@ -116,21 +116,23 @@ export default function UnidadeDetalhe() {
       />
 
       {/* Moradores */}
-      <AppText variant="subtitle" style={{ marginTop: spacing.md, marginBottom: spacing.sm }}>
-        Moradores
-      </AppText>
+      <SectionHeader title="Moradores" />
       {unidade.moradores.length === 0 ? (
-        <Card>
-          <AppText color="muted">Nenhum morador vinculado a esta unidade ainda.</AppText>
-        </Card>
+        <Panel>
+          <Row>
+            <AppText color="muted" variant="caption">
+              Nenhum morador vinculado a esta unidade ainda.
+            </AppText>
+          </Row>
+        </Panel>
       ) : (
-        <View style={{ gap: spacing.sm }}>
+        <Panel>
           {unidade.moradores.map((m) => (
-            <Card key={m.id}>
+            <Row key={m.id}>
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                <Avatar nome={m.profile?.nome_completo} url={m.profile?.avatar_url} size={40} />
+                <Avatar nome={m.profile?.nome_completo} url={m.profile?.avatar_url} size={34} />
                 <View style={{ flex: 1 }}>
-                  <AppText variant="label" numberOfLines={1}>
+                  <AppText variant="subtitle" numberOfLines={1}>
                     {m.profile?.nome_completo || 'Morador'}
                   </AppText>
                   <View style={{ flexDirection: 'row', gap: spacing.xs, marginTop: 2 }}>
@@ -139,8 +141,15 @@ export default function UnidadeDetalhe() {
                   </View>
                 </View>
                 {gestor ? (
-                  <Pressable onPress={() => remover(m.id)} hitSlop={8} disabled={removendoMorador === m.id}>
-                    <Ionicons name="close-circle-outline" size={22} color={palette.danger} />
+                  <Pressable
+                    onPress={() => remover(m.id)}
+                    hitSlop={8}
+                    disabled={removendoMorador === m.id}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${m.profile?.nome_completo || 'morador'}`}
+                    style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.7 })}
+                  >
+                    <Ionicons name="close-circle-outline" size={19} color={palette.textSubtle} />
                   </Pressable>
                 ) : null}
               </View>
@@ -154,14 +163,17 @@ export default function UnidadeDetalhe() {
                         key={v}
                         disabled={mudandoVinculo === m.id}
                         onPress={() => mudarVinculo(m.id, v)}
-                        style={{
-                          paddingHorizontal: spacing.md,
-                          paddingVertical: 6,
+                        accessibilityRole="button"
+                        accessibilityState={{ selected: ativo }}
+                        accessibilityLabel={meta.label}
+                        style={({ hovered }: any) => ({
+                          paddingHorizontal: spacing.md - 1,
+                          paddingVertical: 5,
                           borderRadius: radius.md,
-                          borderWidth: 1.5,
-                          borderColor: ativo ? tones[meta.tone].fg : palette.border,
-                          backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,
-                        }}
+                          borderWidth: 1,
+                          borderColor: ativo ? tones[meta.tone].fg : hovered ? palette.borderStrong : palette.border,
+                          backgroundColor: ativo ? tones[meta.tone].bg : hovered ? palette.surfaceAlt : palette.surface,
+                        })}
                       >
                         <AppText variant="caption" style={{ color: ativo ? tones[meta.tone].fg : palette.textMuted }}>
                           {meta.label}
@@ -190,19 +202,19 @@ export default function UnidadeDetalhe() {
               ) : null}
 
               {podeGerenciar ? <FichaMorador membership={m} gestor={gestor} onSaved={refetch} /> : null}
-            </Card>
+            </Row>
           ))}
-        </View>
+        </Panel>
       )}
 
       {/* Dependentes */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm }}>
-        <AppText variant="subtitle" style={{ flex: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm, minHeight: 20 }}>
+        <AppText variant="overline" color="subtle" style={{ flex: 1 }}>
           Dependentes
         </AppText>
         {podeGerenciar ? (
           <Pressable onPress={() => setFormDependente((v) => !v)} hitSlop={8}>
-            <Ionicons name={formDependente ? 'close-outline' : 'add-circle-outline'} size={24} color={palette.primary} />
+            <Ionicons name={formDependente ? 'close-outline' : 'add-outline'} size={18} color={palette.primary} />
           </Pressable>
         ) : null}
       </View>
@@ -218,38 +230,43 @@ export default function UnidadeDetalhe() {
           Nenhum dependente cadastrado.
         </AppText>
       ) : (
-        <Card>
-          {unidade.dependentes.map((d, i) => (
-            <View key={d.id}>
-              {i > 0 ? <Divider style={{ marginVertical: spacing.sm }} /> : null}
-              <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Panel>
+          {unidade.dependentes.map((d) => (
+            <Row key={d.id} compact>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                 <View style={{ flex: 1 }}>
-                  <AppText variant="label">{d.nome}</AppText>
+                  <AppText variant="subtitle">{d.nome}</AppText>
                   {d.parentesco ? (
-                    <AppText color="muted" variant="caption">
+                    <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>
                       {d.parentesco}
                     </AppText>
                   ) : null}
                 </View>
                 {podeGerenciar ? (
-                  <Pressable onPress={() => removerDependente(d.id).then(refetch)} hitSlop={8}>
-                    <Ionicons name="trash-outline" size={18} color={palette.textSubtle} />
+                  <Pressable
+                    onPress={() => removerDependente(d.id).then(refetch)}
+                    hitSlop={8}
+                    accessibilityRole="button"
+                    accessibilityLabel={`Remover ${d.nome}`}
+                    style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.65 })}
+                  >
+                    <Ionicons name="trash-outline" size={17} color={palette.textSubtle} />
                   </Pressable>
                 ) : null}
               </View>
-            </View>
+            </Row>
           ))}
-        </Card>
+        </Panel>
       )}
 
       {/* Pets */}
-      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm }}>
-        <AppText variant="subtitle" style={{ flex: 1 }}>
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm, minHeight: 20 }}>
+        <AppText variant="overline" color="subtle" style={{ flex: 1 }}>
           Pets
         </AppText>
         {podeGerenciar ? (
           <Pressable onPress={() => setFormPet((v) => !v)} hitSlop={8}>
-            <Ionicons name={formPet ? 'close-outline' : 'add-circle-outline'} size={24} color={palette.primary} />
+            <Ionicons name={formPet ? 'close-outline' : 'add-outline'} size={18} color={palette.primary} />
           </Pressable>
         ) : null}
       </View>
@@ -269,27 +286,32 @@ export default function UnidadeDetalhe() {
           Nenhum pet cadastrado.
         </AppText>
       ) : (
-        <Card>
-          {unidade.pets.map((p, i) => {
+        <Panel>
+          {unidade.pets.map((p) => {
             const meta = especiePetLabel[p.especie];
             return (
-              <View key={p.id}>
-                {i > 0 ? <Divider style={{ marginVertical: spacing.sm }} /> : null}
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="label">{p.nome}</AppText>
-                    <Badge label={meta.label} tone={meta.tone} style={{ marginTop: 2 }} />
+              <Row key={p.id} compact>
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+                  <View style={{ flex: 1, gap: 4 }}>
+                    <AppText variant="subtitle">{p.nome}</AppText>
+                    <Badge label={meta.label} tone={meta.tone} />
                   </View>
                   {podeGerenciar ? (
-                    <Pressable onPress={() => removerPet(p.id).then(refetch)} hitSlop={8}>
-                      <Ionicons name="trash-outline" size={18} color={palette.textSubtle} />
+                    <Pressable
+                      onPress={() => removerPet(p.id).then(refetch)}
+                      hitSlop={8}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remover ${p.nome}`}
+                      style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.65 })}
+                    >
+                      <Ionicons name="trash-outline" size={17} color={palette.textSubtle} />
                     </Pressable>
                   ) : null}
                 </View>
-              </View>
+              </Row>
             );
           })}
-        </Card>
+        </Panel>
       )}
     </Screen>
   );

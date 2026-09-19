@@ -1,9 +1,10 @@
+import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, EmptyState, ErrorState, Fab, Input, Screen, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, Button, EmptyState, ErrorState, Fab, Input, MetaLine, Panel, Row, Screen, SectionHeader, SkeletonList } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarEncomendas, marcarEncomendaRetirada } from '@/lib/db';
@@ -75,15 +76,20 @@ export default function PortariaEncomendas() {
           <EmptyState icon="cube-outline" title="Nenhuma encomenda registrada" />
         ) : (
           <View style={{ gap: spacing.xl }}>
-            <View style={{ gap: spacing.md }}>
-              <AppText variant="subtitle">Aguardando retirada ({aguardando.length})</AppText>
+            <View>
+              <SectionHeader title={`Aguardando retirada (${aguardando.length})`} />
               {aguardando.length === 0 ? (
-                <AppText color="muted" variant="caption">
-                  Nenhuma encomenda pendente.
-                </AppText>
+                <Panel>
+                  <Row>
+                    <AppText color="muted" variant="caption">
+                      Nenhuma encomenda pendente.
+                    </AppText>
+                  </Row>
+                </Panel>
               ) : (
-                aguardando.map((e) => (
-                  <Card key={e.id}>
+                <Panel>
+                  {aguardando.map((e) => (
+                  <Row key={e.id}>
                     <View style={{ flexDirection: 'row', gap: spacing.md }}>
                       {e.foto_url && fotoUrls[e.foto_url] ? (
                         <Image source={{ uri: fotoUrls[e.foto_url] }} style={{ width: 56, height: 56, borderRadius: radius.md }} contentFit="cover" />
@@ -98,21 +104,23 @@ export default function PortariaEncomendas() {
                             justifyContent: 'center',
                           }}
                         >
-                          <Badge label="?" tone="warning" />
+                          <Ionicons name="cube-outline" size={22} color={palette.textSubtle} />
                         </View>
                       )}
                       <View style={{ flex: 1 }}>
                         <AppText variant="subtitle" numberOfLines={1}>
                           {e.descricao}
                         </AppText>
-                        <AppText color="muted" variant="caption">
-                          {e.unidade?.bloco ? `Bloco ${e.unidade.bloco} · ` : ''}
-                          {e.unidade ? `Unidade ${e.unidade.numero}` : ''}
-                          {e.remetente ? ` · ${e.remetente}` : ''}
-                        </AppText>
-                        <AppText color="subtle" variant="caption">
-                          {tempoRelativo(e.created_at)}
-                        </AppText>
+                        <MetaLine
+                          style={{ marginTop: 2 }}
+                          itens={[
+                            e.unidade
+                              ? `${e.unidade.bloco ? `Bloco ${e.unidade.bloco} · ` : ''}Unidade ${e.unidade.numero}`
+                              : null,
+                            e.remetente,
+                            tempoRelativo(e.created_at),
+                          ]}
+                        />
                       </View>
                     </View>
                     {retirandoId === e.id ? (
@@ -150,28 +158,37 @@ export default function PortariaEncomendas() {
                         />
                       </View>
                     )}
-                  </Card>
-                ))
+                  </Row>
+                  ))}
+                </Panel>
               )}
             </View>
 
             {retiradas.length > 0 ? (
-              <View style={{ gap: spacing.md }}>
-                <AppText variant="subtitle">Retiradas recentemente</AppText>
-                {retiradas.slice(0, 10).map((e) => (
-                  <Card key={e.id}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <AppText variant="label" numberOfLines={1} style={{ flex: 1 }}>
-                        {e.descricao}
-                      </AppText>
-                      <Badge label={L.encomendaStatus.retirada.label} tone={L.encomendaStatus.retirada.tone} />
-                    </View>
-                    <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>
-                      Retirada por {e.retirado_por_nome} · {e.retirado_em ? tempoRelativo(e.retirado_em) : ''}
-                      {e.assinatura_confirmada ? ' · ✍️ assinado' : ''}
-                    </AppText>
-                  </Card>
-                ))}
+              <View>
+                <SectionHeader title="Retiradas recentemente" />
+                <Panel>
+                  {retiradas.slice(0, 10).map((e) => (
+                    <Row key={e.id} compact>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+                        <View style={{ flex: 1 }}>
+                          <AppText variant="subtitle" numberOfLines={1}>
+                            {e.descricao}
+                          </AppText>
+                          <MetaLine
+                            style={{ marginTop: 2 }}
+                            itens={[
+                              `Retirada por ${e.retirado_por_nome}`,
+                              e.retirado_em ? tempoRelativo(e.retirado_em) : null,
+                              e.assinatura_confirmada ? 'assinado' : null,
+                            ]}
+                          />
+                        </View>
+                        <Badge label={L.encomendaStatus.retirada.label} tone={L.encomendaStatus.retirada.tone} />
+                      </View>
+                    </Row>
+                  ))}
+                </Panel>
               </View>
             ) : null}
           </View>

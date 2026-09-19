@@ -9,19 +9,21 @@ function Passo({ n, children }: { n: number; children: React.ReactNode }) {
     <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' }}>
       <View
         style={{
-          width: 26,
-          height: 26,
-          borderRadius: radius.full,
-          backgroundColor: palette.primary,
+          width: 22,
+          height: 22,
+          borderRadius: radius.sm,
+          backgroundColor: palette.primarySoft,
           alignItems: 'center',
           justifyContent: 'center',
-          marginTop: 2,
+          marginTop: 1,
         }}
       >
-        <AppText style={{ color: palette.white, fontWeight: '700', fontSize: 13 }}>{n}</AppText>
+        <AppText style={{ color: palette.primary, fontWeight: '700', fontSize: 12 }}>{n}</AppText>
       </View>
       <View style={{ flex: 1 }}>
-        <AppText color="muted">{children}</AppText>
+        <AppText color="muted" variant="caption">
+          {children}
+        </AppText>
       </View>
     </View>
   );
@@ -31,22 +33,11 @@ export default function Setup() {
   return (
     <Screen>
       <View style={{ alignItems: 'center', marginTop: spacing.xxl, marginBottom: spacing.lg, gap: spacing.sm }}>
-        <View
-          style={{
-            width: 64,
-            height: 64,
-            borderRadius: radius.lg,
-            backgroundColor: palette.primarySoft,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name="cloud-offline-outline" size={32} color={palette.primary} />
-        </View>
+        <Ionicons name="cloud-offline-outline" size={22} color={palette.textSubtle} />
         <AppText variant="title" center>
           Conecte o Supabase
         </AppText>
-        <AppText color="muted" center style={{ maxWidth: 340 }}>
+        <AppText color="muted" variant="caption" center style={{ maxWidth: 360 }}>
           O app está pronto, mas ainda não sabe onde guardar os dados. Configure o backend em 3 passos.
         </AppText>
       </View>

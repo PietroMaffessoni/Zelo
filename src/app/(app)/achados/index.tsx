@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, Button, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { alterarStatusAchado, listarAchados } from '@/lib/db';
@@ -54,69 +54,74 @@ export default function AchadosLista() {
             onAction={() => router.push('/(app)/achados/novo')}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {itens.map((a) => {
               const st = L.achadoStatus[a.status];
               const podeEditar = gestor || a.registrado_por === user?.id;
               return (
-                <Card key={a.id}>
+                <Row key={a.id}>
+                  {/*
+                    Lista com miniatura: a foto identifica o objeto mais rápido que
+                    qualquer texto, então ela abre a linha e todas ficam na mesma
+                    coluna. A miniatura caiu de 72 para 56px — o suficiente para
+                    reconhecer, sem que a lista vire um mural de imagens.
+                  */}
                   <View style={{ flexDirection: 'row', gap: spacing.md }}>
                     {a.foto_url && fotoUrls[a.foto_url] ? (
-                      <Image source={{ uri: fotoUrls[a.foto_url] }} style={{ width: 72, height: 72, borderRadius: radius.md }} contentFit="cover" />
+                      <Image
+                        source={{ uri: fotoUrls[a.foto_url] }}
+                        style={{ width: 56, height: 56, borderRadius: radius.md, backgroundColor: palette.surfaceAlt }}
+                        contentFit="cover"
+                      />
                     ) : (
                       <View
                         style={{
-                          width: 72,
-                          height: 72,
+                          width: 56,
+                          height: 56,
                           borderRadius: radius.md,
                           backgroundColor: palette.surfaceAlt,
                           alignItems: 'center',
                           justifyContent: 'center',
                         }}
                       >
-                        <Ionicons name="cube-outline" size={28} color={palette.textSubtle} />
+                        <Ionicons name="cube-outline" size={22} color={palette.textSubtle} />
                       </View>
                     )}
                     <View style={{ flex: 1 }}>
-                      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                         <AppText variant="subtitle" numberOfLines={1} style={{ flex: 1 }}>
                           {a.titulo}
                         </AppText>
                         <Badge label={st.label} tone={st.tone} />
                       </View>
-                      {a.local_encontrado ? (
-                        <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>
-                          <Ionicons name="location-outline" size={12} /> {a.local_encontrado}
+                      <MetaLine
+                        style={{ marginTop: 2 }}
+                        itens={[a.local_encontrado, a.data_encontrado ? formatData(a.data_encontrado) : null]}
+                      />
+                      {a.descricao ? (
+                        <AppText color="muted" variant="caption" style={{ marginTop: 4 }} numberOfLines={2}>
+                          {a.descricao}
                         </AppText>
                       ) : null}
-                      {a.data_encontrado ? (
-                        <AppText color="subtle" variant="caption">
-                          {formatData(a.data_encontrado)}
-                        </AppText>
+                      {podeEditar && a.status === 'guardado' ? (
+                        <View style={{ marginTop: spacing.md, alignSelf: 'flex-start' }}>
+                          <Button
+                            title="Marcar como devolvido"
+                            variant="secondary"
+                            size="sm"
+                            fullWidth={false}
+                            icon="checkmark-circle-outline"
+                            onPress={() => marcarDevolvido(a)}
+                            loading={processando === a.id}
+                          />
+                        </View>
                       ) : null}
                     </View>
                   </View>
-                  {a.descricao ? (
-                    <AppText color="muted" style={{ marginTop: spacing.sm }} numberOfLines={2}>
-                      {a.descricao}
-                    </AppText>
-                  ) : null}
-                  {podeEditar && a.status === 'guardado' ? (
-                    <View style={{ marginTop: spacing.md }}>
-                      <Button
-                        title="Marcar como devolvido"
-                        variant="secondary"
-                        size="sm"
-                        icon="checkmark-circle-outline"
-                        onPress={() => marcarDevolvido(a)}
-                        loading={processando === a.id}
-                      />
-                    </View>
-                  ) : null}
-                </Card>
+                </Row>
               );
             })}
-          </View>
+          </Panel>
         )}
       </Screen>
       <Fab icon="add" label="Registrar" onPress={() => router.push('/(app)/achados/novo')} />

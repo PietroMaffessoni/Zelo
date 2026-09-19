@@ -65,7 +65,7 @@ export default function NovoVisitante() {
         <Input label="Documento (opcional)" placeholder="RG ou CPF" value={documento} onChangeText={setDocumento} />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Data da visita</AppText>
+          <AppText variant="label">Data da visita</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {dias.map((d) => (
               <Chip key={d.value} label={d.label} selected={dataInicio === d.value} onPress={() => setDataInicio(d.value)} />
@@ -85,7 +85,7 @@ export default function NovoVisitante() {
           />
           {variosDias ? (
             <View style={{ gap: spacing.sm }}>
-              <AppText variant="label" color="muted">Válido até</AppText>
+              <AppText variant="label">Válido até</AppText>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
                 {dias
                   .filter((d) => d.value >= dataInicio)

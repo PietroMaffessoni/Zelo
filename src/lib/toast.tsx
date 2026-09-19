@@ -112,8 +112,8 @@ function ToastView({
             flexDirection: 'row',
             alignItems: 'center',
             gap: spacing.sm,
-            paddingVertical: spacing.md,
-            paddingHorizontal: spacing.lg,
+            paddingVertical: spacing.md - 2,
+            paddingHorizontal: spacing.md + 2,
             borderRadius: radius.md,
             backgroundColor: palette.surface,
             borderWidth: 1,
@@ -124,7 +124,7 @@ function ToastView({
           shadow.floating,
         ]}
       >
-        <Ionicons name={cfg.icon} size={20} color={cfg.cor} />
+        <Ionicons name={cfg.icon} size={17} color={cfg.cor} />
         <AppText variant="label" style={{ flex: 1, color: palette.text }} numberOfLines={2}>
           {atual.mensagem}
         </AppText>

@@ -54,7 +54,7 @@ export default function NovoVeiculo() {
         <Input label="Placa" placeholder="ABC1D23" autoCapitalize="characters" value={placa} onChangeText={setPlaca} />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Tipo</AppText>
+          <AppText variant="label">Tipo</AppText>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             {tipos.map((t) => (
               <Chip key={t} label={tipoVeiculoLabel[t].label} selected={tipo === t} onPress={() => setTipo(t)} />

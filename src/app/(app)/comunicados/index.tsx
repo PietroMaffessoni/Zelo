@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, ErrorState, Fab, Screen, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, EmptyState, ErrorState, Fab, Panel, Row, Screen, SkeletonList } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarComunicados } from '@/lib/db';
@@ -42,11 +42,12 @@ export default function ComunicadosLista() {
             onAction={gestor ? () => router.push('/(app)/comunicados/novo') : undefined}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {comunicados.map((c) => (
-              <Card key={c.id} onPress={() => router.push(`/(app)/comunicados/${c.id}`)}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 6 }}>
-                  {c.fixado ? <Ionicons name="pin" size={15} color={palette.primary} /> : null}
+              <Row key={c.id} onPress={() => router.push(`/(app)/comunicados/${c.id}`)} accessibilityLabel={c.titulo}>
+                {/* Selos e data acima do título: dizem "isto mudou" antes da leitura. */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm - 2, marginBottom: 4 }}>
+                  {c.fixado ? <Ionicons name="pin" size={12} color={palette.textSubtle} /> : null}
                   {c.prioridade === 'alta' ? <Badge label="Urgente" tone="danger" /> : null}
                   {!c.lido ? <Badge label="Novo" tone="primary" /> : null}
                   <AppText color="subtle" variant="caption" style={{ marginLeft: 'auto' }}>
@@ -56,12 +57,12 @@ export default function ComunicadosLista() {
                 <AppText variant="subtitle" numberOfLines={1}>
                   {c.titulo}
                 </AppText>
-                <AppText color="muted" numberOfLines={2} style={{ marginTop: 2 }}>
+                <AppText color="muted" variant="caption" numberOfLines={2} style={{ marginTop: 3 }}>
                   {c.corpo}
                 </AppText>
-              </Card>
+              </Row>
             ))}
-          </View>
+          </Panel>
         )}
       </Screen>
       {gestor ? <Fab icon="add" label="Publicar" onPress={() => router.push('/(app)/comunicados/novo')} /> : null}

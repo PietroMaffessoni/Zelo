@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Button, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Button, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarUnidades, listarVisitantesAutorizados, registrarEntradaVisitante } from '@/lib/db';
@@ -59,15 +59,21 @@ export default function PortariaVisitantes() {
           ) : autorizadosHoje.length === 0 ? (
             <EmptyState icon="people-outline" title="Nenhum visitante autorizado hoje" />
           ) : (
-            <View style={{ gap: spacing.md }}>
+            <Panel>
               {autorizadosHoje.map((a) => (
-                <Card key={a.id}>
-                  <AppText variant="subtitle">{a.nome_visitante}</AppText>
-                  <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>
-                    {unidadeMap.get(a.unidade_id) ?? 'Unidade'}
-                    {a.documento ? ` · ${a.documento}` : ''}
-                  </AppText>
-                  <View style={{ marginTop: spacing.md }}>
+                <Row key={a.id} compact>
+                  {/* A ação fica na mesma linha do visitante: a portaria despacha
+                      a fila de cima a baixo sem descer até um botão por bloco. */}
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}>
+                    <View style={{ flex: 1, minWidth: 150 }}>
+                      <AppText variant="subtitle" numberOfLines={1}>
+                        {a.nome_visitante}
+                      </AppText>
+                      <MetaLine
+                        style={{ marginTop: 2 }}
+                        itens={[unidadeMap.get(a.unidade_id) ?? 'Unidade', a.documento]}
+                      />
+                    </View>
                     <Button
                       title="Registrar entrada"
                       size="sm"
@@ -77,9 +83,9 @@ export default function PortariaVisitantes() {
                       onPress={() => registrarEntrada(a.id, a.unidade_id, a.nome_visitante, a.documento)}
                     />
                   </View>
-                </Card>
+                </Row>
               ))}
-            </View>
+            </Panel>
           )}
         </View>
       </Screen>

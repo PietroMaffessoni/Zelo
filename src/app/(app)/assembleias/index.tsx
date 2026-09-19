@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen, Segmented } from '@/components/ui';
+import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen, Segmented } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarAssembleias } from '@/lib/db';
@@ -48,30 +48,34 @@ export default function AssembleiasLista() {
           ) : assembleias.length === 0 ? (
             <EmptyState icon="podium-outline" title="Nenhuma assembleia por aqui" />
           ) : (
-            <View style={{ gap: spacing.md }}>
+            <Panel>
               {assembleias.map((a) => {
                 const st = assembleiaStatus[a.status];
                 return (
-                  <Card key={a.id} onPress={() => router.push(`/(app)/assembleias/${a.id}`)}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <Row
+                    key={a.id}
+                    onPress={() => router.push(`/(app)/assembleias/${a.id}`)}
+                    accessibilityLabel={a.titulo}
+                    compact
+                  >
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                       <AppText variant="subtitle" numberOfLines={1} style={{ flex: 1 }}>
                         {a.titulo}
                       </AppText>
                       <Badge label={st.label} tone={st.tone} />
                     </View>
-                    <AppText color="muted" variant="caption" style={{ marginTop: 4 }}>
-                      {formatDataHora(a.data_hora)}
-                      {a.local ? ` · ${a.local}` : ''}
-                    </AppText>
-                    {a.quorum_minimo_unidades ? (
-                      <AppText color="subtle" variant="caption" style={{ marginTop: 2 }}>
-                        Quórum mínimo: {a.quorum_minimo_unidades} unidades
-                      </AppText>
-                    ) : null}
-                  </Card>
+                    <MetaLine
+                      style={{ marginTop: 3 }}
+                      itens={[
+                        formatDataHora(a.data_hora),
+                        a.local,
+                        a.quorum_minimo_unidades ? `Quórum mínimo: ${a.quorum_minimo_unidades} unidades` : null,
+                      ]}
+                    />
+                  </Row>
                 );
               })}
-            </View>
+            </Panel>
           )}
         </View>
       </Screen>

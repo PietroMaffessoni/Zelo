@@ -66,7 +66,7 @@ export default function NovaEncomenda() {
             height: 140,
             borderRadius: radius.lg,
             backgroundColor: palette.surface,
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderStyle: foto ? 'solid' : 'dashed',
             borderColor: palette.borderStrong,
             alignItems: 'center',

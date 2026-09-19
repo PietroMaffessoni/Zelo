@@ -90,10 +90,21 @@ export function Sidebar() {
         borderRightColor: palette.border,
       }}
     >
-      <ScrollView contentContainerStyle={{ padding: spacing.md, gap: 2, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
-        <View style={{ paddingHorizontal: spacing.sm, paddingVertical: spacing.md }}>
-          <ZeloWordmark size={24} />
-        </View>
+      {/* A marca vive fora da área de rolagem e é separada por um fio: identidade
+          do produto não é item de menu, e fixá-la evita que suma ao rolar. */}
+      <View
+        style={{
+          paddingHorizontal: spacing.md + spacing.sm,
+          paddingTop: spacing.lg,
+          paddingBottom: spacing.md,
+          borderBottomWidth: 1,
+          borderBottomColor: palette.border,
+        }}
+      >
+        <ZeloWordmark size={22} />
+      </View>
+
+      <ScrollView contentContainerStyle={{ padding: spacing.sm, gap: 1, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
 
         {principais.map((it) => (
           <NavLink key={it.match} item={it} pathname={pathname} onPress={() => router.push(it.href)} />
@@ -115,7 +126,10 @@ export function Sidebar() {
 
         {gestor ? <CodigosAcesso /> : null}
 
-        <View style={{ flex: 1, minHeight: spacing.lg }} />
+        <View style={{ flex: 1, minHeight: spacing.xl }} />
+
+        {/* Rodapé da conta, apartado da navegação por um fio. */}
+        <View style={{ height: 1, backgroundColor: palette.border, marginBottom: spacing.sm }} />
 
         <Pressable
           onPress={() => router.push('/(app)/perfil')}
@@ -310,12 +324,27 @@ function CodigoLinha({
 
 function SectionLabel({ children }: { children: string }) {
   return (
-    <AppText variant="caption" color="subtle" style={{ paddingHorizontal: spacing.sm, marginTop: spacing.md, marginBottom: spacing.xs, letterSpacing: 0.5 }}>
+    <AppText
+      variant="overline"
+      color="subtle"
+      style={{ paddingHorizontal: spacing.sm + 2, marginTop: spacing.lg, marginBottom: spacing.xs + 2 }}
+    >
       {children}
     </AppText>
   );
 }
 
+/**
+ * Item de navegação.
+ *
+ * O ativo é marcado com a primária — fundo tênue e rótulo na cor da marca. É para
+ * isto que a cor principal serve num software: dizer onde você está e o que está
+ * selecionado. Por isso ela quase não aparece em outro lugar da sidebar; se cada
+ * ícone do menu fosse colorido, o item ativo não teria como se destacar.
+ *
+ * "Sair" fica neutro em repouso e só assume o vermelho sob o ponteiro: uma ação
+ * destrutiva precisa avisar na hora do gesto, não pintar a navegação o tempo todo.
+ */
 function NavLink({
   item,
   pathname,
@@ -329,7 +358,6 @@ function NavLink({
 }) {
   const { palette } = useAppTheme();
   const ativo = item.match !== '__sair' && pathname.includes(item.match);
-  const cor = danger ? palette.danger : ativo ? palette.primary : palette.textMuted;
   return (
     <Pressable
       onPress={onPress}
@@ -340,19 +368,32 @@ function NavLink({
         {
           flexDirection: 'row',
           alignItems: 'center',
-          gap: spacing.md,
-          paddingHorizontal: spacing.sm,
-          paddingVertical: 10,
+          gap: spacing.md - 2,
+          paddingHorizontal: spacing.sm + 2,
+          paddingVertical: 8,
           borderRadius: radius.md,
           backgroundColor: ativo ? palette.primarySoft : hovered ? palette.surfaceAlt : 'transparent',
         },
         focusRing(focused, palette.primary, true),
       ]}
     >
-      <Ionicons name={item.icon} size={20} color={cor} />
-      <AppText variant="label" style={{ color: cor }} numberOfLines={1}>
-        {item.label}
-      </AppText>
+      {({ hovered }: any) => {
+        const cor = danger
+          ? hovered
+            ? palette.danger
+            : palette.textMuted
+          : ativo
+            ? palette.primary
+            : palette.textMuted;
+        return (
+          <>
+            <Ionicons name={item.icon} size={18} color={cor} />
+            <AppText variant="label" style={{ color: cor, flex: 1 }} numberOfLines={1}>
+              {item.label}
+            </AppText>
+          </>
+        );
+      }}
     </Pressable>
   );
 }

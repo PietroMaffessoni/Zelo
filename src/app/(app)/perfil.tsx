@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Button, Card, Divider, Input, Screen } from '@/components/ui';
+import { AppHeader, AppText, Avatar, Badge, Button, Input, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
@@ -70,14 +70,14 @@ export default function Perfil() {
 
       <View style={{ alignItems: 'center', gap: spacing.sm, marginVertical: spacing.lg }}>
         <Pressable onPress={trocarAvatar}>
-          <Avatar nome={nome || profile?.nome_completo} url={avatar} size={96} />
+          <Avatar nome={nome || profile?.nome_completo} url={avatar} size={76} />
           <View
             style={{
               position: 'absolute',
               right: -2,
               bottom: -2,
-              width: 32,
-              height: 32,
+              width: 28,
+              height: 28,
               borderRadius: radius.full,
               backgroundColor: palette.primary,
               alignItems: 'center',
@@ -104,88 +104,91 @@ export default function Perfil() {
       </View>
 
       {/* Aparência */}
-      <AppText variant="subtitle" style={{ marginTop: spacing.xxl, marginBottom: spacing.md }}>
-        Aparência
-      </AppText>
-      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
-        <Pressable
-          onPress={alternar}
-          style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md }}
-        >
-          <View
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: radius.md,
-              backgroundColor: palette.primarySoft,
-              alignItems: 'center',
-              justifyContent: 'center',
-              marginRight: spacing.md,
-            }}
-          >
-            <Ionicons name={escuro ? 'moon' : 'sunny'} size={18} color={palette.primary} />
+      <SectionHeader title="Aparência" style={{ marginTop: spacing.xxl }} />
+      <Panel>
+        <Row onPress={alternar} accessibilityLabel="Modo escuro" compact>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Ionicons
+              name={escuro ? 'moon-outline' : 'sunny-outline'}
+              size={19}
+              color={palette.textSubtle}
+              style={{ width: 22, textAlign: 'center' }}
+            />
+            <AppText variant="subtitle" style={{ flex: 1 }}>
+              Modo escuro
+            </AppText>
+            <Switch value={escuro} onValueChange={alternar} trackColor={{ true: palette.primary, false: palette.borderStrong }} />
           </View>
-          <AppText style={{ flex: 1 }}>Modo escuro</AppText>
-          <Switch value={escuro} onValueChange={alternar} trackColor={{ true: palette.primary, false: palette.borderStrong }} />
-        </Pressable>
-      </Card>
+        </Row>
+      </Panel>
 
       {/* Notificações */}
-      <AppText variant="subtitle" style={{ marginTop: spacing.xxl, marginBottom: spacing.md }}>
-        Notificações
-      </AppText>
-      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
-        {CATEGORIAS_NOTIFICACAO.map((c, i) => (
-          <View key={c.chave}>
-            {i > 0 ? <Divider /> : null}
-            <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: spacing.md }}>
-              <AppText style={{ flex: 1 }}>{c.label}</AppText>
+      <SectionHeader title="Notificações" style={{ marginTop: spacing.xxl }} />
+      <Panel>
+        {CATEGORIAS_NOTIFICACAO.map((c) => (
+          <Row key={c.chave} compact>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+              <AppText variant="subtitle" style={{ flex: 1 }}>
+                {c.label}
+              </AppText>
               <Switch
                 value={profile?.preferencias_notificacao?.[c.chave] ?? true}
                 onValueChange={(v) => alternarNotificacao(c.chave, v)}
                 trackColor={{ true: palette.primary, false: palette.borderStrong }}
               />
             </View>
-          </View>
+          </Row>
         ))}
-      </Card>
+      </Panel>
 
       {/* Meus condomínios */}
-      <AppText variant="subtitle" style={{ marginTop: spacing.xxl, marginBottom: spacing.md }}>
-        Meus condomínios
-      </AppText>
-      <View style={{ gap: spacing.md }}>
+      <SectionHeader title="Meus condomínios" style={{ marginTop: spacing.xxl }} />
+      {/*
+        Seletor de condomínio. A borda de 2px no item ativo engordava a caixa e
+        desalinhava a lista; o ativo agora se marca com um risco na cor da marca à
+        esquerda, fundo tênue e a marca de seleção à direita — a mesma gramática de
+        "selecionado" usada na sidebar, o que torna o estado reconhecível de tela
+        para tela.
+      */}
+      <Panel>
         {memberships.map((m) => {
           const ativo = m.condominio_id === condominioId;
           return (
-            <Card
+            <Row
               key={m.id}
               onPress={() => selecionarCondominio(m.condominio_id)}
-              style={ativo ? { borderColor: palette.primary, borderWidth: 2 } : undefined}
+              accessibilityLabel={m.condominio?.nome ?? 'Condomínio'}
+              compact
+              style={
+                ativo
+                  ? {
+                      backgroundColor: palette.primarySoft,
+                      borderLeftWidth: 3,
+                      borderLeftColor: palette.primary,
+                      paddingLeft: spacing.lg - 3,
+                    }
+                  : undefined
+              }
             >
               <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                <View
-                  style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: radius.md,
-                    backgroundColor: palette.primarySoft,
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                  }}
-                >
-                  <Ionicons name="business" size={20} color={palette.primary} />
-                </View>
-                <View style={{ flex: 1 }}>
-                  <AppText variant="subtitle" numberOfLines={1}>{m.condominio?.nome ?? 'Condomínio'}</AppText>
+                <Ionicons
+                  name="business-outline"
+                  size={19}
+                  color={ativo ? palette.primary : palette.textSubtle}
+                  style={{ width: 22, textAlign: 'center' }}
+                />
+                <View style={{ flex: 1, gap: 4 }}>
+                  <AppText variant="subtitle" numberOfLines={1}>
+                    {m.condominio?.nome ?? 'Condomínio'}
+                  </AppText>
                   <Badge label={papelLabel[m.papel]} tone={isGestor(m.papel) ? 'primary' : 'neutral'} />
                 </View>
-                {ativo ? <Ionicons name="checkmark-circle" size={22} color={palette.primary} /> : null}
+                {ativo ? <Ionicons name="checkmark-circle" size={19} color={palette.primary} /> : null}
               </View>
-            </Card>
+            </Row>
           );
         })}
-      </View>
+      </Panel>
 
       <View style={{ marginTop: spacing.xxl }}>
         <Button title="Sair da conta" variant="danger" icon="log-out-outline" onPress={signOut} />
