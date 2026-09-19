@@ -1,13 +1,14 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Image } from 'expo-image';
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, View } from 'react-native';
+import { useState } from 'react';
+import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui';
+import { AppHeader, AppText, Button, Input, Screen } from '@/components/ui';
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarAchado } from '@/lib/db';
+import { mascaraData, parseData } from '@/lib/format';
 import { useVoltar } from '@/lib/navegacao';
 import { enviarArquivo, escolherImagem } from '@/lib/storage';
 
@@ -18,21 +19,9 @@ export default function NovoAchado() {
   const [titulo, setTitulo] = useState('');
   const [local, setLocal] = useState('');
   const [descricao, setDescricao] = useState('');
-  const [dia, setDia] = useState(dayjs().format('YYYY-MM-DD'));
+  const [dia, setDia] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [salvando, setSalvando] = useState(false);
-
-  const dias = useMemo(
-    () =>
-      Array.from({ length: 10 }, (_, i) => {
-        const d = dayjs().subtract(i, 'day');
-        return {
-          value: d.format('YYYY-MM-DD'),
-          label: i === 0 ? 'Hoje' : i === 1 ? 'Ontem' : d.format('ddd DD/MM'),
-        };
-      }),
-    [],
-  );
 
   async function selecionarFoto() {
     const uri = await escolherImagem();
@@ -41,6 +30,10 @@ export default function NovoAchado() {
 
   async function registrar() {
     if (!titulo.trim()) return setErro('Informe o que foi encontrado.');
+    if (!dia.trim()) return setErro('Informe quando foi encontrado.');
+    const data = parseData(dia);
+    if (!data.isValid()) return setErro('Informe quando foi encontrado no formato DD/MM/AAAA.');
+    if (data.isAfter(dayjs(), 'day')) return setErro('A data em que foi encontrado não pode ser no futuro.');
     if (!condominioId || !user) return;
     setSalvando(true);
     setErro(null);
@@ -53,7 +46,7 @@ export default function NovoAchado() {
         descricao: descricao.trim() || null,
         local_encontrado: local.trim() || null,
         foto_url,
-        data_encontrado: dia,
+        data_encontrado: data.format('YYYY-MM-DD'),
       });
       voltar();
     } catch (e: any) {
@@ -73,7 +66,7 @@ export default function NovoAchado() {
             height: 160,
             borderRadius: radius.lg,
             backgroundColor: palette.surface,
-            borderWidth: 1.5,
+            borderWidth: 1,
             borderStyle: foto ? 'solid' : 'dashed',
             borderColor: palette.borderStrong,
             alignItems: 'center',
@@ -97,14 +90,15 @@ export default function NovoAchado() {
         <Input label="Onde foi encontrado?" placeholder="Ex.: Garagem, bloco B" value={local} onChangeText={setLocal} icon="location-outline" />
         <Input label="Descrição (opcional)" placeholder="Detalhes do objeto..." value={descricao} onChangeText={setDescricao} multiline />
 
-        <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Quando foi encontrado?</AppText>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
-            {dias.map((d) => (
-              <Chip key={d.value} label={d.label} selected={dia === d.value} onPress={() => setDia(d.value)} />
-            ))}
-          </ScrollView>
-        </View>
+        <Input
+          label="Quando foi encontrado?"
+          placeholder="DD/MM/AAAA"
+          keyboardType="number-pad"
+          maxLength={10}
+          value={dia}
+          onChangeText={(v) => setDia(mascaraData(v))}
+          icon="calendar-outline"
+        />
 
         {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
 

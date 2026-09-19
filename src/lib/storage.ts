@@ -1,9 +1,61 @@
 import * as DocumentPicker from 'expo-document-picker';
+import { File as ArquivoLocal } from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
+import { Platform } from 'react-native';
 
 import { supabase } from '@/lib/supabase';
 
 export type Bucket = 'avatars' | 'chamados' | 'achados' | 'portaria' | 'financeiro' | 'documentos';
+
+const MIME_POR_EXT: Record<string, string> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  gif: 'image/gif',
+  pdf: 'application/pdf',
+};
+
+const EXT_POR_MIME: Record<string, string> = {
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/webp': 'webp',
+  'image/heic': 'heic',
+  'image/heif': 'heif',
+  'image/gif': 'gif',
+  'application/pdf': 'pdf',
+};
+
+/** Extensão em minúsculas ("jpg"), sem ponto. Vazio quando o URI não tem uma
+ *  extensão de verdade (o picker no web devolve `blob:`/`data:`, sem nome). */
+function extensaoDe(nome: string): string {
+  const ext = nome.split('.').pop()?.split('?')[0]?.toLowerCase() ?? '';
+  return /^[a-z0-9]{1,5}$/.test(ext) ? ext : '';
+}
+
+/**
+ * Lê o arquivo local no formato que o Supabase consegue enviar em cada plataforma.
+ *
+ * No React Native o supabase-js embrulha `Blob`/`File` num `FormData`, e o `FormData` do RN
+ * só sabe serializar strings e objetos `{ uri }` — o Blob vira uma parte vazia e o arquivo
+ * sobe com 0 byte (o upload "dá certo", mas a imagem nunca aparece). Por isso, no nativo,
+ * lemos os bytes com o expo-file-system e enviamos o binário, que é o caminho recomendado
+ * pela própria Supabase. No web o Blob funciona normalmente.
+ */
+async function lerArquivo(localUri: string, ext: string) {
+  const padrao = MIME_POR_EXT[ext] ?? 'application/octet-stream';
+  if (Platform.OS === 'web') {
+    const blob = await (await fetch(localUri)).blob();
+    if (blob.size === 0) throw new Error('Não foi possível ler o arquivo selecionado.');
+    return { corpo: blob, contentType: blob.type || padrao };
+  }
+  const arquivo = new ArquivoLocal(localUri);
+  const bytes = await arquivo.bytes();
+  if (bytes.byteLength === 0) throw new Error('Não foi possível ler o arquivo selecionado.');
+  return { corpo: bytes, contentType: MIME_POR_EXT[ext] || arquivo.type || padrao };
+}
 
 /** Abre a galeria e retorna o URI local da imagem escolhida (ou null). */
 export async function escolherImagem(): Promise<string | null> {
@@ -28,12 +80,11 @@ export async function enviarImagem(bucket: 'avatars', localUri: string): Promise
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) throw new Error('Não autenticado');
-  const ext = (localUri.split('.').pop()?.split('?')[0] || 'jpg').toLowerCase();
+  const { corpo, contentType } = await lerArquivo(localUri, extensaoDe(localUri));
+  const ext = extensaoDe(localUri) || EXT_POR_MIME[contentType] || 'jpg';
   const nome = `${user.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const resp = await fetch(localUri);
-  const blob = await resp.blob();
-  const { error } = await supabase.storage.from(bucket).upload(nome, blob, {
-    contentType: blob.type || `image/${ext}`,
+  const { error } = await supabase.storage.from(bucket).upload(nome, corpo, {
+    contentType,
     upsert: false,
   });
   if (error) throw error;
@@ -65,12 +116,12 @@ export async function escolherDocumento(): Promise<{ uri: string; nome: string; 
  * Retorna o *path* dentro do bucket, não uma URL — buckets privados exigem `urlAssinada` para leitura.
  */
 export async function enviarArquivo(bucket: Bucket, localUri: string, pasta: string, nomeOriginal?: string): Promise<string> {
-  const ext = (nomeOriginal ?? localUri).split('.').pop()?.split('?')[0]?.toLowerCase() || 'dat';
+  const extOriginal = extensaoDe(nomeOriginal ?? localUri);
+  const { corpo, contentType } = await lerArquivo(localUri, extOriginal);
+  const ext = extOriginal || EXT_POR_MIME[contentType] || 'dat';
   const path = `${pasta}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
-  const resp = await fetch(localUri);
-  const blob = await resp.blob();
-  const { error } = await supabase.storage.from(bucket).upload(path, blob, {
-    contentType: blob.type || undefined,
+  const { error } = await supabase.storage.from(bucket).upload(path, corpo, {
+    contentType,
     upsert: false,
   });
   if (error) throw error;
