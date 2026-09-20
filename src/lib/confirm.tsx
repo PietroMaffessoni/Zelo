@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
+import { Modal, Pressable, ScrollView, useWindowDimensions } from 'react-native';
 
 import { Acoes } from '@/components/ui/Form';
 import { Button } from '@/components/ui/Button';

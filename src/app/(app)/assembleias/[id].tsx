@@ -1,9 +1,8 @@
-import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Acoes, AppHeader, AppText, Badge, Button, Card, Divider, Input, Loading, Screen } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, Card, Divider, IconButton, Input, Loading, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
@@ -151,9 +150,13 @@ export default function AssembleiaDetalhe() {
       <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: spacing.xl, marginBottom: spacing.sm }}>
         <AppText variant="subtitle" style={{ flex: 1 }}>Pautas</AppText>
         {gestor && !encerradaOuCancelada ? (
-          <Pressable onPress={() => setFormPauta((v) => !v)} hitSlop={8}>
-            <Ionicons name={formPauta ? 'close-outline' : 'add-circle-outline'} size={24} color={palette.primary} />
-          </Pressable>
+          <IconButton
+            icon={formPauta ? 'close-outline' : 'add-circle-outline'}
+            label={formPauta ? 'Fechar formulário de pauta' : 'Adicionar pauta'}
+            tone="primary"
+            size={22}
+            onPress={() => setFormPauta((v) => !v)}
+          />
         ) : null}
       </View>
 

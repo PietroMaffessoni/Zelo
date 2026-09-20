@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
 
-import { Acoes, AppHeader, AppText, Badge, Button, Card, EmptyState, Input, Loading, Screen, Segmented } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, Card, EmptyState, IconButton, Input, Loading, Screen, Segmented } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { atualizarAdministradora, atualizarStatusLancamento, listarLancamentos, marcarDespesasEnviadas } from '@/lib/db';
@@ -133,9 +133,12 @@ export default function ContasAdministradora() {
                 <AppText color="subtle" variant="caption">Toque para configurar a administradora do condomínio.</AppText>
               )}
             </View>
-            <Pressable onPress={() => { setNomeAdm(cond?.administradora ?? ''); setContatoAdm(cond?.administradora_contato ?? ''); setEditandoAdm(true); }} hitSlop={8}>
-              <Ionicons name="create-outline" size={18} color={palette.primary} />
-            </Pressable>
+            <IconButton
+              icon="create-outline"
+              label="Editar administradora"
+              tone="primary"
+              onPress={() => { setNomeAdm(cond?.administradora ?? ''); setContatoAdm(cond?.administradora_contato ?? ''); setEditandoAdm(true); }}
+            />
           </View>
         )}
       </Card>
@@ -188,9 +191,12 @@ export default function ContasAdministradora() {
                       ) : null}
                     </View>
                     {aba === 'enviadas' && d.status !== 'pago' ? (
-                      <Pressable onPress={() => reabrir(d.id)} disabled={processando === d.id} hitSlop={8}>
-                        <Ionicons name="arrow-undo-outline" size={18} color={palette.textSubtle} />
-                      </Pressable>
+                      <IconButton
+                        icon="arrow-undo-outline"
+                        label={`Reabrir ${d.descricao}`}
+                        onPress={() => reabrir(d.id)}
+                        disabled={processando === d.id}
+                      />
                     ) : null}
                   </View>
                 </Card>

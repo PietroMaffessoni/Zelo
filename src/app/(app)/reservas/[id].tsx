@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 
-import { Acoes, AppHeader, AppText, Badge, Button, Card, DataRow, Input, Loading, Screen, SectionHeader } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, Card, DataRow, IconButton, Input, Loading, Screen, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
@@ -288,9 +288,12 @@ function VistoriaSecao({
           {meta.label}
         </AppText>
         {podeEditar && !editando ? (
-          <Pressable onPress={iniciarEdicao} hitSlop={8} accessibilityRole="button" accessibilityLabel={meta.label}>
-            <Ionicons name={vistoria ? 'create-outline' : 'add-outline'} size={18} color={palette.primary} />
-          </Pressable>
+          <IconButton
+            icon={vistoria ? 'create-outline' : 'add-outline'}
+            label={vistoria ? `Editar ${meta.label.toLowerCase()}` : `Registrar ${meta.label.toLowerCase()}`}
+            tone="primary"
+            onPress={iniciarEdicao}
+          />
         ) : null}
       </View>
 
@@ -298,22 +301,25 @@ function VistoriaSecao({
         <Card style={{ marginTop: spacing.sm, gap: spacing.sm }}>
           {itens.map((it, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-              <Pressable onPress={() => alternarOk(i)} hitSlop={8}>
+              <Pressable
+                onPress={() => alternarOk(i)}
+                hitSlop={12}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: it.ok }}
+                accessibilityLabel={it.item}
+                style={{ minWidth: 28, minHeight: 28, alignItems: 'center', justifyContent: 'center' }}
+              >
                 <Ionicons name={it.ok ? 'checkmark-circle' : 'close-circle'} size={19} color={it.ok ? palette.success : palette.danger} />
               </Pressable>
               <AppText variant="caption" style={{ flex: 1 }}>{it.item}</AppText>
-              <Pressable onPress={() => removerItem(i)} hitSlop={8}>
-                <Ionicons name="trash-outline" size={18} color={palette.textSubtle} />
-              </Pressable>
+              <IconButton icon="trash-outline" label={`Remover ${it.item}`} onPress={() => removerItem(i)} />
             </View>
           ))}
           <View style={{ flexDirection: 'row', gap: spacing.sm, alignItems: 'center' }}>
             <View style={{ flex: 1 }}>
               <Input placeholder="Ex.: Piso limpo" value={novoItem} onChangeText={setNovoItem} onSubmitEditing={adicionarItem} />
             </View>
-            <Pressable onPress={adicionarItem} hitSlop={8}>
-              <Ionicons name="add-circle" size={22} color={palette.primary} />
-            </Pressable>
+            <IconButton icon="add-circle" label="Adicionar item ao checklist" tone="primary" size={22} onPress={adicionarItem} />
           </View>
           <Acoes minimo={140}>
             <Button title="Cancelar" variant="secondary" size="sm" onPress={() => setEditando(false)} />

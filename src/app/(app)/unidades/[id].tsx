@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Acoes, AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, Input, Loading, Panel, Row, Screen, SectionHeader } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, IconButton, Input, Loading, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
@@ -143,16 +143,13 @@ export default function UnidadeDetalhe() {
                   </View>
                 </View>
                 {gestor ? (
-                  <Pressable
+                  <IconButton
+                    icon="close-circle-outline"
+                    label={`Remover ${m.profile?.nome_completo || 'morador'}`}
                     onPress={() => remover(m.id)}
-                    hitSlop={8}
                     disabled={removendoMorador === m.id}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remover ${m.profile?.nome_completo || 'morador'}`}
-                    style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.7 })}
-                  >
-                    <Ionicons name="close-circle-outline" size={19} color={palette.textSubtle} />
-                  </Pressable>
+                    size={19}
+                  />
                 ) : null}
               </View>
               {gestor ? (
@@ -215,9 +212,12 @@ export default function UnidadeDetalhe() {
           Dependentes
         </AppText>
         {podeGerenciar ? (
-          <Pressable onPress={() => setFormDependente((v) => !v)} hitSlop={8}>
-            <Ionicons name={formDependente ? 'close-outline' : 'add-outline'} size={18} color={palette.primary} />
-          </Pressable>
+          <IconButton
+            icon={formDependente ? 'close-outline' : 'add-outline'}
+            label={formDependente ? 'Fechar formulário de dependente' : 'Adicionar dependente'}
+            tone="primary"
+            onPress={() => setFormDependente((v) => !v)}
+          />
         ) : null}
       </View>
       {formDependente ? (
@@ -245,15 +245,12 @@ export default function UnidadeDetalhe() {
                   ) : null}
                 </View>
                 {podeGerenciar ? (
-                  <Pressable
+                  <IconButton
+                    icon="trash-outline"
+                    label={`Remover ${d.nome}`}
                     onPress={() => removerDependente(d.id).then(refetch)}
-                    hitSlop={8}
-                    accessibilityRole="button"
-                    accessibilityLabel={`Remover ${d.nome}`}
-                    style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.65 })}
-                  >
-                    <Ionicons name="trash-outline" size={17} color={palette.textSubtle} />
-                  </Pressable>
+                    size={17}
+                  />
                 ) : null}
               </View>
             </Row>
@@ -267,9 +264,12 @@ export default function UnidadeDetalhe() {
           Pets
         </AppText>
         {podeGerenciar ? (
-          <Pressable onPress={() => setFormPet((v) => !v)} hitSlop={8}>
-            <Ionicons name={formPet ? 'close-outline' : 'add-outline'} size={18} color={palette.primary} />
-          </Pressable>
+          <IconButton
+            icon={formPet ? 'close-outline' : 'add-outline'}
+            label={formPet ? 'Fechar formulário de pet' : 'Adicionar pet'}
+            tone="primary"
+            onPress={() => setFormPet((v) => !v)}
+          />
         ) : null}
       </View>
       {formPet ? (
@@ -299,15 +299,12 @@ export default function UnidadeDetalhe() {
                     <Badge label={meta.label} tone={meta.tone} />
                   </View>
                   {podeGerenciar ? (
-                    <Pressable
+                    <IconButton
+                      icon="trash-outline"
+                      label={`Remover ${p.nome}`}
                       onPress={() => removerPet(p.id).then(refetch)}
-                      hitSlop={8}
-                      accessibilityRole="button"
-                      accessibilityLabel={`Remover ${p.nome}`}
-                      style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.65 })}
-                    >
-                      <Ionicons name="trash-outline" size={17} color={palette.textSubtle} />
-                    </Pressable>
+                      size={17}
+                    />
                   ) : null}
                 </View>
               </Row>

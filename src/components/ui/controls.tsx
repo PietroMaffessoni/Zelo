@@ -3,7 +3,7 @@ import { Platform, Pressable, ScrollView, View, type ViewStyle } from 'react-nat
 
 import { radius, shadow, spacing, type Tone } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
-import { useLayout } from '@/lib/responsivo';
+import { TOQUE_MINIMO, useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 
 /** O react-native-web marca `focused` em qualquer foco, inclusive no clique do
@@ -116,6 +116,67 @@ export function Segmented<T extends string>({
     </ScrollView>
   );
 }
+
+/**
+ * Botão só de ícone: remover, editar, adicionar, fechar.
+ *
+ * O app tinha vinte e poucos desses escritos à mão, cada um como um `Pressable`
+ * cru em volta de um ícone de 16 a 19px com `hitSlop={8}` — um alvo de 32 a 35px,
+ * abaixo dos 44pt que o dedo precisa, e sem estado de foco. Cada um também
+ * inventava o próprio realce (uns mudavam `opacity`, outros nada), então a mesma
+ * ação parecia diferente de tela para tela.
+ *
+ * A caixa visível continua discreta (34px, o mesmo do botão de atualizar do
+ * cabeçalho) e o `hitSlop` completa os 44 de alcance: o alvo cresce sem que a
+ * linha engorde.
+ */
+export function IconButton({
+  icon,
+  onPress,
+  label,
+  tone = 'neutral',
+  size = 18,
+  disabled,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  onPress: () => void;
+  /** Obrigatório: sem rótulo de texto, é a única coisa que o leitor de tela anuncia. */
+  label: string;
+  tone?: 'neutral' | 'primary' | 'danger';
+  size?: number;
+  disabled?: boolean;
+}) {
+  const { palette, tone: tones } = useAppTheme();
+  const cor = tone === 'primary' ? palette.primary : tone === 'danger' ? tones.danger.fg : palette.textSubtle;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={disabled}
+      hitSlop={(TOQUE_MINIMO - CAIXA_ICONE) / 2}
+      accessibilityRole="button"
+      accessibilityLabel={label}
+      accessibilityState={{ disabled: !!disabled }}
+      style={({ pressed, hovered, focused }: any) => [
+        {
+          width: CAIXA_ICONE,
+          height: CAIXA_ICONE,
+          borderRadius: radius.md,
+          alignItems: 'center',
+          justifyContent: 'center',
+          flexShrink: 0,
+          backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
+          opacity: disabled ? 0.4 : 1,
+        },
+        focusRing(focused, palette.primary),
+      ]}
+    >
+      <Ionicons name={icon} size={size} color={cor} />
+    </Pressable>
+  );
+}
+
+const CAIXA_ICONE = 34;
 
 /**
  * Linha de lista com ícone, título, subtítulo e ação.

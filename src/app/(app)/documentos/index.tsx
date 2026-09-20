@@ -2,9 +2,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
-import { Pressable, View } from 'react-native';
+import { View } from 'react-native';
 
-import { AppHeader, AppText, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
+import { AppHeader, AppText, EmptyState, Fab, IconButton, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarDocumentos, removerDocumento } from '@/lib/db';
@@ -166,16 +166,13 @@ function DocumentoLinha({
         {abrindo ? (
           <Ionicons name="hourglass-outline" size={17} color={palette.textSubtle} />
         ) : gestor ? (
-          <Pressable
+          <IconButton
+            icon="trash-outline"
+            label={`Remover ${d.titulo}`}
             onPress={onRemover}
-            hitSlop={8}
             disabled={removendo}
-            accessibilityRole="button"
-            accessibilityLabel={`Remover ${d.titulo}`}
-            style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.65 })}
-          >
-            <Ionicons name="trash-outline" size={17} color={palette.textSubtle} />
-          </Pressable>
+            size={17}
+          />
         ) : d.arquivo_path ? (
           <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
         ) : null}

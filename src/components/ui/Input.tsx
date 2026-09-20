@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
-import { Platform, Pressable, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
+import { Platform, StyleSheet, TextInput, View, type TextInputProps } from 'react-native';
 
 import { fontSize, radius, spacing } from '@/constants/theme';
+import { IconButton } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
 import { useAppTheme } from '@/lib/theme';
 
@@ -57,14 +58,15 @@ export function Input({ label, error, hint, icon, senha, style, ...rest }: Input
           secureTextEntry={oculto}
           {...rest}
         />
+        {/* Alvo de 35px antes; agora 44, com realce e foco iguais aos demais
+            botões de ícone do app. */}
         {senha ? (
-          <Pressable onPress={() => setOculto((v) => !v)} hitSlop={8} accessibilityRole="button" accessibilityLabel={oculto ? 'Mostrar senha' : 'Ocultar senha'}>
-            <Ionicons
-              name={oculto ? 'eye-outline' : 'eye-off-outline'}
-              size={19}
-              color={palette.textSubtle}
-            />
-          </Pressable>
+          <IconButton
+            icon={oculto ? 'eye-outline' : 'eye-off-outline'}
+            label={oculto ? 'Mostrar senha' : 'Ocultar senha'}
+            onPress={() => setOculto((v) => !v)}
+            size={19}
+          />
         ) : null}
       </View>
       {error ? (
