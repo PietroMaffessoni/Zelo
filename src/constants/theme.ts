@@ -223,9 +223,16 @@ export const radius = {
   full: 999,
 } as const;
 
-// Largura da navegação lateral fixa (desktop). Compartilhada entre a própria
-// Sidebar e o cálculo de centralização do conteúdo em Layout.
+/**
+ * Largura da navegação lateral fixa.
+ *
+ * Duas medidas porque a barra passou a aparecer também no tablet (a partir de
+ * 768px): lá 264px consumiriam mais de um terço da largura da tela e sobraria
+ * pouco para o conteúdo, então ela encolhe para 228 — o suficiente para os
+ * rótulos mais longos ("Advertências e multas") sem virar uma régua de ícones.
+ */
 export const SIDEBAR_LARGURA = 264;
+export const SIDEBAR_LARGURA_TABLET = 228;
 
 export const fontSize = {
   xs: 12,

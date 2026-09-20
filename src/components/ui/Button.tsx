@@ -1,7 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
-  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -10,8 +9,8 @@ import {
 } from 'react-native';
 
 import { radius, spacing } from '@/constants/theme';
-import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
+import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 
 type Variante = 'primary' | 'secondary' | 'ghost' | 'danger';
@@ -27,9 +26,16 @@ export type ButtonProps = Omit<PressableProps, 'style'> & {
   style?: ViewStyle;
 };
 
-// Alturas reduzidas: 56px de botão dominava a tela sem que a ação ganhasse nada
-// em clareza. 48px continua confortável ao toque (acima dos 44 recomendados).
-const alturas: Record<Tamanho, number> = { sm: 34, md: 42, lg: 48 };
+/**
+ * Altura por tamanho. No toque, o `sm` sobe de 40 para 44px: 40px é confortável
+ * com ponteiro e pequeno demais para o polegar — 44pt é o mínimo do HIG. O
+ * desktop mantém a densidade original, porque lá o alvo não é o dedo.
+ */
+const ALTURAS: Record<Tamanho, { ponteiro: number; toque: number }> = {
+  sm: { ponteiro: 40, toque: 44 },
+  md: { ponteiro: 48, toque: 48 },
+  lg: { ponteiro: 56, toque: 56 },
+};
 
 export function Button({
   title,
@@ -43,8 +49,7 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const { palette } = useAppTheme();
-  const inativo = disabled || loading;
-
+  const { compacto } = useLayout();
   const bg =
     variant === 'primary'
       ? palette.primary
@@ -60,44 +65,46 @@ export function Button({
         ? palette.text
         : palette.primary;
   const borderColor = variant === 'secondary' ? palette.border : 'transparent';
-
-  // Hover no web: o preenchido escurece/clareia (primaryDark serve aos dois temas)
-  // e o vazado ganha fundo. Sem sombra — a mudança de cor já confirma a resposta.
-  const bgHover =
-    variant === 'primary'
-      ? palette.primaryDark
-      : variant === 'danger'
-        ? palette.danger
-        : palette.surfaceAlt;
+  const inativo = disabled || loading;
+  const altura = compacto ? ALTURAS[size].toque : ALTURAS[size].ponteiro;
 
   return (
     <Pressable
       accessibilityRole="button"
+      accessibilityState={{ disabled: !!inativo, busy: !!loading }}
       disabled={inativo}
-      style={({ pressed, hovered, focused }: any) => [
+      style={({ pressed }) => [
         styles.base,
         {
-          height: alturas[size],
+          // `minHeight` e não `height`: com altura travada, um rótulo que quebra
+          // em duas linhas fica cortado pela metade em vez de caber.
+          minHeight: altura,
           backgroundColor: bg,
           borderColor,
           borderWidth: variant === 'secondary' ? 1 : 0,
-          opacity: inativo ? 0.5 : 1,
+          opacity: inativo ? 0.55 : pressed ? 0.9 : 1,
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          paddingHorizontal: fullWidth ? spacing.lg : spacing.lg + 2,
+          paddingHorizontal: fullWidth ? spacing.lg : spacing.xl,
+          // Num `flexDirection: 'row'` o padrão do RN é não encolher, então dois
+          // botões lado a lado num celular estouravam a linha em vez de dividir
+          // o espaço. Aqui eles cedem, e o rótulo trunca com reticências.
+          flexShrink: 1,
+          minWidth: 0,
         },
-        hovered && !inativo ? { backgroundColor: bgHover, borderColor: variant === 'secondary' ? palette.borderStrong : borderColor } : null,
-        pressed && !inativo ? { opacity: Platform.OS === 'web' ? 0.92 : 0.85 } : null,
-        focusRing(focused, palette.primary),
         style,
       ]}
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={fg} size="small" />
+        <ActivityIndicator color={fg} />
       ) : (
         <View style={styles.content}>
-          {icon ? <Ionicons name={icon} size={size === 'sm' ? 15 : 16} color={fg} /> : null}
-          <AppText variant="label" style={{ color: fg, fontSize: size === 'sm' ? 13 : 14 }}>
+          {icon ? <Ionicons name={icon} size={18} color={fg} style={{ flexShrink: 0 }} /> : null}
+          <AppText
+            variant="label"
+            numberOfLines={1}
+            style={{ color: fg, fontSize: size === 'lg' ? 16 : 15, flexShrink: 1 }}
+          >
             {title}
           </AppText>
         </View>
@@ -111,6 +118,7 @@ const styles = StyleSheet.create({
     borderRadius: radius.md,
     alignItems: 'center',
     justifyContent: 'center',
+    paddingVertical: spacing.sm,
   },
-  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm - 1 },
+  content: { flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: spacing.sm, minWidth: 0 },
 });

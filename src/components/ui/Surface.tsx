@@ -221,3 +221,44 @@ export function Section({
 }) {
   return <View style={[{ marginTop: first ? 0 : spacing.xl }, style]}>{children}</View>;
 }
+
+/**
+ * Linha de dado: rótulo à esquerda, valor à direita.
+ *
+ * Duas telas de detalhe (boleto e reserva) declaravam este mesmo componente à
+ * mão, ambas como `justifyContent: 'space-between'` com os dois textos soltos.
+ * No React Native o padrão de `flexShrink` é 0 — ao contrário da web —, então
+ * nenhum dos dois cedia: "Unidade / Despesa geral do condomínio" simplesmente
+ * transbordava a borda do cartão num celular, sem reticências e sem quebra.
+ *
+ * Aqui o rótulo mantém sua largura natural e o valor ocupa o resto, alinhado à
+ * direita e podendo quebrar em duas linhas dentro da própria coluna. A linha
+ * nunca estoura, em nenhuma largura, e continua se lendo como um extrato.
+ */
+export function DataRow({
+  label,
+  valor,
+  children,
+  style,
+}: {
+  label: string;
+  /** Texto do valor. Para um valor composto (selo, botão), use `children`. */
+  valor?: string | null;
+  children?: ReactNode;
+  style?: ViewStyle;
+}) {
+  return (
+    <View style={[{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }, style]}>
+      <AppText color="muted" variant="label" style={{ flexShrink: 0 }}>
+        {label}
+      </AppText>
+      <View style={{ flex: 1, minWidth: 0, alignItems: 'flex-end' }}>
+        {children ?? (
+          <AppText variant="label" numberOfLines={2} style={{ textAlign: 'right' }}>
+            {valor}
+          </AppText>
+        )}
+      </View>
+    </View>
+  );
+}

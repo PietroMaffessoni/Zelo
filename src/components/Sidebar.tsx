@@ -7,11 +7,12 @@ import { ZeloWordmark } from '@/components/Brand';
 import { Avatar } from '@/components/ui/Avatar';
 import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
-import { radius, SIDEBAR_LARGURA, spacing } from '@/constants/theme';
+import { radius, SIDEBAR_LARGURA, SIDEBAR_LARGURA_TABLET, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
 import { papelLabel } from '@/lib/labels';
+import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
 import { isGestor as ehGestor, veManutencao } from '@/lib/types';
@@ -25,6 +26,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const confirmar = useConfirm();
   const { palette } = useAppTheme();
+  const { acima } = useLayout();
   const { profile, papel, membershipAtual, signOut } = useAuth();
   const gestor = ehGestor(papel);
   const porteiro = papel === 'porteiro';
@@ -84,7 +86,8 @@ export function Sidebar() {
   return (
     <View
       style={{
-        width: SIDEBAR_LARGURA,
+        // Encolhe no tablet: 264px ali seriam mais de um terço da tela.
+        width: acima('xl') ? SIDEBAR_LARGURA : SIDEBAR_LARGURA_TABLET,
         backgroundColor: palette.surface,
         borderRightWidth: 1,
         borderRightColor: palette.border,

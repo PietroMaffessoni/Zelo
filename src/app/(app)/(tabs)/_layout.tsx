@@ -1,9 +1,10 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform, useWindowDimensions } from 'react-native';
+import { Platform } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/auth';
+import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 import { isGestor } from '@/lib/types';
 
@@ -11,15 +12,17 @@ export default function TabsLayout() {
   const { papel } = useAuth();
   const { palette } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { width } = useWindowDimensions();
+  const { amplo, estreito } = useLayout();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
   const zelador = papel === 'zelador';
   const morador = !gestor && !porteiro && !zelador;
 
-  // Em telas largas (web/desktop) a navegação vira a sidebar fixa (renderizada no
-  // layout de (app), que envolve todas as telas) e a tab bar inferior some.
-  const desktop = Platform.OS === 'web' && width >= 1024;
+  // Em telas largas (tablet e acima, no web) a navegação vira a sidebar fixa
+  // (renderizada no layout de (app), que envolve todas as telas) e a barra de
+  // abas some. O corte é o mesmo de `(app)/_layout` — as duas precisam trocar
+  // juntas, senão a tela fica sem navegação nenhuma ou com as duas ao mesmo tempo.
+  const lateral = Platform.OS === 'web' && amplo;
 
   // Exibe 3–4 destinos de alto tráfego por papel; os demais ficam ocultos
   // (href: null) mas continuam navegáveis por links/ações rápidas.
@@ -31,7 +34,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      tabBar={desktop ? () => null : undefined}
+      tabBar={lateral ? () => null : undefined}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: palette.primary,
@@ -46,8 +49,11 @@ export default function TabsLayout() {
           paddingTop: 6,
         },
         // Rótulo um grau menor e com entreletra aberta: a barra fica mais calma
-        // e o ícone volta a ser o que identifica a aba.
-        tabBarLabelStyle: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.1, marginTop: 1 },
+        // e o ícone volta a ser o que identifica a aba. Num celular pequeno cai
+        // mais um degrau: cinco rótulos disputando 320px começam a truncar, e um
+        // rótulo cortado ("Em andame...") é pior que um rótulo miúdo.
+        tabBarLabelStyle: { fontSize: estreito ? 9.5 : 10.5, fontWeight: '600', letterSpacing: 0.1, marginTop: 1 },
+        tabBarItemStyle: { paddingHorizontal: 2 },
       }}
     >
       <Tabs.Screen

@@ -17,6 +17,7 @@ import { Button } from '@/components/ui/Button';
 import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
 import { useVoltar } from '@/lib/navegacao';
+import { useLayout, TOQUE_MINIMO } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 
 // Largura única de conteúdo para TODAS as telas — mantém a coluna com a mesma
@@ -24,7 +25,14 @@ import { useAppTheme } from '@/lib/theme';
 // a tela que 760 sem esticar o conteúdo como 1120.
 const MAX_LARGURA = 940;
 
-/** Container base de tela: fundo, área segura, teclado e centralização no web. */
+/**
+ * Container base de tela: fundo, área segura, teclado e centralização no web.
+ *
+ * O recuo lateral vem da faixa de largura (`useLayout`), não de um valor fixo:
+ * 14px num celular pequeno, 32px no desktop. E a área segura passou a incluir
+ * `left`/`right` — sem isso, em celular com recorte de tela o conteúdo corre por
+ * baixo do notch quando o aparelho está deitado.
+ */
 export function Screen({
   children,
   scroll = true,
@@ -45,13 +53,19 @@ export function Screen({
   maxWidth?: number;
 }) {
   const { palette } = useAppTheme();
+  const { gutter } = useLayout();
+
+  // `left`/`right` sempre entram: protegem o recorte de tela em paisagem sem
+  // afetar nada em retrato, onde os insets laterais são zero.
+  const bordas = Array.from(new Set([...edges, 'left', 'right'])) as typeof edges;
+
   const conteudo = (
     <View
       style={[
         // Coluna centralizada na área útil (ao lado da sidebar no desktop), com a
         // mesma largura em todas as telas.
         { width: '100%', maxWidth, alignSelf: 'center', flex: scroll ? undefined : 1 },
-        padded ? { paddingHorizontal: spacing.lg } : null,
+        padded ? { paddingHorizontal: gutter } : null,
         style,
       ]}
     >
@@ -60,7 +74,7 @@ export function Screen({
   );
 
   return (
-    <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }} edges={edges}>
+    <SafeAreaView style={{ flex: 1, backgroundColor: palette.background }} edges={bordas}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
@@ -154,7 +168,10 @@ export function AppHeader({
           <Ionicons name="chevron-back" size={21} color={palette.textMuted} />
         </Pressable>
       ) : null}
-      <View style={{ flex: 1 }}>
+      {/* `minWidth: 0` é o que permite o título truncar em vez de empurrar as
+          ações para fora da tela: sem ele o texto impõe sua largura natural ao
+          flex e, num celular, "Advertências e multas" expulsa o botão da direita. */}
+      <View style={{ flex: 1, minWidth: 0 }}>
         <AppText variant="heading" numberOfLines={1}>
           {title}
         </AppText>
@@ -164,27 +181,31 @@ export function AppHeader({
           </AppText>
         ) : null}
       </View>
-      {Platform.OS === 'web' && onRefresh ? (
-        <Pressable
-          onPress={onRefresh}
-          accessibilityRole="button"
-          accessibilityLabel="Atualizar"
-          style={({ pressed, hovered, focused }: any) => [
-            {
-              width: 34,
-              height: 34,
-              borderRadius: radius.md,
-              backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
-              alignItems: 'center',
-              justifyContent: 'center',
-            },
-            focusRing(focused, palette.primary),
-          ]}
-        >
-          <Ionicons name="refresh" size={17} color={palette.textMuted} />
-        </Pressable>
-      ) : null}
-      {right}
+      {/* As ações nunca encolhem — quem cede espaço é o título. */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs, flexShrink: 0 }}>
+        {Platform.OS === 'web' && onRefresh ? (
+          <Pressable
+            onPress={onRefresh}
+            hitSlop={(TOQUE_MINIMO - 34) / 2}
+            accessibilityRole="button"
+            accessibilityLabel="Atualizar"
+            style={({ pressed, hovered, focused }: any) => [
+              {
+                width: 34,
+                height: 34,
+                borderRadius: radius.md,
+                backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
+                alignItems: 'center',
+                justifyContent: 'center',
+              },
+              focusRing(focused, palette.primary),
+            ]}
+          >
+            <Ionicons name="refresh" size={17} color={palette.textMuted} />
+          </Pressable>
+        ) : null}
+        {right}
+      </View>
     </View>
   );
 }
