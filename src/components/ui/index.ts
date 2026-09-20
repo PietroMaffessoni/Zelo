@@ -8,4 +8,4 @@ export { Screen, AppHeader, Loading, EmptyState, ErrorState } from './Layout';
 export { Divider, Chip, Segmented, ListItem, Fab, ActionTile, ActionRow } from './controls';
 export { Skeleton, SkeletonCard, SkeletonList } from './Skeleton';
 export { Panel, Row, SectionHeader, MetaLine, Section, DataRow } from './Surface';
-export { FormRow, Acoes } from './Form';
+export { FormRow, Acoes, Grade } from './Form';

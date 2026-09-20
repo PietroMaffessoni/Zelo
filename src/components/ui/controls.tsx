@@ -3,6 +3,7 @@ import { Platform, Pressable, ScrollView, View, type ViewStyle } from 'react-nat
 
 import { radius, shadow, spacing, type Tone } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
+import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 
 /** O react-native-web marca `focused` em qualquer foco, inclusive no clique do
@@ -145,6 +146,7 @@ export function ListItem({
   chevron?: boolean;
 }) {
   const { palette, tone: tones } = useAppTheme();
+  const { compacto } = useLayout();
   const corIcone = iconTone === 'danger' ? tones.danger.fg : palette.textSubtle;
   return (
     <Pressable
@@ -180,8 +182,15 @@ export function ListItem({
         >
           {title}
         </AppText>
+        {/*
+          No celular a descrição ganha uma segunda linha. Com uma só, "Cadastro,
+          ficha (CPF/RG) e busca de moradores" cabia em ~198px e virava "Cadastro,
+          ficha (CPF/RG) e bus…" — o subtítulo existe justamente para dizer o que o
+          destino faz, e cortado no meio ele não diz. No desktop sobra largura e
+          uma linha mantém a lista com altura regular.
+        */}
         {subtitle ? (
-          <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 1 }}>
+          <AppText variant="caption" color="muted" numberOfLines={compacto ? 2 : 1} style={{ marginTop: 1 }}>
             {subtitle}
           </AppText>
         ) : null}

@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppText } from '@/components/ui/Text';
 import { radius, shadow, spacing } from '@/constants/theme';
 import { hapticError, hapticSuccess } from '@/lib/haptics';
+import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 
 export type ToastTone = 'success' | 'error' | 'info';
@@ -83,7 +84,12 @@ function ToastView({
   onPress: () => void;
 }) {
   const { palette } = useAppTheme();
+  const { amplo } = useLayout();
   const insets = useSafeAreaInsets();
+  // A barra de abas só some quando a navegação lateral entra (web, tablet+). Na
+  // web em largura de celular ela continua lá, e o aviso nascia atrás dela — o
+  // cálculo antigo só abria espaço no nativo.
+  const barraDeAbas = !(Platform.OS === 'web' && amplo);
   const cfg = {
     success: { icon: 'checkmark-circle' as const, cor: palette.success },
     error: { icon: 'alert-circle' as const, cor: palette.danger },
@@ -99,7 +105,7 @@ function ToastView({
         right: 0,
         bottom: 0,
         paddingHorizontal: spacing.lg,
-        paddingBottom: Math.max(insets.bottom, spacing.lg) + (Platform.OS === 'web' ? spacing.md : 72),
+        paddingBottom: Math.max(insets.bottom, spacing.lg) + (barraDeAbas ? 66 : spacing.md),
         alignItems: 'center',
       }}
     >

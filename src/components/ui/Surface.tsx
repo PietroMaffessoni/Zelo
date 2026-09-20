@@ -3,6 +3,7 @@ import { Pressable, View, type TextStyle, type ViewStyle } from 'react-native';
 
 import { radius, spacing } from '@/constants/theme';
 import { focusRing } from '@/components/ui/controls';
+import { useLayout } from '@/lib/responsivo';
 import { AppText } from '@/components/ui/Text';
 import { useAppTheme } from '@/lib/theme';
 
@@ -199,10 +200,15 @@ export function MetaLine({
   color?: 'muted' | 'subtle';
   style?: TextStyle;
 }) {
+  const { compacto } = useLayout();
   const texto = itens.filter(Boolean).join(' · ');
   if (!texto) return null;
+  // No celular a faixa ganha uma segunda linha: numa só, "12 boletos vencidos ·
+  // há 45 dias · desde 12/01/2026" cabia em ~180px e sumia no primeiro item.
+  // Estes metadados são o que distingue uma linha da outra na lista — truncá-los
+  // devolve todas ao mesmo texto.
   return (
-    <AppText variant="caption" color={color} numberOfLines={1} style={style}>
+    <AppText variant="caption" color={color} numberOfLines={compacto ? 2 : 1} style={style}>
       {texto}
     </AppText>
   );

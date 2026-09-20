@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useRef, useState, type ReactNode } from 'react';
-import { Modal, Pressable, View } from 'react-native';
+import { Modal, Pressable, ScrollView, View, useWindowDimensions } from 'react-native';
 
+import { Acoes } from '@/components/ui/Form';
 import { Button } from '@/components/ui/Button';
 import { AppText } from '@/components/ui/Text';
 import { radius, shadow, spacing } from '@/constants/theme';
@@ -25,6 +26,7 @@ const ConfirmContext = createContext<ConfirmContexto | undefined>(undefined);
  */
 export function ConfirmProvider({ children }: { children: ReactNode }) {
   const { palette } = useAppTheme();
+  const { height } = useWindowDimensions();
   const [opcoes, setOpcoes] = useState<ConfirmOpcoes | null>(null);
   const resolverRef = useRef<((v: boolean) => void) | null>(null);
 
@@ -61,6 +63,11 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               {
                 width: '100%',
                 maxWidth: 400,
+                // Em celular deitado a viewport tem ~375px de altura: sem teto, um
+                // diálogo com mensagem longa passava das duas bordas e os botões
+                // ficavam fora do alcance. Com teto, o texto rola e a decisão
+                // continua visível.
+                maxHeight: height - spacing.xl * 2,
                 backgroundColor: palette.surface,
                 borderRadius: radius.xl,
                 borderWidth: 1,
@@ -73,24 +80,28 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
               shadow.floating,
             ]}
           >
-            <AppText variant="heading">{opcoes?.titulo}</AppText>
-            {opcoes?.mensagem ? (
-              <AppText color="muted" variant="caption">
-                {opcoes.mensagem}
-              </AppText>
-            ) : null}
-            <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
-              <View style={{ flex: 1 }}>
-                <Button title={opcoes?.cancelar ?? 'Cancelar'} variant="secondary" onPress={() => responder(false)} />
-              </View>
-              <View style={{ flex: 1 }}>
-                <Button
-                  title={opcoes?.confirmar ?? 'Confirmar'}
-                  variant={opcoes?.destrutivo ? 'danger' : 'primary'}
-                  onPress={() => responder(true)}
-                />
-              </View>
-            </View>
+            <ScrollView
+              style={{ flexGrow: 0 }}
+              contentContainerStyle={{ gap: spacing.sm }}
+              showsVerticalScrollIndicator={false}
+            >
+              <AppText variant="heading">{opcoes?.titulo}</AppText>
+              {opcoes?.mensagem ? (
+                <AppText color="muted" variant="caption">
+                  {opcoes.mensagem}
+                </AppText>
+              ) : null}
+            </ScrollView>
+            {/* Rótulos como "Gerar novo código" não cabem em meia largura num
+                celular pequeno: a fileira quebra em vez de truncar a ação. */}
+            <Acoes minimo={130} style={{ marginTop: spacing.md }}>
+              <Button title={opcoes?.cancelar ?? 'Cancelar'} variant="secondary" onPress={() => responder(false)} />
+              <Button
+                title={opcoes?.confirmar ?? 'Confirmar'}
+                variant={opcoes?.destrutivo ? 'danger' : 'primary'}
+                onPress={() => responder(true)}
+              />
+            </Acoes>
           </Pressable>
         </Pressable>
       </Modal>

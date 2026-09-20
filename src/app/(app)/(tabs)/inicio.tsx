@@ -3,23 +3,9 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { ZeloMark } from '@/components/Brand';
-import {
-  ActionRow,
-  ActionTile,
-  AppText,
-  Avatar,
-  Badge,
-  Card,
-  ErrorState,
-  MetaLine,
-  Panel,
-  Row,
-  Screen,
-  Section,
-  SectionHeader,
-  SkeletonList,
-} from '@/components/ui';
+import { ActionRow, ActionTile, AppText, Avatar, Badge, Card, ErrorState, Grade, MetaLine, Panel, Row, Screen, Section, SectionHeader, SkeletonList } from '@/components/ui';
 import { radius, spacing, type Tone } from '@/constants/theme';
+import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
 import {
@@ -39,6 +25,7 @@ import { isGestor, type Comunicado } from '@/lib/types';
 export default function Inicio() {
   const router = useRouter();
   const { palette } = useAppTheme();
+  const { estreito } = useLayout();
   const { profile, membershipAtual, condominioId, user, papel } = useAuth();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
@@ -110,50 +97,36 @@ export default function Inicio() {
       */}
       <View
         style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
           paddingVertical: spacing.md,
           borderTopWidth: 1,
           borderBottomWidth: 1,
           borderColor: palette.border,
+          gap: spacing.sm,
         }}
       >
-        <ZeloMark height={24} color={palette.primary} windowColor={palette.background} />
-        <View style={{ flex: 1 }}>
-          <AppText variant="subtitle" numberOfLines={1}>
-            {cond?.nome ?? 'Meu condomínio'}
-          </AppText>
-          <MetaLine
-            itens={[
-              cond?.cidade ? `${cond.cidade}${cond.uf ? `/${cond.uf}` : ''}` : null,
-              gestor && resumo ? `${resumo.moradores} ${resumo.moradores === 1 ? 'morador' : 'moradores'}` : null,
-            ]}
-            style={{ marginTop: 2 }}
-          />
-        </View>
-        {gestor && cond?.codigo_convite ? (
-          <View style={{ alignItems: 'flex-end' }}>
-            <AppText variant="caption" color="subtle">
-              Código de convite
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <ZeloMark height={24} color={palette.primary} windowColor={palette.background} />
+          <View style={{ flex: 1, minWidth: 0 }}>
+            <AppText variant="subtitle" numberOfLines={1}>
+              {cond?.nome ?? 'Meu condomínio'}
             </AppText>
-            <View
-              style={{
-                marginTop: 3,
-                backgroundColor: palette.surfaceAlt,
-                borderWidth: 1,
-                borderColor: palette.border,
-                paddingHorizontal: spacing.sm,
-                paddingVertical: 2,
-                borderRadius: radius.sm,
-              }}
-            >
-              <AppText variant="label" style={{ color: palette.text, letterSpacing: 1.5 }}>
-                {cond.codigo_convite}
-              </AppText>
-            </View>
+            <MetaLine
+              itens={[
+                cond?.cidade ? `${cond.cidade}${cond.uf ? `/${cond.uf}` : ''}` : null,
+                gestor && resumo ? `${resumo.moradores} ${resumo.moradores === 1 ? 'morador' : 'moradores'}` : null,
+              ]}
+              style={{ marginTop: 2 }}
+            />
           </View>
-        ) : null}
+          {/*
+            O código de convite disputava a linha com o nome do condomínio: num
+            celular pequeno sobravam ~130px para o nome e "Residencial Parque das
+            Flores" virava "Residencial Par…". Ali ele desce para a própria linha,
+            alinhado à esquerda, onde cabe inteiro e continua fácil de ditar.
+          */}
+          {gestor && cond?.codigo_convite && !estreito ? <CodigoConvite codigo={cond.codigo_convite} /> : null}
+        </View>
+        {gestor && cond?.codigo_convite && estreito ? <CodigoConvite codigo={cond.codigo_convite} alinhar="flex-start" /> : null}
       </View>
 
       {/*
@@ -276,21 +249,21 @@ export default function Inicio() {
       <Section>
         <SectionHeader title="Ações rápidas" />
         {gestor ? (
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Grade>
             <ActionTile icon="megaphone-outline" label="Publicar aviso" tone="primary" onPress={() => router.push('/(app)/comunicados/novo')} />
             <ActionTile icon="construct-outline" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
             <ActionTile icon="cube-outline" label="Achados" tone="info" onPress={() => router.push('/(app)/achados')} />
-          </View>
+          </Grade>
         ) : porteiro ? (
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Grade>
             <ActionTile icon="cube-outline" label="Nova encomenda" tone="warning" onPress={() => router.push('/(app)/portaria/encomenda-nova')} />
             <ActionTile icon="car-outline" label="Veículos" tone="primary" onPress={() => router.push('/(app)/portaria/veiculos')} />
-          </View>
+          </Grade>
         ) : zelador ? (
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Grade>
             <ActionTile icon="construct-outline" label="Chamados" tone="warning" onPress={() => router.push('/(app)/(tabs)/chamados')} />
             <ActionTile icon="build-outline" label="Manutenção" tone="primary" onPress={() => router.push('/(app)/manutencao')} />
-          </View>
+          </Grade>
         ) : (
           <Panel>
             <ActionRow
@@ -361,6 +334,33 @@ export default function Inicio() {
         )}
       </Section>
     </Screen>
+  );
+}
+
+/** Código de convite do condomínio, para o síndico ditar a quem vai entrar. */
+function CodigoConvite({ codigo, alinhar = 'flex-end' }: { codigo: string; alinhar?: 'flex-start' | 'flex-end' }) {
+  const { palette } = useAppTheme();
+  return (
+    <View style={{ alignItems: alinhar, flexShrink: 0 }}>
+      <AppText variant="caption" color="subtle">
+        Código de convite
+      </AppText>
+      <View
+        style={{
+          marginTop: 3,
+          backgroundColor: palette.surfaceAlt,
+          borderWidth: 1,
+          borderColor: palette.border,
+          paddingHorizontal: spacing.sm,
+          paddingVertical: 2,
+          borderRadius: radius.sm,
+        }}
+      >
+        <AppText variant="label" style={{ color: palette.text, letterSpacing: 1.5 }}>
+          {codigo}
+        </AppText>
+      </View>
+    </View>
   );
 }
 
