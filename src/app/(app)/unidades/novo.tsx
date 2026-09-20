@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Button, Input, Screen } from '@/components/ui';
+import { AppHeader, AppText, Button, FormRow, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarUnidade } from '@/lib/db';
@@ -41,14 +41,10 @@ export default function NovaUnidade() {
     <Screen>
       <AppHeader title="Nova unidade" back />
       <View style={{ gap: spacing.lg }}>
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <View style={{ flex: 1 }}>
-            <Input label="Bloco (opcional)" placeholder="A" value={bloco} onChangeText={setBloco} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Input label="Apto/Casa" placeholder="101" value={numero} onChangeText={setNumero} />
-          </View>
-        </View>
+        <FormRow minimo={130}>
+          <Input label="Bloco (opcional)" placeholder="A" value={bloco} onChangeText={setBloco} />
+          <Input label="Apto/Casa" placeholder="101" value={numero} onChangeText={setNumero} />
+        </FormRow>
         <Input
           label="Fração ideal (opcional)"
           placeholder="Ex.: 0.0125"

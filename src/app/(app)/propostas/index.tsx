@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, EmptyState, Fab, Loading, Panel, Row, Screen } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, EmptyState, Fab, Loading, Panel, Row, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { alternarApoioProposta, listarPropostas, responderProposta } from '@/lib/db';
@@ -106,10 +106,10 @@ export default function Propostas() {
                     </Pressable>
 
                     {gestor && p.status === 'sugerida' ? (
-                      <View style={{ flexDirection: 'row', gap: spacing.sm, marginLeft: 'auto' }}>
-                        <Button title="Aprovar" size="sm" fullWidth={false} icon="checkmark" onPress={() => decidir(p, 'aprovada')} loading={ocupado === p.id} />
-                        <Button title="Recusar" size="sm" fullWidth={false} variant="secondary" onPress={() => decidir(p, 'recusada')} loading={ocupado === p.id} />
-                      </View>
+                      <Acoes minimo={116}>
+                        <Button title="Aprovar" size="sm" icon="checkmark" onPress={() => decidir(p, 'aprovada')} loading={ocupado === p.id} />
+                        <Button title="Recusar" size="sm" variant="secondary" onPress={() => decidir(p, 'recusada')} loading={ocupado === p.id} />
+                      </Acoes>
                     ) : null}
                   </View>
                 </Row>

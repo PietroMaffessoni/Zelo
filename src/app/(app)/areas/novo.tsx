@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui';
+import { AppHeader, AppText, Button, Chip, FormRow, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarArea } from '@/lib/db';
@@ -57,14 +57,12 @@ export default function NovaArea() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <View style={{ flex: 1 }}>
-            <Input label="Taxa de uso (R$, opcional)" placeholder="0,00" keyboardType="decimal-pad" value={taxaUso} onChangeText={setTaxaUso} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Input label="Limite mensal/unidade (opcional)" placeholder="Ex.: 2" keyboardType="number-pad" value={limite} onChangeText={setLimite} />
-          </View>
-        </View>
+        {/* Rotulos longos: num celular estes dois campos precisam de uma linha
+            cada, senao "Limite mensal/unidade (opcional)" quebra em tres. */}
+        <FormRow minimo={200}>
+          <Input label="Taxa de uso (R$, opcional)" placeholder="0,00" keyboardType="decimal-pad" value={taxaUso} onChangeText={setTaxaUso} />
+          <Input label="Limite mensal/unidade (opcional)" placeholder="Ex.: 2" keyboardType="number-pad" value={limite} onChangeText={setLimite} />
+        </FormRow>
 
         {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
 

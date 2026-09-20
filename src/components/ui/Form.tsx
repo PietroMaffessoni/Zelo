@@ -38,16 +38,22 @@ export function FormRow({
   style,
 }: {
   children: ReactNode;
-  /** Largura mínima confortável de cada campo antes de empilhar. */
-  minimo?: number;
+  /**
+   * Largura mínima confortável de cada campo antes de empilhar. Um número vale
+   * para todos; um array dá a medida de cada campo na ordem — é o caso de
+   * "Cidade" com "UF" ao lado, em que o segundo precisa de dois caracteres e
+   * dividir a linha ao meio desperdiçaria o espaço do primeiro.
+   */
+  minimo?: number | number[];
   style?: ViewStyle;
 }) {
   const campos = achatar(children);
+  const medida = (i: number) => (Array.isArray(minimo) ? (minimo[i] ?? minimo[minimo.length - 1]) : minimo);
 
   return (
     <View style={[{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md }, style]}>
       {campos.map((campo, i) => (
-        <View key={i} style={{ flexGrow: 1, flexShrink: 1, flexBasis: minimo, minWidth: 0 }}>
+        <View key={i} style={{ flexGrow: 1, flexShrink: 1, flexBasis: medida(i), minWidth: 0 }}>
           {campo}
         </View>
       ))}

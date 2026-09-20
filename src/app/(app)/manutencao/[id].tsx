@@ -85,7 +85,9 @@ export default function EquipamentoDetalhe() {
       <AppHeader title={eq.nome} back subtitle={meta.label} />
       <View style={{ gap: spacing.lg }}>
         <Card>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          {/* O selo pode trazer "Vencida — 00/00/0000": junto com o rótulo passa
+              da largura de um celular pequeno, então a linha quebra em duas. */}
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: spacing.sm }}>
             <AppText variant="label" color="muted">Próxima manutenção</AppText>
             {eq.proxima_manutencao ? (
               <Badge label={vencida ? `Vencida — ${formatData(eq.proxima_manutencao)}` : formatData(eq.proxima_manutencao)} tone={vencida ? 'danger' : 'success'} />
@@ -153,7 +155,7 @@ export default function EquipamentoDetalhe() {
                 <View key={m.id}>
                   {i > 0 ? <Divider /> : null}
                   <View style={{ paddingVertical: spacing.md }}>
-                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
                       <AppText variant="label">{formatData(m.realizada_em)}</AppText>
                       {m.custo ? <AppText color="muted" variant="caption">{formatMoeda(m.custo)}</AppText> : null}
                     </View>

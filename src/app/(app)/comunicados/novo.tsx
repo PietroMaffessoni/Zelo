@@ -94,8 +94,8 @@ export default function NovoComunicado() {
           <Segmented options={prioridades} value={prioridade} onChange={setPrioridade} />
         </View>
 
-        <Card style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
+        <Card style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <AppText variant="label">Fixar no topo</AppText>
             <AppText color="muted" variant="caption">
               Mantém o aviso em destaque na lista.

@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Button, Chip, Input, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Button, Chip, FormRow, Input, Loading, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { atualizarArea, getArea } from '@/lib/db';
 import { useVoltar } from '@/lib/navegacao';
@@ -87,14 +87,10 @@ export default function EditarArea() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <View style={{ flex: 1 }}>
-            <Input label="Taxa de uso (R$)" keyboardType="decimal-pad" value={taxaUso} onChangeText={setTaxaUso} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Input label="Limite mensal/unidade" keyboardType="number-pad" value={limite} onChangeText={setLimite} />
-          </View>
-        </View>
+        <FormRow minimo={190}>
+          <Input label="Taxa de uso (R$)" keyboardType="decimal-pad" value={taxaUso} onChangeText={setTaxaUso} />
+          <Input label="Limite mensal/unidade" keyboardType="number-pad" value={limite} onChangeText={setLimite} />
+        </FormRow>
 
         {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
 

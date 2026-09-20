@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, EmptyState, Input, Loading, Screen, Segmented } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, Card, EmptyState, Input, Loading, Screen, Segmented } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { atualizarAdministradora, atualizarStatusLancamento, listarLancamentos, marcarDespesasEnviadas } from '@/lib/db';
@@ -117,10 +117,10 @@ export default function ContasAdministradora() {
           <View style={{ gap: spacing.sm }}>
             <Input label="Administradora" placeholder="Ex.: Lello, Moras, Benedetti..." value={nomeAdm} onChangeText={setNomeAdm} />
             <Input label="Contato (WhatsApp/e-mail)" placeholder="(11) 90000-0000" value={contatoAdm} onChangeText={setContatoAdm} />
-            <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-              <Button title="Cancelar" variant="secondary" size="sm" fullWidth={false} onPress={() => setEditandoAdm(false)} />
-              <Button title="Salvar" size="sm" icon="checkmark" fullWidth={false} onPress={salvarAdministradora} loading={salvandoAdm} />
-            </View>
+            <Acoes minimo={120}>
+              <Button title="Cancelar" variant="secondary" size="sm" onPress={() => setEditandoAdm(false)} />
+              <Button title="Salvar" size="sm" icon="checkmark" onPress={salvarAdministradora} loading={salvandoAdm} />
+            </Acoes>
           </View>
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>

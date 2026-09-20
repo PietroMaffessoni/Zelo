@@ -56,7 +56,7 @@ export default function PrestacaoContas() {
             <View style={{ gap: spacing.lg }}>
               {meses.map((m) => (
                 <View key={m.mes} style={{ gap: 6 }}>
-                  <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', gap: spacing.sm }}>
                     <AppText variant="label" style={{ textTransform: 'capitalize' }}>
                       {dayjs(m.mes + '-01').format('MMM/YY')}
                     </AppText>
@@ -71,7 +71,7 @@ export default function PrestacaoContas() {
                 </View>
               ))}
             </View>
-            <View style={{ flexDirection: 'row', gap: spacing.lg, marginTop: spacing.lg }}>
+            <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.md, rowGap: spacing.sm, marginTop: spacing.lg }}>
               <Legenda cor={palette.success} label="Receita (boletos pagos)" />
               <Legenda cor={palette.danger} label="Despesa" />
             </View>

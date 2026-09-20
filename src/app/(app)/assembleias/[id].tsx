@@ -3,7 +3,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, Divider, Input, Loading, Screen } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, Card, Divider, Input, Loading, Screen } from '@/components/ui';
 import { palette, radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import {
@@ -130,8 +130,10 @@ export default function AssembleiaDetalhe() {
         </AppText>
       ) : null}
 
+      {/* "Anexar ata" + "Encerrar assembleia" somavam ~355px de conteúdo numa tela
+          de 320px e o segundo saía pela direita. Agora a fileira quebra. */}
       {gestor && !encerradaOuCancelada ? (
-        <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
+        <Acoes minimo={170} style={{ marginTop: spacing.md }}>
           <Button
             title="Anexar ata"
             variant="secondary"
@@ -140,7 +142,7 @@ export default function AssembleiaDetalhe() {
             onPress={() => router.push(`/(app)/documentos/novo?assembleiaId=${id}`)}
           />
           <Button title="Encerrar assembleia" variant="danger" size="sm" loading={encerrando} onPress={encerrar} />
-        </View>
+        </Acoes>
       ) : null}
 
       {/* Pautas */}
@@ -225,11 +227,15 @@ export default function AssembleiaDetalhe() {
                             backgroundColor: palette.primarySoft,
                           }}
                         />
-                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                          <AppText variant="label" style={{ color: votei ? palette.primary : palette.text }}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
+                          <AppText
+                            variant="label"
+                            numberOfLines={2}
+                            style={{ flex: 1, minWidth: 0, color: votei ? palette.primary : palette.text }}
+                          >
                             {o.texto} {votei ? '✓' : ''}
                           </AppText>
-                          <AppText color="muted" variant="caption" style={{ fontVariant: ['tabular-nums'] }}>
+                          <AppText color="muted" variant="caption" style={{ flexShrink: 0, fontVariant: ['tabular-nums'] }}>
                             {o.votos ?? 0} · {pct}%
                           </AppText>
                         </View>

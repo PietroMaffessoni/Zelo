@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui';
+import { AppHeader, AppText, Button, Chip, FormRow, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarVeiculo } from '@/lib/db';
@@ -62,14 +62,10 @@ export default function NovoVeiculo() {
           </View>
         </View>
 
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <View style={{ flex: 1 }}>
-            <Input label="Modelo (opcional)" placeholder="Ex.: Onix" value={modelo} onChangeText={setModelo} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Input label="Cor (opcional)" placeholder="Ex.: Prata" value={cor} onChangeText={setCor} />
-          </View>
-        </View>
+        <FormRow minimo={140}>
+          <Input label="Modelo (opcional)" placeholder="Ex.: Onix" value={modelo} onChangeText={setModelo} />
+          <Input label="Cor (opcional)" placeholder="Ex.: Prata" value={cor} onChangeText={setCor} />
+        </FormRow>
         <Input label="Vaga (opcional)" placeholder="Ex.: G-12" value={vaga} onChangeText={setVaga} />
 
         {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}

@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Switch, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, EmptyState, ErrorState, Fab, Input, MetaLine, Panel, Row, Screen, SectionHeader, SkeletonList } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, EmptyState, ErrorState, Fab, Input, MetaLine, Panel, Row, Screen, SectionHeader, SkeletonList } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarEncomendas, marcarEncomendaRetirada } from '@/lib/db';
@@ -142,10 +142,10 @@ export default function PortariaEncomendas() {
                           </View>
                           <Switch value={assinou} onValueChange={setAssinou} trackColor={{ true: palette.primary, false: palette.borderStrong }} />
                         </View>
-                        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                        <Acoes minimo={120}>
                           <Button title="Cancelar" variant="secondary" size="sm" onPress={() => setRetirandoId(null)} />
                           <Button title="Confirmar" size="sm" loading={salvando} onPress={() => confirmarRetirada(e.id)} />
-                        </View>
+                        </Acoes>
                       </View>
                     ) : (
                       <View style={{ marginTop: spacing.md }}>

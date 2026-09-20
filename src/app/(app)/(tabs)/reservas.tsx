@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, EmptyState, Loading, MetaLine, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, EmptyState, Loading, MetaLine, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
@@ -93,23 +93,21 @@ export default function ReservasTab() {
                         “{r.observacao}”
                       </AppText>
                     ) : null}
-                    <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
+                    <Acoes minimo={116} style={{ marginTop: spacing.md }}>
                       <Button
                         title="Recusar"
                         variant="secondary"
                         size="sm"
-                        fullWidth={false}
                         onPress={() => responder(r.id, 'rejeitada')}
                         loading={processando === r.id}
                       />
                       <Button
                         title="Aprovar"
                         size="sm"
-                        fullWidth={false}
                         onPress={() => responder(r.id, 'aprovada')}
                         loading={processando === r.id}
                       />
-                    </View>
+                    </Acoes>
                   </Row>
                 ))}
               </Panel>

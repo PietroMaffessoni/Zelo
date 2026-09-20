@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, Loading, Screen, SectionHeader } from '@/components/ui';
+import { AppHeader, AppText, Badge, Card, DataRow, Loading, Screen, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { atualizarStatusLancamento, getLancamento } from '@/lib/db';
@@ -71,17 +71,17 @@ export default function FinanceiroDetalhe() {
       </AppText>
 
       <Card style={{ marginTop: spacing.lg, gap: spacing.sm }}>
-        <Linha label="Vencimento" valor={formatData(lancamento.vencimento)} />
-        {lancamento.pago_em ? <Linha label="Pago em" valor={formatData(lancamento.pago_em)} /> : null}
+        <DataRow label="Vencimento" valor={formatData(lancamento.vencimento)} />
+        {lancamento.pago_em ? <DataRow label="Pago em" valor={formatData(lancamento.pago_em)} /> : null}
         {lancamento.unidade ? (
-          <Linha
+          <DataRow
             label="Unidade"
             valor={`${lancamento.unidade.bloco ? 'Bloco ' + lancamento.unidade.bloco + ' · ' : ''}Unidade ${lancamento.unidade.numero}`}
           />
         ) : (
-          <Linha label="Unidade" valor="Despesa geral do condomínio" />
+          <DataRow label="Unidade" valor="Despesa geral do condomínio" />
         )}
-        {lancamento.competencia ? <Linha label="Competência" valor={lancamento.competencia} /> : null}
+        {lancamento.competencia ? <DataRow label="Competência" valor={lancamento.competencia} /> : null}
       </Card>
 
       {lancamento.observacao ? (
@@ -151,13 +151,3 @@ export default function FinanceiroDetalhe() {
   );
 }
 
-function Linha({ label, valor }: { label: string; valor: string }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-      <AppText color="muted" variant="label">
-        {label}
-      </AppText>
-      <AppText variant="label">{valor}</AppText>
-    </View>
-  );
-}

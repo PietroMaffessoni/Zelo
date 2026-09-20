@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Button, Input, Screen } from '@/components/ui';
+import { AppHeader, AppText, Button, FormRow, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarAssembleia } from '@/lib/db';
@@ -53,28 +53,26 @@ export default function NovaAssembleia() {
       <View style={{ gap: spacing.lg }}>
         <Input label="Título" placeholder="Ex.: Assembleia geral ordinária" value={titulo} onChangeText={setTitulo} />
         <Input label="Descrição (opcional)" placeholder="Contexto da convocação..." value={descricao} onChangeText={setDescricao} multiline />
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <View style={{ flex: 1 }}>
-            <Input
-              label="Data"
-              placeholder="DD/MM/AAAA"
-              keyboardType="number-pad"
-              maxLength={10}
-              value={data}
-              onChangeText={(v) => setData(mascaraData(v))}
-            />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Input
-              label="Hora"
-              placeholder="HH:MM"
-              keyboardType="number-pad"
-              maxLength={5}
-              value={hora}
-              onChangeText={(v) => setHora(mascaraHora(v))}
-            />
-          </View>
-        </View>
+        {/* Data e hora seguem juntas mesmo no celular pequeno: sao dois campos
+            curtos e separa-las quebraria a leitura de "quando". */}
+        <FormRow minimo={[150, 104]}>
+          <Input
+            label="Data"
+            placeholder="DD/MM/AAAA"
+            keyboardType="number-pad"
+            maxLength={10}
+            value={data}
+            onChangeText={(v) => setData(mascaraData(v))}
+          />
+          <Input
+            label="Hora"
+            placeholder="HH:MM"
+            keyboardType="number-pad"
+            maxLength={5}
+            value={hora}
+            onChangeText={(v) => setHora(mascaraHora(v))}
+          />
+        </FormRow>
         <Input label="Local (opcional)" placeholder="Ex.: Salão de festas" value={local} onChangeText={setLocal} />
         <Input label="Link online (opcional)" placeholder="Ex.: link do Google Meet" value={linkOnline} onChangeText={setLinkOnline} />
         <Input label="Quórum mínimo de unidades (opcional)" placeholder="Ex.: 10" keyboardType="number-pad" value={quorum} onChangeText={setQuorum} />

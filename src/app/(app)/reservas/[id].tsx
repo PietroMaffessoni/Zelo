@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, Input, Loading, Screen, SectionHeader } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, Card, DataRow, Input, Loading, Screen, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
@@ -110,11 +110,11 @@ export default function ReservaDetalhe() {
       </AppText>
 
       <Card style={{ marginTop: spacing.lg, gap: spacing.sm }}>
-        <Linha label="Morador" valor={primeiroNome(reserva.morador?.nome_completo) || 'Morador'} />
+        <DataRow label="Morador" valor={primeiroNome(reserva.morador?.nome_completo) || 'Morador'} />
         {reserva.unidade ? (
-          <Linha label="Unidade" valor={`${reserva.unidade.bloco ? 'Bloco ' + reserva.unidade.bloco + ' · ' : ''}${reserva.unidade.numero}`} />
+          <DataRow label="Unidade" valor={`${reserva.unidade.bloco ? 'Bloco ' + reserva.unidade.bloco + ' · ' : ''}${reserva.unidade.numero}`} />
         ) : null}
-        {reserva.taxa_cobrada ? <Linha label="Taxa de uso" valor={formatMoeda(reserva.taxa_cobrada)} /> : null}
+        {reserva.taxa_cobrada ? <DataRow label="Taxa de uso" valor={formatMoeda(reserva.taxa_cobrada)} /> : null}
       </Card>
 
       {reserva.observacao ? (
@@ -225,15 +225,6 @@ export default function ReservaDetalhe() {
   );
 }
 
-function Linha({ label, valor }: { label: string; valor: string }) {
-  return (
-    <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-      <AppText color="muted" variant="label">{label}</AppText>
-      <AppText variant="label">{valor}</AppText>
-    </View>
-  );
-}
-
 function VistoriaSecao({
   tipo,
   reservaId,
@@ -321,10 +312,10 @@ function VistoriaSecao({
               <Ionicons name="add-circle" size={22} color={palette.primary} />
             </Pressable>
           </View>
-          <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+          <Acoes minimo={140}>
             <Button title="Cancelar" variant="secondary" size="sm" onPress={() => setEditando(false)} />
             <Button title="Salvar checklist" size="sm" loading={salvando} onPress={salvar} />
-          </View>
+          </Acoes>
         </Card>
       ) : itensAtuais.length === 0 ? (
         <AppText color="subtle" variant="caption" style={{ marginTop: spacing.xs }}>

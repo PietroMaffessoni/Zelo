@@ -102,8 +102,8 @@ export default function ComunicadoDetalhe() {
       <AppText style={{ lineHeight: 25 }}>{c.corpo}</AppText>
 
       {gestor ? (
-        <Card style={{ marginTop: spacing.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-          <View style={{ flex: 1 }}>
+        <Card style={{ marginTop: spacing.xl, flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+          <View style={{ flex: 1, minWidth: 0 }}>
             <AppText variant="subtitle">Fixar no topo</AppText>
             <AppText color="muted" variant="caption">
               {fixado ? 'Desligue para tirar o aviso do destaque.' : 'Mantém o aviso em destaque na lista.'}

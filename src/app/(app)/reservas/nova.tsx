@@ -209,7 +209,13 @@ export default function NovaReserva() {
           <View style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
               <AppText variant="label">Horários</AppText>
-              <Pressable onPress={selecionarDiaInteiro} hitSlop={8}>
+              <Pressable
+                onPress={selecionarDiaInteiro}
+                hitSlop={12}
+                accessibilityRole="button"
+                accessibilityLabel="Selecionar o dia inteiro"
+                style={{ minHeight: 32, justifyContent: 'center', paddingHorizontal: spacing.xs }}
+              >
                 <AppText color="primary" variant="caption">Dia inteiro</AppText>
               </Pressable>
             </View>

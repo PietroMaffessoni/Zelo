@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, Input, Loading, Panel, Row, Screen, SectionHeader } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, Input, Loading, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import {
@@ -356,10 +356,10 @@ function FichaMorador({
         <Divider style={{ marginBottom: spacing.xs }} />
         <Input label="CPF" placeholder="000.000.000-00" value={cpf} onChangeText={setCpf} keyboardType="numbers-and-punctuation" />
         <Input label="RG" placeholder="00.000.000-0" value={rg} onChangeText={setRg} />
-        <View style={{ flexDirection: 'row', gap: spacing.sm }}>
-          <Button title="Cancelar" variant="secondary" size="sm" fullWidth={false} onPress={() => setEditando(false)} />
-          <Button title="Salvar ficha" size="sm" icon="checkmark" fullWidth={false} onPress={salvar} loading={salvando} />
-        </View>
+        <Acoes minimo={130}>
+          <Button title="Cancelar" variant="secondary" size="sm" onPress={() => setEditando(false)} />
+          <Button title="Salvar ficha" size="sm" icon="checkmark" onPress={salvar} loading={salvando} />
+        </Acoes>
       </View>
     );
   }

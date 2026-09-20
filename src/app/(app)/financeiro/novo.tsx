@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { ScrollView, View } from 'react-native';
 
 import { UnidadeSeletor } from '@/components/UnidadeSeletor';
-import { AppHeader, AppText, Button, Chip, Input, Screen } from '@/components/ui';
+import { AppHeader, AppText, Button, Chip, FormRow, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { criarLancamento, listarUnidades } from '@/lib/db';
@@ -100,21 +100,17 @@ export default function NovoLancamento() {
         </View>
 
         <Input label="Descrição" placeholder="Ex.: Taxa condominial de julho" value={descricao} onChangeText={setDescricao} />
-        <View style={{ flexDirection: 'row', gap: spacing.md }}>
-          <View style={{ flex: 1 }}>
-            <Input label="Valor (R$)" placeholder="350,00" keyboardType="decimal-pad" value={valor} onChangeText={setValor} />
-          </View>
-          <View style={{ flex: 1 }}>
-            <Input
-              label="Vencimento"
-              placeholder="DD/MM/AAAA"
-              keyboardType="number-pad"
-              maxLength={10}
-              value={vencimento}
-              onChangeText={(v) => setVencimento(mascaraData(v))}
-            />
-          </View>
-        </View>
+        <FormRow minimo={[136, 156]}>
+          <Input label="Valor (R$)" placeholder="350,00" keyboardType="decimal-pad" value={valor} onChangeText={setValor} />
+          <Input
+            label="Vencimento"
+            placeholder="DD/MM/AAAA"
+            keyboardType="number-pad"
+            maxLength={10}
+            value={vencimento}
+            onChangeText={(v) => setVencimento(mascaraData(v))}
+          />
+        </FormRow>
         <Input label="Observação (opcional)" placeholder="Detalhes adicionais..." value={observacao} onChangeText={setObservacao} multiline />
 
         <Button

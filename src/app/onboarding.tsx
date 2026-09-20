@@ -3,7 +3,7 @@ import { Redirect, useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppText, Button, Card, Chip, Input, Loading, Panel, Row, Screen } from '@/components/ui';
+import { AppText, Button, Card, Chip, FormRow, Input, Loading, Panel, Row, Screen } from '@/components/ui';
 import { palette, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { vinculoLabel } from '@/lib/labels';
@@ -186,14 +186,12 @@ export default function Onboarding() {
         <Card style={{ gap: spacing.lg }}>
           <AppText variant="subtitle">Novo condomínio</AppText>
           <Input label="Nome do condomínio" placeholder="Ex.: Residencial Jardins" value={nome} onChangeText={setNome} />
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <View style={{ flex: 2 }}>
-              <Input label="Cidade" placeholder="Cidade" value={cidade} onChangeText={setCidade} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Input label="UF" placeholder="SP" autoCapitalize="characters" maxLength={2} value={uf} onChangeText={setUf} />
-            </View>
-          </View>
+          {/* UF precisa de dois caracteres: dividir a linha ao meio sobraria
+              espaco nela e faltaria na cidade. */}
+          <FormRow minimo={[170, 76]}>
+            <Input label="Cidade" placeholder="Cidade" value={cidade} onChangeText={setCidade} />
+            <Input label="UF" placeholder="SP" autoCapitalize="characters" maxLength={2} value={uf} onChangeText={setUf} />
+          </FormRow>
           {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
           <Button title="Criar condomínio" onPress={criar} loading={carregando} size="lg" icon="add" />
           <Voltar onPress={() => setModo('escolha')} />
@@ -209,14 +207,10 @@ export default function Onboarding() {
             onChangeText={setCodigo}
             icon="key-outline"
           />
-          <View style={{ flexDirection: 'row', gap: spacing.md }}>
-            <View style={{ flex: 1 }}>
-              <Input label="Bloco (opcional)" placeholder="A" value={bloco} onChangeText={setBloco} />
-            </View>
-            <View style={{ flex: 1 }}>
-              <Input label="Apto/Casa" placeholder="101" value={numero} onChangeText={setNumero} />
-            </View>
-          </View>
+          <FormRow minimo={130}>
+            <Input label="Bloco (opcional)" placeholder="A" value={bloco} onChangeText={setBloco} />
+            <Input label="Apto/Casa" placeholder="101" value={numero} onChangeText={setNumero} />
+          </FormRow>
           <View style={{ gap: spacing.sm }}>
             <AppText variant="label" color="muted">Você é...</AppText>
             <View style={{ flexDirection: 'row', gap: spacing.sm, flexWrap: 'wrap' }}>

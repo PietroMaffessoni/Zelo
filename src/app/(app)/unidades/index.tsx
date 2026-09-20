@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Button, EmptyState, ErrorState, Fab, Input, MetaLine, Panel, Row, Screen, SectionHeader, SkeletonList } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Avatar, Button, EmptyState, ErrorState, Fab, Input, MetaLine, Panel, Row, Screen, SectionHeader, SkeletonList } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
@@ -125,24 +125,22 @@ export default function UnidadesLista() {
                         ]}
                       />
                     </View>
-                    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                    <Acoes minimo={116}>
                       <Button
                         title="Recusar"
                         variant="secondary"
                         size="sm"
-                        fullWidth={false}
                         onPress={() => recusar(m.id)}
                         loading={processando === m.id}
                       />
                       <Button
                         title="Aprovar"
                         size="sm"
-                        fullWidth={false}
                         icon="checkmark"
                         onPress={() => aprovar(m.id)}
                         loading={processando === m.id}
                       />
-                    </View>
+                    </Acoes>
                   </View>
                 </Row>
               ))}
