@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, EmptyState, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, Button, EmptyState, Loading, MetaLine, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
@@ -49,33 +49,28 @@ export default function ReservasTab() {
           <Pressable
             key={a.id}
             onPress={() => router.push(`/(app)/reservas/nova?area=${a.id}`)}
-            style={{
-              width: 130,
-              padding: spacing.md,
+            accessibilityRole="button"
+            accessibilityLabel={`Reservar ${a.nome}`}
+            style={({ hovered, pressed }: any) => ({
+              width: 132,
+              paddingVertical: spacing.md,
+              paddingHorizontal: spacing.md,
               borderRadius: radius.lg,
-              backgroundColor: palette.surface,
+              backgroundColor: hovered ? palette.surfaceAlt : palette.surface,
               borderWidth: 1,
-              borderColor: palette.border,
+              borderColor: hovered ? palette.borderStrong : palette.border,
+              opacity: pressed ? 0.85 : 1,
               gap: spacing.sm,
-            }}
+            })}
           >
-            <View
-              style={{
-                width: 44,
-                height: 44,
-                borderRadius: radius.md,
-                backgroundColor: palette.primarySoft,
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <Ionicons name={(a.icone as any) || 'business-outline'} size={22} color={palette.primary} />
-            </View>
+            {/* Sem o quadrado colorido atrás do ícone: a área se identifica pelo
+                nome, e "Reservar" já diz o que o toque faz — a seta era enfeite. */}
+            <Ionicons name={(a.icone as any) || 'business-outline'} size={18} color={palette.textMuted} />
             <AppText variant="label" numberOfLines={2}>
               {a.nome}
             </AppText>
             <AppText color="primary" variant="caption">
-              Reservar →
+              Reservar
             </AppText>
           </Pressable>
         ))}
@@ -87,39 +82,43 @@ export default function ReservasTab() {
         <>
           {/* Aprovações pendentes (gestor) */}
           {gestor && pendentes.length > 0 ? (
-            <View style={{ marginTop: spacing.xl }}>
-              <AppText variant="subtitle" style={{ marginBottom: spacing.md }}>
-                Aguardando aprovação ({pendentes.length})
-              </AppText>
-              <View style={{ gap: spacing.md }}>
+            <Section>
+              <SectionHeader title={`Aguardando aprovação (${pendentes.length})`} />
+              <Panel>
                 {pendentes.map((r) => (
-                  <Card key={r.id}>
+                  <Row key={r.id}>
                     <ReservaInfo reserva={r} mostrarMorador />
                     {r.observacao ? (
-                      <AppText color="muted" style={{ marginTop: spacing.sm }}>
+                      <AppText color="muted" variant="caption" style={{ marginTop: spacing.sm, fontStyle: 'italic' }}>
                         “{r.observacao}”
                       </AppText>
                     ) : null}
-                    <View style={{ flexDirection: 'row', gap: spacing.md, marginTop: spacing.md }}>
+                    <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
                       <Button
                         title="Recusar"
                         variant="secondary"
+                        size="sm"
+                        fullWidth={false}
                         onPress={() => responder(r.id, 'rejeitada')}
                         loading={processando === r.id}
                       />
-                      <Button title="Aprovar" onPress={() => responder(r.id, 'aprovada')} loading={processando === r.id} />
+                      <Button
+                        title="Aprovar"
+                        size="sm"
+                        fullWidth={false}
+                        onPress={() => responder(r.id, 'aprovada')}
+                        loading={processando === r.id}
+                      />
                     </View>
-                  </Card>
+                  </Row>
                 ))}
-              </View>
-            </View>
+              </Panel>
+            </Section>
           ) : null}
 
           {/* Próximas reservas */}
-          <View style={{ marginTop: spacing.xl }}>
-            <AppText variant="subtitle" style={{ marginBottom: spacing.md }}>
-              Próximas reservas
-            </AppText>
+          <Section>
+            <SectionHeader title="Próximas reservas" />
             {proximas.length === 0 ? (
               <EmptyState
                 icon="calendar-outline"
@@ -127,46 +126,49 @@ export default function ReservasTab() {
                 description="Escolha uma área acima para fazer sua reserva."
               />
             ) : (
-              <View style={{ gap: spacing.md }}>
+              <Panel>
                 {proximas.map((r) => (
-                  <Card key={r.id} onPress={() => router.push(`/(app)/reservas/${r.id}`)}>
+                  <Row
+                    key={r.id}
+                    onPress={() => router.push(`/(app)/reservas/${r.id}`)}
+                    accessibilityLabel={r.area?.nome ?? 'Reserva'}
+                    compact
+                  >
                     <ReservaInfo reserva={r} mostrarMorador={gestor} />
-                  </Card>
+                  </Row>
                 ))}
-              </View>
+              </Panel>
             )}
-          </View>
+          </Section>
         </>
       )}
     </Screen>
   );
 }
 
+/**
+ * Miolo de uma reserva. Data/hora e morador viraram uma linha de metadados só —
+ * antes cada dado vinha precedido do próprio ícone, empilhado, o que dobrava a
+ * altura da linha e enchia a coluna de pictogramas que não diziam nada que o
+ * texto ao lado já não dissesse.
+ */
 function ReservaInfo({ reserva, mostrarMorador }: { reserva: Reserva; mostrarMorador?: boolean }) {
-  const { palette } = useAppTheme();
   const st = L.reservaStatus[reserva.status];
   return (
     <View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
         <AppText variant="subtitle" numberOfLines={1} style={{ flex: 1 }}>
           {reserva.area?.nome ?? 'Área'}
         </AppText>
         <Badge label={st.label} tone={st.tone} />
       </View>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 6 }}>
-        <Ionicons name="calendar-outline" size={15} color={palette.textMuted} />
-        <AppText color="muted" variant="caption">
-          {formatData(reserva.inicio)} · {formatHora(reserva.inicio)} às {formatHora(reserva.fim)}
-        </AppText>
-      </View>
-      {mostrarMorador ? (
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: 4 }}>
-          <Ionicons name="person-outline" size={15} color={palette.textMuted} />
-          <AppText color="muted" variant="caption">
-            {primeiroNome(reserva.morador?.nome_completo) || 'Morador'}
-          </AppText>
-        </View>
-      ) : null}
+      <MetaLine
+        style={{ marginTop: 3 }}
+        itens={[
+          `${formatData(reserva.inicio)} · ${formatHora(reserva.inicio)} às ${formatHora(reserva.fim)}`,
+          mostrarMorador ? primeiroNome(reserva.morador?.nome_completo) || 'Morador' : null,
+        ]}
+      />
     </View>
   );
 }

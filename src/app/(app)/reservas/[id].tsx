@@ -3,7 +3,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, Input, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, Button, Card, Input, Loading, Screen, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
@@ -165,9 +165,7 @@ export default function ReservaDetalhe() {
 
       {gestor ? (
         <View style={{ marginTop: spacing.xl }}>
-          <AppText variant="label" color="muted" style={{ marginBottom: spacing.sm }}>
-            Alterar status
-          </AppText>
+          <SectionHeader title="Alterar status" />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {statusOrdem.map((s) => {
               const meta = reservaStatus[s];
@@ -177,14 +175,19 @@ export default function ReservaDetalhe() {
                   key={s}
                   disabled={mudando}
                   onPress={() => mudarStatus(s)}
-                  style={{
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm,
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: ativo }}
+                  accessibilityLabel={meta.label}
+                  style={({ hovered }: any) => ({
+                    minHeight: 32,
+                    justifyContent: 'center',
+                    paddingHorizontal: spacing.md - 1,
+                    paddingVertical: 6,
                     borderRadius: radius.md,
-                    borderWidth: 1.5,
-                    borderColor: ativo ? tones[meta.tone].fg : palette.border,
-                    backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,
-                  }}
+                    borderWidth: 1,
+                    borderColor: ativo ? tones[meta.tone].fg : hovered ? palette.borderStrong : palette.border,
+                    backgroundColor: ativo ? tones[meta.tone].bg : hovered ? palette.surfaceAlt : palette.surface,
+                  })}
                 >
                   <AppText variant="label" style={{ color: ativo ? tones[meta.tone].fg : palette.textMuted }}>
                     {meta.label}
@@ -287,10 +290,12 @@ function VistoriaSecao({
   return (
     <View style={{ marginTop: spacing.xl }}>
       <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-        <AppText variant="subtitle" style={{ flex: 1 }}>{meta.label}</AppText>
+        <AppText variant="overline" color="subtle" style={{ flex: 1 }}>
+          {meta.label}
+        </AppText>
         {podeEditar && !editando ? (
-          <Pressable onPress={iniciarEdicao} hitSlop={8}>
-            <Ionicons name={vistoria ? 'create-outline' : 'add-circle-outline'} size={22} color={palette.primary} />
+          <Pressable onPress={iniciarEdicao} hitSlop={8} accessibilityRole="button" accessibilityLabel={meta.label}>
+            <Ionicons name={vistoria ? 'create-outline' : 'add-outline'} size={18} color={palette.primary} />
           </Pressable>
         ) : null}
       </View>
@@ -300,9 +305,9 @@ function VistoriaSecao({
           {itens.map((it, i) => (
             <View key={i} style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
               <Pressable onPress={() => alternarOk(i)} hitSlop={8}>
-                <Ionicons name={it.ok ? 'checkmark-circle' : 'close-circle'} size={22} color={it.ok ? palette.success : palette.danger} />
+                <Ionicons name={it.ok ? 'checkmark-circle' : 'close-circle'} size={19} color={it.ok ? palette.success : palette.danger} />
               </Pressable>
-              <AppText style={{ flex: 1 }}>{it.item}</AppText>
+              <AppText variant="caption" style={{ flex: 1 }}>{it.item}</AppText>
               <Pressable onPress={() => removerItem(i)} hitSlop={8}>
                 <Ionicons name="trash-outline" size={18} color={palette.textSubtle} />
               </Pressable>
@@ -313,7 +318,7 @@ function VistoriaSecao({
               <Input placeholder="Ex.: Piso limpo" value={novoItem} onChangeText={setNovoItem} onSubmitEditing={adicionarItem} />
             </View>
             <Pressable onPress={adicionarItem} hitSlop={8}>
-              <Ionicons name="add-circle" size={28} color={palette.primary} />
+              <Ionicons name="add-circle" size={22} color={palette.primary} />
             </Pressable>
           </View>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>

@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, ErrorState, Fab, Screen, Segmented, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarLancamentos } from '@/lib/db';
@@ -43,16 +43,16 @@ export default function FinanceiroLista() {
                 hitSlop={10}
                 accessibilityRole="button"
                 accessibilityLabel="Gerar boletos do mês"
-                style={{
-                  width: 44,
-                  height: 44,
-                  borderRadius: radius.full,
-                  backgroundColor: palette.surfaceAlt,
+                style={({ hovered, pressed }: any) => ({
+                  width: 34,
+                  height: 34,
+                  borderRadius: radius.md,
+                  backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
                   alignItems: 'center',
                   justifyContent: 'center',
-                }}
+                })}
               >
-                <Ionicons name="repeat-outline" size={20} color={palette.text} />
+                <Ionicons name="repeat-outline" size={18} color={palette.textMuted} />
               </Pressable>
             ) : undefined
           }
@@ -80,33 +80,45 @@ export default function FinanceiroLista() {
               title={tipo === 'boleto' ? 'Nenhum boleto por aqui' : 'Nenhuma despesa registrada'}
             />
           ) : (
-            <View style={{ gap: spacing.md }}>
+            <Panel>
               {lancamentos.map((l) => {
                 const status = statusFinanceiroEfetivo(l);
                 const stMeta = statusFinanceiro[status];
                 const catMeta = categoriaFinanceira[l.categoria];
+                const unidade = l.unidade
+                  ? `${l.unidade.bloco ? 'Bloco ' + l.unidade.bloco + ' · ' : ''}Unidade ${l.unidade.numero}`
+                  : null;
                 return (
-                  <Card key={l.id} onPress={() => router.push(`/(app)/financeiro/${l.id}`)}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <AppText variant="subtitle" numberOfLines={1} style={{ flex: 1 }}>
-                        {l.descricao}
-                      </AppText>
-                      <Badge label={stMeta.label} tone={stMeta.tone} />
+                  <Row key={l.id} onPress={() => router.push(`/(app)/financeiro/${l.id}`)} accessibilityLabel={l.descricao} compact>
+                    {/*
+                      Lançamento financeiro se lê como extrato: descrição e contexto
+                      à esquerda, dinheiro encostado na direita. O valor usa dígitos
+                      tabulares, então as casas decimais alinham entre as linhas e dá
+                      para comparar valores de relance — que é a razão de existir da
+                      lista. Antes o valor ficava no meio da linha de metadados,
+                      solto, e cada registro o colocava numa horizontal diferente.
+                    */}
+                    <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+                      <View style={{ flex: 1 }}>
+                        <AppText variant="subtitle" numberOfLines={1}>
+                          {l.descricao}
+                        </AppText>
+                        <MetaLine
+                          style={{ marginTop: 2 }}
+                          itens={[catMeta.label, unidade, `Venc. ${formatData(l.vencimento)}`]}
+                        />
+                      </View>
+                      <View style={{ alignItems: 'flex-end', gap: 5 }}>
+                        <AppText variant="label" style={{ fontVariant: ['tabular-nums'], fontSize: 14 }}>
+                          {formatMoeda(l.valor)}
+                        </AppText>
+                        <Badge label={stMeta.label} tone={stMeta.tone} />
+                      </View>
                     </View>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 6 }}>
-                      <AppText color="muted" variant="caption">
-                        {catMeta.label}
-                        {l.unidade ? ` · ${l.unidade.bloco ? 'Bloco ' + l.unidade.bloco + ' · ' : ''}Unidade ${l.unidade.numero}` : ''}
-                      </AppText>
-                      <AppText variant="label">{formatMoeda(l.valor)}</AppText>
-                    </View>
-                    <AppText color="subtle" variant="caption" style={{ marginTop: 2 }}>
-                      Vencimento {formatData(l.vencimento)}
-                    </AppText>
-                  </Card>
+                  </Row>
                 );
               })}
-            </View>
+            </Panel>
           )}
         </View>
       </Screen>

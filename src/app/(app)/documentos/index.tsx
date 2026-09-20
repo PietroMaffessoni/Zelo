@@ -4,8 +4,8 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
-import { radius, spacing } from '@/constants/theme';
+import { AppHeader, AppText, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarDocumentos, removerDocumento } from '@/lib/db';
 import { formatData } from '@/lib/format';
@@ -56,9 +56,9 @@ export default function Documentos() {
     refetch();
   }
 
-  function renderCard(d: Documento, comCategoria: boolean) {
+  function renderLinha(d: Documento, comCategoria: boolean) {
     return (
-      <DocumentoCard
+      <DocumentoLinha
         key={d.id}
         documento={d}
         categoria={comCategoria}
@@ -88,16 +88,16 @@ export default function Documentos() {
           ) : (
             <View style={{ gap: spacing.xl }}>
               {regimento.length > 0 ? (
-                <View style={{ gap: spacing.md }}>
-                  <SecaoTitulo icone="pin" texto="Regimento interno" />
-                  {regimento.map((d) => renderCard(d, false))}
+                <View>
+                  <SectionHeader title="Regimento interno" />
+                  <Panel>{regimento.map((d) => renderLinha(d, false))}</Panel>
                 </View>
               ) : null}
 
               {demais.length > 0 ? (
-                <View style={{ gap: spacing.md }}>
-                  {regimento.length > 0 ? <SecaoTitulo icone="folder-outline" texto="Outros documentos" /> : null}
-                  {demais.map((d) => renderCard(d, true))}
+                <View>
+                  {regimento.length > 0 ? <SectionHeader title="Outros documentos" /> : null}
+                  <Panel>{demais.map((d) => renderLinha(d, true))}</Panel>
                 </View>
               ) : null}
             </View>
@@ -109,17 +109,16 @@ export default function Documentos() {
   );
 }
 
-function SecaoTitulo({ icone, texto }: { icone: keyof typeof Ionicons.glyphMap; texto: string }) {
-  const { palette } = useAppTheme();
-  return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
-      <Ionicons name={icone} size={14} color={palette.textMuted} />
-      <AppText variant="label" color="muted">{texto}</AppText>
-    </View>
-  );
-}
-
-function DocumentoCard({
+/**
+ * Um documento na lista.
+ *
+ * Documento é registro de arquivo: título, quando entrou, quanto pesa e o que
+ * fazer com ele. Vira linha — o ícone indica se há anexo ou se o texto É o
+ * documento, e o seletor de categoria vira metadado em vez de um selo colorido
+ * flutuando abaixo do título, que empurrava cada registro para uma altura
+ * diferente e quebrava o alinhamento da coluna.
+ */
+function DocumentoLinha({
   documento: d,
   categoria,
   gestor,
@@ -129,7 +128,7 @@ function DocumentoCard({
   onRemover,
 }: {
   documento: Documento;
-  /** Mostra o selo da categoria — desnecessário na seção do regimento. */
+  /** Mostra a categoria — desnecessária na seção do regimento. */
   categoria: boolean;
   gestor: boolean;
   abrindo: boolean;
@@ -141,46 +140,46 @@ function DocumentoCard({
   const meta = categoriaDocumento[d.categoria];
 
   return (
-    <Card onPress={d.arquivo_path ? onAbrir : undefined}>
+    <Row onPress={d.arquivo_path ? onAbrir : undefined} accessibilityLabel={d.titulo} compact>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-        <View
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.md,
-            backgroundColor: palette.surfaceAlt,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
-        >
-          <Ionicons name={(d.arquivo_path ? meta.icon ?? 'document-outline' : 'text-outline') as any} size={20} color={palette.textMuted} />
-        </View>
+        <Ionicons
+          name={(d.arquivo_path ? meta.icon ?? 'document-outline' : 'text-outline') as any}
+          size={19}
+          color={palette.textSubtle}
+          style={{ width: 22, textAlign: 'center' }}
+        />
         <View style={{ flex: 1 }}>
           <AppText variant="subtitle" numberOfLines={1}>
             {d.titulo}
           </AppText>
-          <AppText color="muted" variant="caption">
-            {formatData(d.created_at)}
-            {formatTamanho(d.tamanho_bytes) ? ` · ${formatTamanho(d.tamanho_bytes)}` : ''}
-          </AppText>
+          <MetaLine
+            style={{ marginTop: 2 }}
+            itens={[categoria ? meta.label : null, formatData(d.created_at), formatTamanho(d.tamanho_bytes)]}
+          />
+          {d.descricao ? (
+            // Sem anexo, a descrição É o documento — mostra inteira em vez de resumo.
+            <AppText color="muted" variant="caption" style={{ marginTop: 5 }} numberOfLines={d.arquivo_path ? 2 : undefined}>
+              {d.descricao}
+            </AppText>
+          ) : null}
         </View>
         {abrindo ? (
-          <Ionicons name="hourglass-outline" size={18} color={palette.textSubtle} />
+          <Ionicons name="hourglass-outline" size={17} color={palette.textSubtle} />
         ) : gestor ? (
-          <Pressable onPress={onRemover} hitSlop={8} disabled={removendo}>
-            <Ionicons name="trash-outline" size={18} color={palette.textSubtle} />
+          <Pressable
+            onPress={onRemover}
+            hitSlop={8}
+            disabled={removendo}
+            accessibilityRole="button"
+            accessibilityLabel={`Remover ${d.titulo}`}
+            style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.65 })}
+          >
+            <Ionicons name="trash-outline" size={17} color={palette.textSubtle} />
           </Pressable>
         ) : d.arquivo_path ? (
-          <Ionicons name="chevron-forward" size={18} color={palette.textSubtle} />
+          <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
         ) : null}
       </View>
-      {categoria ? <Badge label={meta.label} tone={meta.tone} style={{ marginTop: spacing.sm }} /> : null}
-      {d.descricao ? (
-        // Sem anexo, a descrição É o documento — mostra inteira em vez de resumo.
-        <AppText color="muted" style={{ marginTop: spacing.sm }} numberOfLines={d.arquivo_path ? 2 : undefined}>
-          {d.descricao}
-        </AppText>
-      ) : null}
-    </Card>
+    </Row>
   );
 }

@@ -91,7 +91,7 @@ export default function NovoLancamento() {
         ) : null}
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Categoria</AppText>
+          <AppText variant="label">Categoria</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {categorias.map((c) => (
               <Chip key={c} label={categoriaFinanceira[c].label} selected={categoria === c} onPress={() => setCategoria(c)} />

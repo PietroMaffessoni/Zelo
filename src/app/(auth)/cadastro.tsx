@@ -59,7 +59,7 @@ export default function Cadastro() {
   }
 
   return (
-    <Screen>
+    <Screen maxWidth={400}>
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={{ marginTop: spacing.xxl, marginBottom: spacing.xl }}>
           <Brand size="lg" />
@@ -139,15 +139,21 @@ export default function Cadastro() {
             </AppText>
           </Pressable>
 
+          {/* Retorno do formulário em bloco contido — uma linha de texto colorida
+              solta entre os campos se perde justamente quando mais importa. */}
           {erro ? (
-            <AppText color="danger" variant="label">
-              {erro}
-            </AppText>
+            <View style={{ backgroundColor: palette.dangerSoft, borderRadius: radius.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md }}>
+              <AppText variant="caption" style={{ color: palette.danger }}>
+                {erro}
+              </AppText>
+            </View>
           ) : null}
           {aviso ? (
-            <AppText color="success" variant="label">
-              {aviso}
-            </AppText>
+            <View style={{ backgroundColor: palette.successSoft, borderRadius: radius.md, paddingVertical: spacing.sm + 2, paddingHorizontal: spacing.md }}>
+              <AppText variant="caption" style={{ color: palette.success }}>
+                {aviso}
+              </AppText>
+            </View>
           ) : null}
 
           <Button title="Criar conta" onPress={cadastrar} loading={carregando} size="lg" />

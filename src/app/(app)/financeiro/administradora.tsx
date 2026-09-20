@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Button, Card, EmptyState, Input, Loading, Screen, Segmented } from '@/components/ui';
-import { radius, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { atualizarAdministradora, atualizarStatusLancamento, listarLancamentos, marcarDespesasEnviadas } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
@@ -124,11 +124,9 @@ export default function ContasAdministradora() {
           </View>
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-            <View style={{ width: 40, height: 40, borderRadius: radius.md, backgroundColor: palette.primarySoft, alignItems: 'center', justifyContent: 'center' }}>
-              <Ionicons name="briefcase-outline" size={20} color={palette.primary} />
-            </View>
+            <Ionicons name="briefcase-outline" size={19} color={palette.textSubtle} style={{ width: 22, textAlign: 'center' }} />
             <View style={{ flex: 1 }}>
-              <AppText variant="label">{cond?.administradora || 'Administradora não definida'}</AppText>
+              <AppText variant="subtitle">{cond?.administradora || 'Administradora não definida'}</AppText>
               {cond?.administradora_contato ? (
                 <AppText color="muted" variant="caption">{cond.administradora_contato}</AppText>
               ) : (
@@ -136,7 +134,7 @@ export default function ContasAdministradora() {
               )}
             </View>
             <Pressable onPress={() => { setNomeAdm(cond?.administradora ?? ''); setContatoAdm(cond?.administradora_contato ?? ''); setEditandoAdm(true); }} hitSlop={8}>
-              <Ionicons name="create-outline" size={20} color={palette.primary} />
+              <Ionicons name="create-outline" size={18} color={palette.primary} />
             </Pressable>
           </View>
         )}

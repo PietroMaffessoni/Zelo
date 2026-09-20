@@ -50,7 +50,7 @@ export default function NovaArea() {
         <Input label="Capacidade (opcional)" placeholder="Ex.: 40 pessoas" keyboardType="number-pad" value={capacidade} onChangeText={setCapacidade} />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Aprovação</AppText>
+          <AppText variant="label">Aprovação</AppText>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Chip label="Precisa aprovação" selected={requerAprovacao} onPress={() => setRequerAprovacao(true)} />
             <Chip label="Automática" selected={!requerAprovacao} onPress={() => setRequerAprovacao(false)} />

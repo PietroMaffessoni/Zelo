@@ -184,7 +184,7 @@ export default function NovaReserva() {
 
       <View style={{ gap: spacing.xl }}>
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Área</AppText>
+          <AppText variant="label">Área</AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {(areas ?? []).map((a) => (
               <Chip key={a.id} label={a.nome} icon={a.icone as any} selected={areaId === a.id} onPress={() => trocarArea(a)} />
@@ -193,7 +193,7 @@ export default function NovaReserva() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Dia</AppText>
+          <AppText variant="label">Dia</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {dias.map((d) => (
               <Chip key={d.value} label={d.label} selected={dia === d.value} onPress={() => trocarDia(d.value)} />
@@ -208,7 +208,7 @@ export default function NovaReserva() {
         ) : (
           <View style={{ gap: spacing.sm }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <AppText variant="label" color="muted">Horários</AppText>
+              <AppText variant="label">Horários</AppText>
               <Pressable onPress={selecionarDiaInteiro} hitSlop={8}>
                 <AppText color="primary" variant="caption">Dia inteiro</AppText>
               </Pressable>

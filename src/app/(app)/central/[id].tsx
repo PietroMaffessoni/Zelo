@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Button, Card, Input, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Avatar, Badge, Button, Card, Input, Loading, Screen, SectionHeader } from '@/components/ui';
 import { palette, radius, spacing, tone as tones } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { getSolicitacao, responderSolicitacao } from '@/lib/db';
@@ -62,26 +62,55 @@ export default function SolicitacaoDetalhe() {
         {s.descricao}
       </AppText>
 
-      <Card style={{ marginTop: spacing.lg, flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-        <Avatar nome={s.morador?.nome_completo} url={s.morador?.avatar_url} size={36} />
-        <View>
-          <AppText variant="label">{s.morador?.nome_completo || 'Morador'}</AppText>
-          <AppText color="subtle" variant="caption">{formatDataHora(s.created_at)}</AppText>
+      {/* Faixa de contexto do registro — fios no lugar de mais uma caixa. */}
+      <View
+        style={{
+          marginTop: spacing.lg,
+          paddingVertical: spacing.md,
+          borderTopWidth: 1,
+          borderBottomWidth: 1,
+          borderColor: palette.border,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+        }}
+      >
+        <Avatar nome={s.morador?.nome_completo} url={s.morador?.avatar_url} size={32} />
+        <View style={{ flex: 1 }}>
+          <AppText variant="subtitle" numberOfLines={1}>
+            {s.morador?.nome_completo || 'Morador'}
+          </AppText>
+          <AppText color="subtle" variant="caption" style={{ marginTop: 1 }}>
+            {formatDataHora(s.created_at)}
+          </AppText>
         </View>
-      </Card>
+      </View>
 
       {/* Resposta existente (visão do morador) */}
       {!gestor && s.resposta ? (
-        <Card style={{ marginTop: spacing.lg, backgroundColor: palette.primarySoft, borderColor: palette.primarySoft }}>
-          <AppText variant="label" color="primary">Resposta da administração</AppText>
-          <AppText style={{ marginTop: spacing.xs }}>{s.resposta}</AppText>
+        <Card
+          style={{
+            marginTop: spacing.lg,
+            backgroundColor: palette.primarySoft,
+            borderColor: palette.primarySoft,
+            borderLeftWidth: 3,
+            borderLeftColor: palette.primary,
+            paddingLeft: spacing.lg - 3,
+          }}
+        >
+          <AppText variant="overline" color="primary">
+            Resposta da administração
+          </AppText>
+          <AppText variant="caption" style={{ marginTop: spacing.xs }}>
+            {s.resposta}
+          </AppText>
         </Card>
       ) : null}
 
       {/* Painel de resposta (gestor) */}
       {gestor ? (
         <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
-          <AppText variant="subtitle">Responder</AppText>
+          <SectionHeader title="Responder" />
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
             {statuses.map((s2) => {
               const meta = L.solicitacaoStatus[s2];
@@ -90,11 +119,16 @@ export default function SolicitacaoDetalhe() {
                 <Pressable
                   key={s2}
                   onPress={() => setStatus(s2)}
+                  accessibilityRole="button"
+                  accessibilityState={{ selected: ativo }}
+                  accessibilityLabel={meta.label}
                   style={{
-                    paddingHorizontal: spacing.md,
-                    paddingVertical: spacing.sm,
+                    minHeight: 32,
+                    justifyContent: 'center',
+                    paddingHorizontal: spacing.md - 1,
+                    paddingVertical: 6,
                     borderRadius: radius.md,
-                    borderWidth: 1.5,
+                    borderWidth: 1,
                     borderColor: ativo ? tones[meta.tone].fg : palette.border,
                     backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,
                   }}

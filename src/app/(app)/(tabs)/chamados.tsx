@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, ErrorState, Fab, Screen, Segmented, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarChamados } from '@/lib/db';
@@ -62,11 +62,11 @@ export default function ChamadosTab() {
             onAction={() => router.push('/(app)/chamados/novo')}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {lista.map((c) => (
-              <ChamadoCard key={c.id} chamado={c} gestor={gestor} onPress={() => router.push(`/(app)/chamados/${c.id}`)} />
+              <ChamadoLinha key={c.id} chamado={c} gestor={gestor} onPress={() => router.push(`/(app)/chamados/${c.id}`)} />
             ))}
-          </View>
+          </Panel>
         )}
       </Screen>
       <Fab icon="add" label="Novo" onPress={() => router.push('/(app)/chamados/novo')} />
@@ -74,30 +74,46 @@ export default function ChamadosTab() {
   );
 }
 
-function ChamadoCard({ chamado, gestor, onPress }: { chamado: Chamado; gestor: boolean; onPress: () => void }) {
+/**
+ * Um chamado na lista.
+ *
+ * Antes: dois selos coloridos no topo, título, duas linhas de descrição e o autor
+ * embaixo — cada registro virava um bloco com cinco alturas diferentes, e vinte
+ * deles empilhados não davam para varrer. Agora a leitura é sempre a mesma: o
+ * título e o status na primeira linha, o resumo na segunda, o resto como metadado.
+ * A categoria saiu do selo e virou texto: dois selos por linha faziam status e
+ * categoria disputarem o mesmo destaque, e é o status que muda e exige decisão.
+ */
+function ChamadoLinha({ chamado, gestor, onPress }: { chamado: Chamado; gestor: boolean; onPress: () => void }) {
   const cat = L.chamadoCategoria[chamado.categoria];
   const st = L.chamadoStatus[chamado.status];
+  const unidade = chamado.unidade
+    ? `${chamado.unidade.bloco ? chamado.unidade.bloco + ' ' : ''}${chamado.unidade.numero}`
+    : null;
+
   return (
-    <Card onPress={onPress}>
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginBottom: 6 }}>
-        <Badge label={cat.label} tone={cat.tone} />
+    <Row onPress={onPress} accessibilityLabel={chamado.titulo}>
+      <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md }}>
+        <View style={{ flex: 1 }}>
+          <AppText variant="subtitle" numberOfLines={1}>
+            {chamado.titulo}
+          </AppText>
+          <AppText color="muted" variant="caption" numberOfLines={2} style={{ marginTop: 3 }}>
+            {chamado.descricao}
+          </AppText>
+          <MetaLine
+            color="subtle"
+            style={{ marginTop: 5 }}
+            itens={[
+              cat.label,
+              tempoRelativo(chamado.created_at),
+              gestor ? primeiroNome(chamado.autor?.nome_completo) || 'Morador' : null,
+              gestor ? unidade : null,
+            ]}
+          />
+        </View>
         <Badge label={st.label} tone={st.tone} />
-        <AppText color="subtle" variant="caption" style={{ marginLeft: 'auto' }}>
-          {tempoRelativo(chamado.created_at)}
-        </AppText>
       </View>
-      <AppText variant="subtitle" numberOfLines={1}>
-        {chamado.titulo}
-      </AppText>
-      <AppText color="muted" numberOfLines={2} style={{ marginTop: 2 }}>
-        {chamado.descricao}
-      </AppText>
-      {gestor ? (
-        <AppText color="subtle" variant="caption" style={{ marginTop: spacing.sm }}>
-          {primeiroNome(chamado.autor?.nome_completo) || 'Morador'}
-          {chamado.unidade ? ` · ${chamado.unidade.bloco ? chamado.unidade.bloco + ' ' : ''}${chamado.unidade.numero}` : ''}
-        </AppText>
-      ) : null}
-    </Card>
+    </Row>
   );
 }

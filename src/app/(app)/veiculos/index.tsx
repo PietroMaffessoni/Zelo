@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { palette, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarVeiculos, removerVeiculo } from '@/lib/db';
@@ -49,32 +49,41 @@ export default function VeiculosLista() {
             onAction={() => router.push('/(app)/veiculos/novo')}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {veiculos.map((v) => {
               const meta = tipoVeiculoLabel[v.tipo];
               return (
-                <Card key={v.id}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                <Row key={v.id} compact>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                     <View style={{ flex: 1 }}>
+                      {/* A placa é o identificador do registro: entreletra aberta e
+                          dígitos tabulares para ficar legível e alinhada na coluna. */}
                       <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm }}>
-                        <AppText variant="subtitle" style={{ letterSpacing: 1 }}>
+                        <AppText variant="subtitle" style={{ letterSpacing: 1.2, fontVariant: ['tabular-nums'] }}>
                           {v.placa}
                         </AppText>
                         <Badge label={meta.label} tone={meta.tone} />
                       </View>
-                      <AppText color="muted" variant="caption" style={{ marginTop: 4 }}>
-                        {v.modelo ? `${v.modelo}${v.cor ? ' · ' + v.cor : ''}` : v.cor || ''}
-                        {v.vaga ? ` · Vaga ${v.vaga}` : ''}
-                      </AppText>
+                      <MetaLine
+                        style={{ marginTop: 3 }}
+                        itens={[v.modelo, v.cor, v.vaga ? `Vaga ${v.vaga}` : null]}
+                      />
                     </View>
-                    <Pressable onPress={() => remover(v.id)} hitSlop={8} disabled={removendo === v.id}>
-                      <Ionicons name="trash-outline" size={18} color={palette.textSubtle} />
+                    <Pressable
+                      onPress={() => remover(v.id)}
+                      hitSlop={8}
+                      disabled={removendo === v.id}
+                      accessibilityRole="button"
+                      accessibilityLabel={`Remover veículo ${v.placa}`}
+                      style={({ hovered }: any) => ({ opacity: hovered ? 1 : 0.65 })}
+                    >
+                      <Ionicons name="trash-outline" size={17} color={palette.textSubtle} />
                     </Pressable>
                   </View>
-                </Card>
+                </Row>
               );
             })}
-          </View>
+          </Panel>
         )}
       </Screen>
       {unidadeId ? <Fab icon="add" label="Veículo" onPress={() => router.push('/(app)/veiculos/novo')} /> : null}

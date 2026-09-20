@@ -72,22 +72,39 @@ export default function ComunicadoDetalhe() {
 
       <AppText variant="title">{c.titulo}</AppText>
 
-      <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, marginTop: spacing.md, marginBottom: spacing.lg }}>
-        <Avatar nome={c.autor?.nome_completo} url={c.autor?.avatar_url} size={36} />
-        <View>
-          <AppText variant="label">{c.autor?.nome_completo || 'Administração'}</AppText>
-          <AppText color="subtle" variant="caption">
+      {/* Assinatura do comunicado: quem publicou e quando, apartado do corpo por
+          um fio — a leitura do aviso começa logo abaixo, sem uma caixa no meio. */}
+      <View
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: spacing.sm,
+          marginTop: spacing.md,
+          marginBottom: spacing.lg,
+          paddingBottom: spacing.md,
+          borderBottomWidth: 1,
+          borderBottomColor: palette.border,
+        }}
+      >
+        <Avatar nome={c.autor?.nome_completo} url={c.autor?.avatar_url} size={32} />
+        <View style={{ flex: 1 }}>
+          <AppText variant="subtitle" numberOfLines={1}>
+            {c.autor?.nome_completo || 'Administração'}
+          </AppText>
+          <AppText color="subtle" variant="caption" style={{ marginTop: 1 }}>
             {formatDataHora(c.created_at)}
           </AppText>
         </View>
       </View>
 
-      <AppText style={{ lineHeight: 24 }}>{c.corpo}</AppText>
+      {/* Corpo do aviso: entrelinha mais generosa que a do resto do app — aqui o
+          texto é o conteúdo da tela, não um rótulo. */}
+      <AppText style={{ lineHeight: 25 }}>{c.corpo}</AppText>
 
       {gestor ? (
         <Card style={{ marginTop: spacing.xl, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
           <View style={{ flex: 1 }}>
-            <AppText variant="label">Fixar no topo</AppText>
+            <AppText variant="subtitle">Fixar no topo</AppText>
             <AppText color="muted" variant="caption">
               {fixado ? 'Desligue para tirar o aviso do destaque.' : 'Mantém o aviso em destaque na lista.'}
             </AppText>

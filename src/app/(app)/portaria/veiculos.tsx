@@ -1,7 +1,7 @@
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Input, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, EmptyState, Input, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarVeiculos } from '@/lib/db';
@@ -39,29 +39,36 @@ export default function PortariaVeiculos() {
         ) : filtrados.length === 0 ? (
           <EmptyState icon="car-outline" title="Nenhum veículo encontrado" />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {filtrados.map((v) => {
               const meta = tipoVeiculoLabel[v.tipo];
+              const unidade = v.unidade
+                ? `${v.unidade.bloco ? `Bloco ${v.unidade.bloco} · ` : ''}Unidade ${v.unidade.numero}`
+                : null;
               return (
-                <Card key={v.id}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <AppText variant="subtitle" style={{ letterSpacing: 1 }}>
-                      {v.placa}
-                    </AppText>
+                <Row key={v.id} compact>
+                  {/*
+                    Consulta de portaria: o porteiro chega com uma placa na mão e
+                    precisa achá-la na coluna. Placa alinhada à esquerda em dígitos
+                    tabulares, resto como metadado — três linhas de tamanhos
+                    diferentes por veículo tornavam a varredura mais lenta.
+                  */}
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
+                    <View style={{ flex: 1 }}>
+                      <AppText variant="subtitle" style={{ letterSpacing: 1.2, fontVariant: ['tabular-nums'] }}>
+                        {v.placa}
+                      </AppText>
+                      <MetaLine
+                        style={{ marginTop: 3 }}
+                        itens={[v.modelo, v.cor, unidade, v.vaga ? `Vaga ${v.vaga}` : null]}
+                      />
+                    </View>
                     <Badge label={meta.label} tone={meta.tone} />
                   </View>
-                  <AppText color="muted" variant="caption" style={{ marginTop: 4 }}>
-                    {v.modelo ? `${v.modelo}${v.cor ? ' · ' + v.cor : ''}` : v.cor || ''}
-                  </AppText>
-                  <AppText color="subtle" variant="caption" style={{ marginTop: 2 }}>
-                    {v.unidade?.bloco ? `Bloco ${v.unidade.bloco} · ` : ''}
-                    {v.unidade ? `Unidade ${v.unidade.numero}` : ''}
-                    {v.vaga ? ` · Vaga ${v.vaga}` : ''}
-                  </AppText>
-                </Card>
+                </Row>
               );
             })}
-          </View>
+          </Panel>
         )}
       </View>
     </Screen>

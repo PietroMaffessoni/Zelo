@@ -11,6 +11,16 @@ export type CardProps = ViewProps & {
   accessibilityLabel?: string;
 };
 
+/**
+ * Superfície para um bloco que é, de fato, uma unidade isolada — um destaque, um
+ * resumo, um formulário agrupado.
+ *
+ * O card não flutua mais: em repouso ele se separa do fundo por borda e por
+ * contraste de superfície, e só levanta (de leve, no web) quando é clicável e o
+ * ponteiro está sobre ele — aí a sombra tem função, que é dizer "isto responde".
+ * Empilhar dezenas destes é o que dava o aspecto de template; para listas de
+ * registros repetidos use `Panel` + `Row`.
+ */
 export function Card({ onPress, padded = true, style, children, accessibilityLabel, ...rest }: CardProps) {
   const { palette } = useAppTheme();
   const base: ViewStyle = {
@@ -19,7 +29,6 @@ export function Card({ onPress, padded = true, style, children, accessibilityLab
     borderWidth: 1,
     borderColor: palette.border,
     padding: padded ? spacing.lg : 0,
-    ...shadow.soft,
   };
 
   if (onPress) {
@@ -33,7 +42,7 @@ export function Card({ onPress, padded = true, style, children, accessibilityLab
           hovered
             ? { borderColor: palette.borderStrong, ...(Platform.OS === 'web' ? shadow.card : null) }
             : null,
-          { opacity: pressed ? 0.85 : 1 },
+          pressed ? { backgroundColor: palette.surfaceAlt } : null,
           focusRing(focused, palette.primary),
           style,
         ]}

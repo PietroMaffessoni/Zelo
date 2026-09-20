@@ -4,7 +4,7 @@ import dayjs from 'dayjs';
 import { useMemo, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, Card, Divider, Input, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, Button, Card, Divider, Input, Loading, Screen, SectionHeader } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { getEquipamento, listarManutencoes, registrarManutencao } from '@/lib/db';
@@ -104,7 +104,7 @@ export default function EquipamentoDetalhe() {
 
         {podeRegistrar ? (
           <Card>
-            <AppText variant="subtitle" style={{ marginBottom: spacing.sm }}>Registrar manutenção</AppText>
+            <SectionHeader title="Registrar manutenção" />
             <View style={{ gap: spacing.sm }}>
               <Input label="Serviço realizado" placeholder="Ex.: Troca de óleo e revisão" value={descricao} onChangeText={setDescricao} multiline />
 
@@ -123,10 +123,10 @@ export default function EquipamentoDetalhe() {
                       >
                         <Ionicons
                           name={ok ? 'checkbox' : 'square-outline'}
-                          size={22}
+                          size={19}
                           color={ok ? palette.success : palette.textSubtle}
                         />
-                        <AppText style={{ flex: 1 }}>{item}</AppText>
+                        <AppText variant="caption" style={{ flex: 1 }}>{item}</AppText>
                       </Pressable>
                     );
                   })}
@@ -142,7 +142,7 @@ export default function EquipamentoDetalhe() {
         ) : null}
 
         <View>
-          <AppText variant="subtitle" style={{ marginBottom: spacing.sm }}>Histórico</AppText>
+          <SectionHeader title="Histórico" />
           {historico.length === 0 ? (
             <Card>
               <AppText color="muted" center>Nenhuma manutenção registrada ainda.</AppText>

@@ -44,15 +44,15 @@ export default function PrestacaoContas() {
             </Card>
           </View>
           <Card style={{ backgroundColor: saldo >= 0 ? palette.successSoft : palette.dangerSoft }}>
-            <AppText color="muted" variant="caption">Saldo do período</AppText>
-            <AppText variant="title" style={{ color: saldo >= 0 ? palette.success : palette.danger }}>
+            <AppText variant="overline" color="muted">Saldo do período</AppText>
+            <AppText variant="metric" style={{ color: saldo >= 0 ? palette.success : palette.danger, marginTop: 4, fontVariant: ['tabular-nums'] }}>
               {formatMoeda(saldo)}
             </AppText>
           </Card>
 
           {/* Gráfico de barras */}
           <Card>
-            <AppText variant="subtitle" style={{ marginBottom: spacing.lg }}>Por mês</AppText>
+            <AppText variant="overline" color="subtle" style={{ marginBottom: spacing.lg }}>Por mês</AppText>
             <View style={{ gap: spacing.lg }}>
               {meses.map((m) => (
                 <View key={m.mes} style={{ gap: 6 }}>
@@ -60,7 +60,9 @@ export default function PrestacaoContas() {
                     <AppText variant="label" style={{ textTransform: 'capitalize' }}>
                       {dayjs(m.mes + '-01').format('MMM/YY')}
                     </AppText>
-                    <AppText color="muted" variant="caption">{formatMoeda(m.receita - m.despesa)}</AppText>
+                    <AppText color="muted" variant="caption" style={{ fontVariant: ['tabular-nums'] }}>
+                      {formatMoeda(m.receita - m.despesa)}
+                    </AppText>
                   </View>
                   <View style={{ gap: 4 }}>
                     <Barra valor={m.receita} max={maxValor} cor={palette.success} />

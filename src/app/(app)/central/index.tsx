@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
-import { palette, radius, spacing, tone as tones } from '@/constants/theme';
+import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
+import { palette, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarSolicitacoes } from '@/lib/db';
 import { primeiroNome, tempoRelativo } from '@/lib/format';
@@ -47,40 +47,42 @@ export default function CentralLista() {
             onAction={gestor ? undefined : () => router.push('/(app)/central/nova')}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {itens.map((s) => {
               const cat = L.solicitacaoCategoria[s.categoria];
               const st = L.solicitacaoStatus[s.status];
               return (
-                <Card key={s.id} onPress={() => router.push(`/(app)/central/${s.id}`)}>
+                <Row key={s.id} onPress={() => router.push(`/(app)/central/${s.id}`)} accessibilityLabel={s.titulo} compact>
                   <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>
-                    <View
-                      style={{
-                        width: 42,
-                        height: 42,
-                        borderRadius: radius.md,
-                        backgroundColor: tones[cat.tone].bg,
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                      }}
-                    >
-                      <Ionicons name={(cat.icon as any) || 'document-outline'} size={20} color={tones[cat.tone].fg} />
-                    </View>
+                    {/* O ícone da categoria perdeu o bloco colorido de 42px e ficou
+                        neutro: numa coluna de dez linhas ele serve para localizar o
+                        tipo de pedido, não para colorir a tela. A cor sobrou para o
+                        selo de status, que é o que de fato muda de linha para linha. */}
+                    <Ionicons
+                      name={(cat.icon as any) || 'document-outline'}
+                      size={19}
+                      color={palette.textSubtle}
+                      style={{ width: 22, textAlign: 'center' }}
+                    />
                     <View style={{ flex: 1 }}>
                       <AppText variant="subtitle" numberOfLines={1}>
                         {s.titulo}
                       </AppText>
-                      <AppText color="muted" variant="caption">
-                        {cat.label}
-                        {gestor ? ` · ${primeiroNome(s.morador?.nome_completo) || 'Morador'}` : ''} · {tempoRelativo(s.created_at)}
-                      </AppText>
+                      <MetaLine
+                        style={{ marginTop: 2 }}
+                        itens={[
+                          cat.label,
+                          gestor ? primeiroNome(s.morador?.nome_completo) || 'Morador' : null,
+                          tempoRelativo(s.created_at),
+                        ]}
+                      />
                     </View>
                     <Badge label={st.label} tone={st.tone} />
                   </View>
-                </Card>
+                </Row>
               );
             })}
-          </View>
+          </Panel>
         )}
       </Screen>
       <Fab icon="add" label="Solicitar" onPress={() => router.push('/(app)/central/nova')} />

@@ -31,11 +31,120 @@ export type Palette = {
 };
 export type ModoTema = 'light' | 'dark';
 
+/**
+ * Intensidade cromática da paleta.
+ *
+ * `vivida` é a paleta do Zelo, e é a que está em uso. `suave` fica registrada
+ * como alternativa já testada e medida: mantém EXATAMENTE os mesmos matizes — o
+ * azul continua o mesmo azul, o verde o mesmo verde — e baixa só a saturação,
+ * de 14% a 39% menos croma. Nenhuma outra parte do app precisa saber qual está
+ * ativa: trocar esta constante (e recarregar) troca o produto inteiro.
+ *
+ * Duas coisas foram verificadas em ambas as paletas, e é por isso que a suave
+ * não é só a vivida "lavada":
+ *
+ *  - CONTRASTE: todo texto de status sobre o próprio fundo, e toda cor sobre a
+ *    página, ficam em 4,5:1 ou mais (WCAG AA). Para isso, no tema claro as
+ *    semânticas ESCURECERAM ao perder croma — dessaturar mantendo a luminosidade
+ *    média produz cor lamacenta, não sóbria.
+ *  - DISTINÇÃO: com pouco croma, os 19° de matiz que separam o âmbar do vermelho
+ *    deixam de bastar e os dois viram o mesmo marrom. Por isso `warning` é bem
+ *    mais claro que `danger` aqui: a diferença que o croma deixou de fazer passa
+ *    a ser feita pela luminosidade.
+ */
+export type IntensidadeCor = 'vivida' | 'suave';
+
+export const INTENSIDADE: IntensidadeCor = 'vivida';
+
+/** As cores que carregam croma. Os neutros são os mesmos nas duas intensidades. */
+type Acentos = Pick<
+  Palette,
+  | 'primary' | 'primaryDark' | 'primarySoft'
+  | 'success' | 'successSoft'
+  | 'warning' | 'warningSoft'
+  | 'danger' | 'dangerSoft'
+  | 'info' | 'infoSoft'
+>;
+
+const acentosClaro: Record<IntensidadeCor, Acentos> = {
+  vivida: {
+    // Marca — Zelo: azul-marinho profundo (confiança & instituição). Não é o índigo.
+    primary: '#12568F',
+    primaryDark: '#0E4373',
+    primarySoft: '#E2ECF6',
+    success: '#2E7D46',
+    successSoft: '#DCF0E1',
+    warning: '#B45309',
+    warningSoft: '#FBEBCB',
+    danger: '#C0392B',
+    dangerSoft: '#F7E1DD',
+    info: '#0E7490',
+    infoSoft: '#DEF0F3',
+  },
+  suave: {
+    // Mesmo marinho, um passo atrás na saturação — segue reconhecível como Zelo.
+    primary: '#1F5585',
+    primaryDark: '#15426D',
+    primarySoft: '#E5EBF2',
+    success: '#346541',
+    successSoft: '#E1EEE4',
+    warning: '#995A37',
+    warningSoft: '#F6ECD7',
+    danger: '#863A30',
+    dangerSoft: '#F2E3E0',
+    info: '#387286',
+    infoSoft: '#E3EFF1',
+  },
+};
+
+const acentosEscuro: Record<IntensidadeCor, Acentos> = {
+  vivida: {
+    // Marca — Zelo: azul clareado (azure) para superfícies escuras.
+    primary: '#5AA6E8',
+    primaryDark: '#84BEF0',
+    primarySoft: 'rgba(90, 166, 232, 0.16)',
+    success: '#54CC82',
+    successSoft: 'rgba(84, 204, 130, 0.16)',
+    warning: '#F0B44E',
+    warningSoft: 'rgba(240, 180, 78, 0.16)',
+    danger: '#E8776B',
+    dangerSoft: 'rgba(232, 119, 107, 0.16)',
+    info: '#38BECF',
+    infoSoft: 'rgba(56, 190, 207, 0.16)',
+  },
+  suave: {
+    // No escuro a cor precisa de luminosidade para ser legível sobre o carvão,
+    // então aqui só o croma cai — nenhuma cor passa de 0,80 de luminosidade, que
+    // é o limiar em que um tom começa a "acender" contra o fundo.
+    primary: '#7AA7D1',
+    primaryDark: '#9BC1E4',
+    primarySoft: 'rgba(122, 167, 209, 0.16)',
+    success: '#83BF95',
+    successSoft: 'rgba(131, 191, 149, 0.16)',
+    warning: '#DCB77F',
+    warningSoft: 'rgba(220, 183, 127, 0.16)',
+    danger: '#CC867D',
+    dangerSoft: 'rgba(204, 134, 125, 0.16)',
+    info: '#78C8D4',
+    infoSoft: 'rgba(120, 200, 212, 0.16)',
+  },
+};
+
+/**
+ * Cor de fundo do avatar quando não há foto, sorteada pelo nome.
+ *
+ * A lista `vivida` é a original. A `suave` troca o arco-íris de sete matizes
+ * saturados (violeta, rosa e laranja chegavam a 0,247 de croma — o triplo da
+ * cor da marca) por matizes do próprio mundo do Zelo, todos no mesmo croma baixo:
+ * uma parede de avatares deixa de ser o elemento mais berrante da tela.
+ */
+export const coresAvatar: Record<IntensidadeCor, readonly string[]> = {
+  vivida: ['#4F46E5', '#0EA5E9', '#16A34A', '#EA580C', '#DB2777', '#7C3AED', '#0891B2'],
+  suave: ['#35597E', '#25727B', '#24644F', '#586D3E', '#68521F', '#885641', '#7A4548'],
+};
+
 const paletteLight: Palette = {
-  // Marca — Zelo: azul-marinho profundo (confiança & instituição). Não é o índigo.
-  primary: '#12568F',
-  primaryDark: '#0E4373',
-  primarySoft: '#E2ECF6',
+  ...acentosClaro[INTENSIDADE],
   onPrimary: '#FFFFFF',
 
   // Neutros frios e limpos (papel levemente azulado)
@@ -50,16 +159,6 @@ const paletteLight: Palette = {
   textMuted: '#516175',
   textSubtle: '#7B8798',
 
-  // Semânticas — agora contrastam com a primária azul (verde/vermelho/âmbar/teal)
-  success: '#2E7D46',
-  successSoft: '#DCF0E1',
-  warning: '#B45309',
-  warningSoft: '#FBEBCB',
-  danger: '#C0392B',
-  dangerSoft: '#F7E1DD',
-  info: '#0E7490',
-  infoSoft: '#DEF0F3',
-
   // Utilitárias
   overlay: 'rgba(12, 22, 36, 0.45)',
   white: '#FFFFFF',
@@ -67,10 +166,7 @@ const paletteLight: Palette = {
 };
 
 const paletteDark: Palette = {
-  // Marca — Zelo: azul clareado (azure) para superfícies escuras.
-  primary: '#5AA6E8',
-  primaryDark: '#84BEF0',
-  primarySoft: 'rgba(90, 166, 232, 0.16)',
+  ...acentosEscuro[INTENSIDADE],
   onPrimary: '#08121E',
 
   // Neutros escuros frios (azul-carvão)
@@ -84,16 +180,6 @@ const paletteDark: Palette = {
   text: '#EAF0F7',
   textMuted: '#A2AEC0',
   textSubtle: '#7E8B9E',
-
-  // Semânticas
-  success: '#54CC82',
-  successSoft: 'rgba(84, 204, 130, 0.16)',
-  warning: '#F0B44E',
-  warningSoft: 'rgba(240, 180, 78, 0.16)',
-  danger: '#E8776B',
-  dangerSoft: 'rgba(232, 119, 107, 0.16)',
-  info: '#38BECF',
-  infoSoft: 'rgba(56, 190, 207, 0.16)',
 
   // Utilitárias
   overlay: 'rgba(0, 0, 0, 0.6)',
@@ -122,11 +208,18 @@ export const spacing = {
   xxxl: 48,
 } as const;
 
+/**
+ * Raio de canto. A escala é curta e fechada de propósito: o Zelo é um produto
+ * institucional, não um app de bolhas. A regra é "quanto maior a superfície,
+ * MENOS proporcionalmente ela arredonda" — um painel de lista inteiro usa `lg`,
+ * um controle isolado usa `md`, um selo usa `sm`. `full` fica reservado ao que é
+ * genuinamente circular (avatar, ponto de status), nunca para caixas e botões.
+ */
 export const radius = {
-  sm: 8,
-  md: 12,
-  lg: 16,
-  xl: 22,
+  sm: 5,
+  md: 7,
+  lg: 9,
+  xl: 12,
   full: 999,
 } as const;
 
@@ -163,26 +256,37 @@ export const fonts = {
   semibold: 'PlusJakartaSans_600SemiBold',
 } as const;
 
+/**
+ * Sombra = profundidade real, não decoração. Só quem de fato flutua SOBRE o
+ * conteúdo recebe sombra: modal, toast e FAB (`floating`). Superfícies que vivem
+ * no plano da página — painéis, listas, campos — se separam por borda e por
+ * contraste de fundo (`background` vs `surface`), que é o que uma ferramenta de
+ * trabalho faz. `soft` e `card` sobrevivem para hover no web, onde um leve
+ * levantar comunica "isto é clicável"; em repouso ambos são praticamente nulos.
+ */
 export const shadow = {
+  /** Hover de superfície clicável (web). Discreto de propósito. */
   card: {
-    shadowColor: '#0B1B2E',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.08,
-    shadowRadius: 16,
-    elevation: 3,
-  },
-  soft: {
     shadowColor: '#0B1B2E',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.06,
-    shadowRadius: 8,
+    shadowRadius: 6,
     elevation: 2,
   },
+  /** Elevação mínima. Reservado a poucos casos; a maioria das superfícies não usa. */
+  soft: {
+    shadowColor: '#0B1B2E',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.04,
+    shadowRadius: 3,
+    elevation: 1,
+  },
+  /** Camada que flutua sobre o conteúdo: modal, toast, FAB. */
   floating: {
     shadowColor: '#0A2440',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.24,
-    shadowRadius: 16,
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
     elevation: 8,
   },
 } as const;

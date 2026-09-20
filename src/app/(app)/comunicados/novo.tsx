@@ -88,7 +88,7 @@ export default function NovoComunicado() {
         />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">
+          <AppText variant="label">
             Prioridade
           </AppText>
           <Segmented options={prioridades} value={prioridade} onChange={setPrioridade} />

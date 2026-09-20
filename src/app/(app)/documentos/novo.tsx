@@ -61,7 +61,7 @@ export default function NovoDocumento() {
       <AppHeader title={assembleiaId ? 'Anexar ata' : 'Publicar documento'} back />
       <View style={{ gap: spacing.lg }}>
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Categoria</AppText>
+          <AppText variant="label">Categoria</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {categorias.map((c) => (
               <Chip key={c} label={categoriaDocumento[c].label} selected={categoria === c} onPress={() => setCategoria(c)} />

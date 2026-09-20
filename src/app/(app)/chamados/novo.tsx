@@ -88,7 +88,7 @@ export default function NovoChamado() {
 
       <View style={{ gap: spacing.lg }}>
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">
+          <AppText variant="label">
             Categoria
           </AppText>
           <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
@@ -129,14 +129,14 @@ export default function NovoChamado() {
         />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">
+          <AppText variant="label">
             Prioridade
           </AppText>
           <Segmented options={prioridades} value={prioridade} onChange={setPrioridade} />
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">
+          <AppText variant="label">
             Fotos (opcional)
           </AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
@@ -162,7 +162,7 @@ export default function NovoChamado() {
                 width: 84,
                 height: 84,
                 borderRadius: radius.md,
-                borderWidth: 1.5,
+                borderWidth: 1,
                 borderStyle: 'dashed',
                 borderColor: palette.borderStrong,
                 alignItems: 'center',

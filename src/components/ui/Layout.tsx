@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 
 import { radius, spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
+import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
 import { useVoltar } from '@/lib/navegacao';
 import { useAppTheme } from '@/lib/theme';
@@ -66,7 +67,7 @@ export function Screen({
       >
         {scroll ? (
           <ScrollView
-            contentContainerStyle={{ paddingBottom: spacing.xxxl, flexGrow: 1 }}
+            contentContainerStyle={{ paddingBottom: spacing.xxxl + spacing.xl, flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             showsVerticalScrollIndicator={false}
@@ -86,7 +87,14 @@ export function Screen({
   );
 }
 
-/** Cabeçalho customizado com título, voltar e ação à direita. */
+/**
+ * Cabeçalho de tela: voltar, título, subtítulo e ação à direita.
+ *
+ * O "voltar" deixou de ser um disco cinza de 44px — um botão de navegação
+ * secundário não precisa de peso de bloco. Vira uma seta neutra que só ganha
+ * fundo sob o ponteiro, alinhada à esquerda da coluna de texto; e o conjunto
+ * inteiro ganhou respiro embaixo, para o título não colar no conteúdo.
+ */
 export function AppHeader({
   title,
   subtitle,
@@ -119,7 +127,8 @@ export function AppHeader({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
-        paddingVertical: spacing.md,
+        paddingTop: spacing.lg,
+        paddingBottom: spacing.lg,
         minHeight: 56,
       }}
     >
@@ -129,16 +138,20 @@ export function AppHeader({
           hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Voltar"
-          style={{
-            width: 44,
-            height: 44,
-            borderRadius: radius.full,
-            backgroundColor: palette.surfaceAlt,
-            alignItems: 'center',
-            justifyContent: 'center',
-          }}
+          style={({ pressed, hovered, focused }: any) => [
+            {
+              width: 32,
+              height: 32,
+              marginLeft: -6,
+              borderRadius: radius.md,
+              backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+            focusRing(focused, palette.primary),
+          ]}
         >
-          <Ionicons name="chevron-back" size={22} color={palette.text} />
+          <Ionicons name="chevron-back" size={21} color={palette.textMuted} />
         </Pressable>
       ) : null}
       <View style={{ flex: 1 }}>
@@ -146,7 +159,7 @@ export function AppHeader({
           {title}
         </AppText>
         {subtitle ? (
-          <AppText variant="caption" color="muted" numberOfLines={1}>
+          <AppText variant="caption" color="muted" numberOfLines={1} style={{ marginTop: 2 }}>
             {subtitle}
           </AppText>
         ) : null}
@@ -156,16 +169,19 @@ export function AppHeader({
           onPress={onRefresh}
           accessibilityRole="button"
           accessibilityLabel="Atualizar"
-          style={({ pressed, hovered }: any) => ({
-            width: 44,
-            height: 44,
-            borderRadius: radius.full,
-            backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
-            alignItems: 'center',
-            justifyContent: 'center',
-          })}
+          style={({ pressed, hovered, focused }: any) => [
+            {
+              width: 34,
+              height: 34,
+              borderRadius: radius.md,
+              backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
+              alignItems: 'center',
+              justifyContent: 'center',
+            },
+            focusRing(focused, palette.primary),
+          ]}
         >
-          <Ionicons name="refresh" size={20} color={palette.textMuted} />
+          <Ionicons name="refresh" size={17} color={palette.textMuted} />
         </Pressable>
       ) : null}
       {right}
@@ -177,9 +193,9 @@ export function Loading({ label }: { label?: string }) {
   const { palette } = useAppTheme();
   return (
     <View style={{ alignItems: 'center', justifyContent: 'center', paddingVertical: spacing.xxxl, paddingHorizontal: spacing.xl, gap: spacing.md }}>
-      <ActivityIndicator size="large" color={palette.primary} />
+      <ActivityIndicator color={palette.primary} />
       {label ? (
-        <AppText color="muted" variant="body">
+        <AppText color="muted" variant="caption">
           {label}
         </AppText>
       ) : null}
@@ -187,6 +203,15 @@ export function Loading({ label }: { label?: string }) {
   );
 }
 
+/**
+ * Estado vazio.
+ *
+ * Saiu o disco de 72px com ícone de 34 seguido de um botão largo — aquele arranjo
+ * dá a uma tela SEM conteúdo mais presença visual do que ela tem quando está
+ * cheia, o que é exatamente o contrário do que se quer. Aqui o vazio é uma área
+ * delimitada e discreta: diz o que falta, por quê, e oferece a saída em escala
+ * proporcional. Toda a informação e a ação continuam as mesmas.
+ */
 export function EmptyState({
   icon = 'file-tray-outline',
   title,
@@ -206,42 +231,35 @@ export function EmptyState({
       style={{
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: spacing.xxxl,
+        paddingVertical: spacing.xxl,
         paddingHorizontal: spacing.xl,
-        gap: spacing.sm,
+        gap: spacing.xs,
+        backgroundColor: palette.surface,
+        borderWidth: 1,
+        borderColor: palette.border,
+        borderRadius: radius.lg,
       }}
     >
-      <View
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: radius.full,
-          backgroundColor: palette.primarySoft,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: spacing.sm,
-        }}
-      >
-        <Ionicons name={icon} size={34} color={palette.primary} />
-      </View>
+      <Ionicons name={icon} size={20} color={palette.textSubtle} style={{ marginBottom: spacing.sm }} />
       <AppText variant="subtitle" center>
         {title}
       </AppText>
       {description ? (
-        <AppText color="muted" center style={{ maxWidth: 320 }}>
+        <AppText variant="caption" color="muted" center style={{ maxWidth: 330 }}>
           {description}
         </AppText>
       ) : null}
       {actionLabel && onAction ? (
         <View style={{ marginTop: spacing.md }}>
-          <Button title={actionLabel} onPress={onAction} fullWidth={false} icon="add" />
+          <Button title={actionLabel} onPress={onAction} fullWidth={false} size="sm" variant="secondary" />
         </View>
       ) : null}
     </View>
   );
 }
 
-/** Estado de falha de carregamento — distingue "deu erro" de "está vazio". */
+/** Falha de carregamento — distingue "deu erro" de "está vazio". Mesmo desenho do
+ *  estado vazio; só o ícone carrega a cor, porque aqui ela informa. */
 export function ErrorState({
   title = 'Não foi possível carregar',
   description = 'Verifique sua conexão e tente novamente.',
@@ -257,33 +275,25 @@ export function ErrorState({
       style={{
         alignItems: 'center',
         justifyContent: 'center',
-        paddingVertical: spacing.xxxl,
+        paddingVertical: spacing.xxl,
         paddingHorizontal: spacing.xl,
-        gap: spacing.sm,
+        gap: spacing.xs,
+        backgroundColor: palette.surface,
+        borderWidth: 1,
+        borderColor: palette.border,
+        borderRadius: radius.lg,
       }}
     >
-      <View
-        style={{
-          width: 72,
-          height: 72,
-          borderRadius: radius.full,
-          backgroundColor: palette.dangerSoft,
-          alignItems: 'center',
-          justifyContent: 'center',
-          marginBottom: spacing.sm,
-        }}
-      >
-        <Ionicons name="cloud-offline-outline" size={34} color={palette.danger} />
-      </View>
+      <Ionicons name="cloud-offline-outline" size={20} color={palette.danger} style={{ marginBottom: spacing.sm }} />
       <AppText variant="subtitle" center>
         {title}
       </AppText>
-      <AppText color="muted" center style={{ maxWidth: 320 }}>
+      <AppText variant="caption" color="muted" center style={{ maxWidth: 330 }}>
         {description}
       </AppText>
       {onRetry ? (
         <View style={{ marginTop: spacing.md }}>
-          <Button title="Tentar novamente" onPress={onRetry} fullWidth={false} icon="refresh" variant="secondary" />
+          <Button title="Tentar novamente" onPress={onRetry} fullWidth={false} size="sm" icon="refresh" variant="secondary" />
         </View>
       ) : null}
     </View>

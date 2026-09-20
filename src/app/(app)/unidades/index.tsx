@@ -3,8 +3,8 @@ import { useRouter } from 'expo-router';
 import { useMemo, useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Button, Card, EmptyState, ErrorState, Fab, Input, Screen, SkeletonList } from '@/components/ui';
-import { radius, spacing } from '@/constants/theme';
+import { AppHeader, AppText, Avatar, Button, EmptyState, ErrorState, Fab, Input, MetaLine, Panel, Row, Screen, SectionHeader, SkeletonList } from '@/components/ui';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { aprovarMembership, listarMembershipsPendentes, listarMoradores, listarUnidades, recusarMembership } from '@/lib/db';
@@ -99,42 +99,54 @@ export default function UnidadesLista() {
         ) : null}
 
         {!loading && pendentes.length > 0 ? (
-          <View style={{ marginBottom: spacing.lg, gap: spacing.sm }}>
-            <AppText variant="label" color="muted">
-              Pedidos de acesso pendentes ({pendentes.length})
-            </AppText>
-            {pendentes.map((m) => (
-              <Card key={m.id}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                  <Avatar nome={m.profile?.nome_completo} url={m.profile?.avatar_url} size={40} />
-                  <View style={{ flex: 1 }}>
-                    <AppText variant="label" numberOfLines={1}>
-                      {m.profile?.nome_completo || 'Morador'}
-                    </AppText>
-                    <AppText color="muted" variant="caption">
-                      {m.unidade ? `${m.unidade.bloco ? `Bloco ${m.unidade.bloco} · ` : ''}Unidade ${m.unidade.numero} · ` : ''}
-                      {vinculoLabel[m.vinculo].label}
-                    </AppText>
+          <View style={{ marginBottom: spacing.xl }}>
+            <SectionHeader title={`Pedidos de acesso pendentes (${pendentes.length})`} />
+            {/*
+              Fila de aprovação: as duas ações ficam na própria linha, à direita,
+              em vez de empilhadas embaixo de cada card. Assim o síndico despacha a
+              fila inteira sem que o olho precise voltar ao início a cada registro.
+            */}
+            <Panel>
+              {pendentes.map((m) => (
+                <Row key={m.id} compact>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md, flexWrap: 'wrap' }}>
+                    <Avatar nome={m.profile?.nome_completo} url={m.profile?.avatar_url} size={34} />
+                    <View style={{ flex: 1, minWidth: 140 }}>
+                      <AppText variant="subtitle" numberOfLines={1}>
+                        {m.profile?.nome_completo || 'Morador'}
+                      </AppText>
+                      <MetaLine
+                        style={{ marginTop: 2 }}
+                        itens={[
+                          m.unidade
+                            ? `${m.unidade.bloco ? `Bloco ${m.unidade.bloco} · ` : ''}Unidade ${m.unidade.numero}`
+                            : null,
+                          vinculoLabel[m.vinculo].label,
+                        ]}
+                      />
+                    </View>
+                    <View style={{ flexDirection: 'row', gap: spacing.sm }}>
+                      <Button
+                        title="Recusar"
+                        variant="secondary"
+                        size="sm"
+                        fullWidth={false}
+                        onPress={() => recusar(m.id)}
+                        loading={processando === m.id}
+                      />
+                      <Button
+                        title="Aprovar"
+                        size="sm"
+                        fullWidth={false}
+                        icon="checkmark"
+                        onPress={() => aprovar(m.id)}
+                        loading={processando === m.id}
+                      />
+                    </View>
                   </View>
-                </View>
-                <View style={{ flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md }}>
-                  <Button
-                    title="Recusar"
-                    variant="secondary"
-                    size="sm"
-                    onPress={() => recusar(m.id)}
-                    loading={processando === m.id}
-                  />
-                  <Button
-                    title="Aprovar"
-                    size="sm"
-                    icon="checkmark"
-                    onPress={() => aprovar(m.id)}
-                    loading={processando === m.id}
-                  />
-                </View>
-              </Card>
-            ))}
+                </Row>
+              ))}
+            </Panel>
           </View>
         ) : null}
 
@@ -153,37 +165,31 @@ export default function UnidadesLista() {
         ) : unidadesFiltradas.length === 0 ? (
           <EmptyState icon="search-outline" title="Nada encontrado" description={`Nenhuma unidade ou morador corresponde a "${busca}".`} />
         ) : (
-          <View style={{ gap: spacing.sm }}>
+          <Panel>
             {unidadesFiltradas.map((u) => (
-              <Card key={u.id} onPress={() => router.push(`/(app)/unidades/${u.id}`)}>
+              <Row
+                key={u.id}
+                onPress={() => router.push(`/(app)/unidades/${u.id}`)}
+                accessibilityLabel={`${u.bloco ? `Bloco ${u.bloco} ` : ''}Unidade ${u.numero}`}
+                compact
+              >
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: radius.md,
-                      backgroundColor: palette.primarySoft,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Ionicons name="home-outline" size={20} color={palette.primary} />
-                  </View>
+                  <Ionicons name="home-outline" size={18} color={palette.textSubtle} style={{ width: 22, textAlign: 'center' }} />
                   <View style={{ flex: 1 }}>
-                    <AppText variant="subtitle">
+                    <AppText variant="subtitle" numberOfLines={1}>
                       {u.bloco ? `Bloco ${u.bloco} · ` : ''}Unidade {u.numero}
                     </AppText>
                     {u.observacoes ? (
-                      <AppText color="muted" variant="caption" numberOfLines={1}>
+                      <AppText color="muted" variant="caption" numberOfLines={1} style={{ marginTop: 2 }}>
                         {u.observacoes}
                       </AppText>
                     ) : null}
                   </View>
-                  <Ionicons name="chevron-forward" size={20} color={palette.textSubtle} />
+                  <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
                 </View>
-              </Card>
+              </Row>
             ))}
-          </View>
+          </Panel>
         )}
       </Screen>
       <Fab icon="add" label="Unidade" onPress={() => router.push('/(app)/unidades/novo')} />

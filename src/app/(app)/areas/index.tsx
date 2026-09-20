@@ -2,8 +2,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
+import { palette, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarAreasAdmin } from '@/lib/db';
 import { formatMoeda } from '@/lib/format';
@@ -35,36 +35,34 @@ export default function AreasLista() {
             onAction={() => router.push('/(app)/areas/novo')}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {areas.map((a) => (
-              <Card key={a.id} onPress={() => router.push(`/(app)/areas/${a.id}`)}>
+              <Row key={a.id} onPress={() => router.push(`/(app)/areas/${a.id}`)} accessibilityLabel={a.nome} compact>
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-                  <View
-                    style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: radius.md,
-                      backgroundColor: palette.primarySoft,
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                    }}
-                  >
-                    <Ionicons name={(a.icone as any) || 'business-outline'} size={20} color={palette.primary} />
-                  </View>
+                  <Ionicons
+                    name={(a.icone as any) || 'business-outline'}
+                    size={19}
+                    color={palette.textSubtle}
+                    style={{ width: 22, textAlign: 'center' }}
+                  />
                   <View style={{ flex: 1 }}>
                     <AppText variant="subtitle" numberOfLines={1}>
                       {a.nome}
                     </AppText>
-                    <AppText color="muted" variant="caption">
-                      {a.taxa_uso > 0 ? `Taxa: ${formatMoeda(a.taxa_uso)}` : 'Sem taxa'}
-                      {a.limite_mensal_por_unidade ? ` · Limite ${a.limite_mensal_por_unidade}/mês` : ''}
-                    </AppText>
+                    <MetaLine
+                      style={{ marginTop: 2 }}
+                      itens={[
+                        a.taxa_uso > 0 ? `Taxa: ${formatMoeda(a.taxa_uso)}` : 'Sem taxa',
+                        a.limite_mensal_por_unidade ? `Limite ${a.limite_mensal_por_unidade}/mês` : null,
+                      ]}
+                    />
                   </View>
                   {!a.ativo ? <Badge label="Inativa" tone="neutral" /> : null}
+                  <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
                 </View>
-              </Card>
+              </Row>
             ))}
-          </View>
+          </Panel>
         )}
       </Screen>
       <Fab icon="add" label="Área" onPress={() => router.push('/(app)/areas/novo')} />

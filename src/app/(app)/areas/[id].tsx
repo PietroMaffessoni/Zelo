@@ -72,7 +72,7 @@ export default function EditarArea() {
         <Input label="Capacidade (opcional)" keyboardType="number-pad" value={capacidade} onChangeText={setCapacidade} />
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Aprovação</AppText>
+          <AppText variant="label">Aprovação</AppText>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Chip label="Precisa aprovação" selected={requerAprovacao} onPress={() => setRequerAprovacao(true)} />
             <Chip label="Automática" selected={!requerAprovacao} onPress={() => setRequerAprovacao(false)} />
@@ -80,7 +80,7 @@ export default function EditarArea() {
         </View>
 
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Disponibilidade</AppText>
+          <AppText variant="label">Disponibilidade</AppText>
           <View style={{ flexDirection: 'row', gap: spacing.sm }}>
             <Chip label="Ativa" selected={ativo} onPress={() => setAtivo(true)} />
             <Chip label="Inativa" selected={!ativo} onPress={() => setAtivo(false)} />

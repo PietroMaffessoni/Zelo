@@ -55,7 +55,7 @@ export default function GerarBoletosMensais() {
       <AppHeader title="Gerar cobrança mensal" back subtitle="Lança a mesma cobrança para todas as unidades" />
       <View style={{ gap: spacing.lg }}>
         <View style={{ gap: spacing.sm }}>
-          <AppText variant="label" color="muted">Categoria</AppText>
+          <AppText variant="label">Categoria</AppText>
           <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: spacing.sm }}>
             {categorias.map((c) => (
               <Chip key={c} label={categoriaFinanceira[c].label} selected={categoria === c} onPress={() => setCategoria(c)} />

@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import {
   ActivityIndicator,
+  Platform,
   Pressable,
   StyleSheet,
   View,
@@ -9,6 +10,7 @@ import {
 } from 'react-native';
 
 import { radius, spacing } from '@/constants/theme';
+import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
 import { useAppTheme } from '@/lib/theme';
 
@@ -25,7 +27,9 @@ export type ButtonProps = Omit<PressableProps, 'style'> & {
   style?: ViewStyle;
 };
 
-const alturas: Record<Tamanho, number> = { sm: 40, md: 48, lg: 56 };
+// Alturas reduzidas: 56px de botão dominava a tela sem que a ação ganhasse nada
+// em clareza. 48px continua confortável ao toque (acima dos 44 recomendados).
+const alturas: Record<Tamanho, number> = { sm: 34, md: 42, lg: 48 };
 
 export function Button({
   title,
@@ -39,6 +43,8 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const { palette } = useAppTheme();
+  const inativo = disabled || loading;
+
   const bg =
     variant === 'primary'
       ? palette.primary
@@ -54,33 +60,44 @@ export function Button({
         ? palette.text
         : palette.primary;
   const borderColor = variant === 'secondary' ? palette.border : 'transparent';
-  const inativo = disabled || loading;
+
+  // Hover no web: o preenchido escurece/clareia (primaryDark serve aos dois temas)
+  // e o vazado ganha fundo. Sem sombra — a mudança de cor já confirma a resposta.
+  const bgHover =
+    variant === 'primary'
+      ? palette.primaryDark
+      : variant === 'danger'
+        ? palette.danger
+        : palette.surfaceAlt;
 
   return (
     <Pressable
       accessibilityRole="button"
       disabled={inativo}
-      style={({ pressed }) => [
+      style={({ pressed, hovered, focused }: any) => [
         styles.base,
         {
           height: alturas[size],
           backgroundColor: bg,
           borderColor,
           borderWidth: variant === 'secondary' ? 1 : 0,
-          opacity: inativo ? 0.55 : pressed ? 0.9 : 1,
+          opacity: inativo ? 0.5 : 1,
           alignSelf: fullWidth ? 'stretch' : 'flex-start',
-          paddingHorizontal: fullWidth ? spacing.lg : spacing.xl,
+          paddingHorizontal: fullWidth ? spacing.lg : spacing.lg + 2,
         },
+        hovered && !inativo ? { backgroundColor: bgHover, borderColor: variant === 'secondary' ? palette.borderStrong : borderColor } : null,
+        pressed && !inativo ? { opacity: Platform.OS === 'web' ? 0.92 : 0.85 } : null,
+        focusRing(focused, palette.primary),
         style,
       ]}
       {...rest}
     >
       {loading ? (
-        <ActivityIndicator color={fg} />
+        <ActivityIndicator color={fg} size="small" />
       ) : (
         <View style={styles.content}>
-          {icon ? <Ionicons name={icon} size={18} color={fg} /> : null}
-          <AppText variant="label" style={{ color: fg, fontSize: size === 'lg' ? 16 : 15 }}>
+          {icon ? <Ionicons name={icon} size={size === 'sm' ? 15 : 16} color={fg} /> : null}
+          <AppText variant="label" style={{ color: fg, fontSize: size === 'sm' ? 13 : 14 }}>
             {title}
           </AppText>
         </View>
@@ -95,5 +112,5 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  content: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm - 1 },
 });

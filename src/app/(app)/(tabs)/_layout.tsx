@@ -45,7 +45,9 @@ export default function TabsLayout() {
           paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
           paddingTop: 6,
         },
-        tabBarLabelStyle: { fontSize: 11, fontWeight: '600' },
+        // Rótulo um grau menor e com entreletra aberta: a barra fica mais calma
+        // e o ícone volta a ser o que identifica a aba.
+        tabBarLabelStyle: { fontSize: 10.5, fontWeight: '600', letterSpacing: 0.1, marginTop: 1 },
       }}
     >
       <Tabs.Screen

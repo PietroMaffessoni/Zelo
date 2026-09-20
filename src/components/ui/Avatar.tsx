@@ -1,12 +1,13 @@
 import { Image } from 'expo-image';
 import { View } from 'react-native';
 
-import { radius } from '@/constants/theme';
+import { coresAvatar, INTENSIDADE, radius } from '@/constants/theme';
 import { iniciais } from '@/lib/format';
 import { useAppTheme } from '@/lib/theme';
 import { AppText } from '@/components/ui/Text';
 
-const cores = ['#4F46E5', '#0EA5E9', '#16A34A', '#EA580C', '#DB2777', '#7C3AED', '#0891B2'];
+/** A lista vive em `@/constants/theme` para seguir o interruptor de intensidade. */
+const cores = coresAvatar[INTENSIDADE];
 
 function corPorNome(nome?: string | null) {
   const s = nome ?? '?';

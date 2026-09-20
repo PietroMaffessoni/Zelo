@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Card, Divider, ListItem, Screen } from '@/components/ui';
+import { AppHeader, AppText, Avatar, Badge, Card, Divider, ListItem, Screen, SectionHeader } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
@@ -56,12 +56,12 @@ export default function Mais() {
       {/* Perfil */}
       <Card onPress={() => router.push('/(app)/perfil')}>
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={52} />
+          <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={42} />
           <View style={{ flex: 1 }}>
             <AppText variant="subtitle" numberOfLines={1}>
               {profile?.nome_completo || 'Meu perfil'}
             </AppText>
-            <View style={{ flexDirection: 'row', marginTop: 4 }}>
+            <View style={{ flexDirection: 'row', marginTop: 5 }}>
               <Badge label={papel ? papelLabel[papel] : 'Morador'} tone={gestor ? 'primary' : 'neutral'} />
             </View>
           </View>
@@ -69,9 +69,7 @@ export default function Mais() {
       </Card>
 
       {/* Serviços */}
-      <AppText variant="label" color="muted" style={{ marginTop: spacing.xl, marginBottom: spacing.xs }}>
-        SERVIÇOS
-      </AppText>
+      <SectionHeader title="Serviços" style={{ marginTop: spacing.xl }} />
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
         <ListItem icon="megaphone-outline" iconTone="primary" title="Comunicados" subtitle="Avisos do condomínio" onPress={() => router.push('/(app)/comunicados')} />
         {!equipe ? (
@@ -115,9 +113,7 @@ export default function Mais() {
       {/* Gestão — síndico, conselho fiscal e zelador (operação/manutenção) */}
       {veManutencao(papel) ? (
         <>
-          <AppText variant="label" color="muted" style={{ marginTop: spacing.xl, marginBottom: spacing.xs }}>
-            GESTÃO
-          </AppText>
+          <SectionHeader title="Gestão" style={{ marginTop: spacing.xl }} />
           <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
             <ListItem icon="construct-outline" iconTone="warning" title="Manutenção" subtitle="Equipamentos e manutenção preventiva" onPress={() => router.push('/(app)/manutencao')} />
             {conselho ? (
@@ -133,9 +129,7 @@ export default function Mais() {
       {/* Administração */}
       {gestor ? (
         <>
-          <AppText variant="label" color="muted" style={{ marginTop: spacing.xl, marginBottom: spacing.xs }}>
-            ADMINISTRAÇÃO
-          </AppText>
+          <SectionHeader title="Administração" style={{ marginTop: spacing.xl }} />
           <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
             <ListItem icon="add-circle-outline" iconTone="primary" title="Publicar comunicado" onPress={() => router.push('/(app)/comunicados/novo')} />
             <Divider />
@@ -175,9 +169,7 @@ export default function Mais() {
       ) : null}
 
       {/* Conta */}
-      <AppText variant="label" color="muted" style={{ marginTop: spacing.xl, marginBottom: spacing.xs }}>
-        CONTA
-      </AppText>
+      <SectionHeader title="Conta" style={{ marginTop: spacing.xl }} />
       <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
         <ListItem icon="person-outline" iconTone="neutral" title="Meu perfil" onPress={() => router.push('/(app)/perfil')} />
         {membershipAtual?.unidade_id ? (

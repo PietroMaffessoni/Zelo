@@ -14,15 +14,23 @@ export type InputProps = TextInputProps & {
   senha?: boolean;
 };
 
+/**
+ * Campo de texto. A borda voltou a 1px: a de 1,5px deixava um formulário inteiro
+ * com aparência de grade pesada, e o foco — que é o estado que precisa saltar —
+ * não tinha para onde crescer. Agora o repouso é discreto e o foco engrossa,
+ * então o olho encontra na hora onde está digitando.
+ */
 export function Input({ label, error, hint, icon, senha, style, ...rest }: InputProps) {
   const { palette } = useAppTheme();
   const [focado, setFocado] = useState(false);
   const [oculto, setOculto] = useState(!!senha);
 
+  const corBorda = error ? palette.danger : focado ? palette.primary : palette.border;
+
   return (
-    <View style={{ gap: spacing.xs }}>
+    <View style={{ gap: 6 }}>
       {label ? (
-        <AppText variant="label" color="muted">
+        <AppText variant="label" style={{ color: palette.text }}>
           {label}
         </AppText>
       ) : null}
@@ -30,13 +38,16 @@ export function Input({ label, error, hint, icon, senha, style, ...rest }: Input
         style={[
           styles.campo,
           {
-            borderColor: error ? palette.danger : focado ? palette.primary : palette.border,
+            borderColor: corBorda,
+            borderWidth: focado || error ? 1.5 : 1,
+            // Compensa o engrossar da borda para o campo não "pular" ao focar.
+            paddingHorizontal: focado || error ? spacing.md - 0.5 : spacing.md,
             backgroundColor: palette.surface,
           },
         ]}
       >
         {icon ? (
-          <Ionicons name={icon} size={18} color={palette.textSubtle} style={{ marginRight: spacing.sm }} />
+          <Ionicons name={icon} size={17} color={focado ? palette.primary : palette.textSubtle} style={{ marginRight: spacing.sm }} />
         ) : null}
         <TextInput
           style={[styles.input, { color: palette.text }, Platform.OS === 'web' && (webNoOutline as object), style]}
@@ -47,10 +58,10 @@ export function Input({ label, error, hint, icon, senha, style, ...rest }: Input
           {...rest}
         />
         {senha ? (
-          <Pressable onPress={() => setOculto((v) => !v)} hitSlop={8}>
+          <Pressable onPress={() => setOculto((v) => !v)} hitSlop={8} accessibilityRole="button" accessibilityLabel={oculto ? 'Mostrar senha' : 'Ocultar senha'}>
             <Ionicons
               name={oculto ? 'eye-outline' : 'eye-off-outline'}
-              size={20}
+              size={19}
               color={palette.textSubtle}
             />
           </Pressable>
@@ -76,14 +87,12 @@ const styles = StyleSheet.create({
   campo: {
     flexDirection: 'row',
     alignItems: 'center',
-    borderWidth: 1.5,
     borderRadius: radius.md,
-    paddingHorizontal: spacing.md,
-    minHeight: 50,
+    minHeight: 44,
   },
   input: {
     flex: 1,
     fontSize: fontSize.md,
-    paddingVertical: spacing.md,
+    paddingVertical: spacing.sm + 2,
   },
 });

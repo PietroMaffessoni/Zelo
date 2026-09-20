@@ -1,7 +1,7 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Card, EmptyState, Fab, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarVisitantesAutorizados } from '@/lib/db';
@@ -41,31 +41,31 @@ export default function VisitantesLista() {
             onAction={() => router.push('/(app)/visitantes/novo')}
           />
         ) : (
-          <View style={{ gap: spacing.md }}>
+          <Panel>
             {visitantes.map((v) => {
               const st = L.visitanteStatus[v.status];
+              const periodo =
+                v.data_fim && v.data_fim !== v.data_inicio
+                  ? `${formatData(v.data_inicio)} até ${formatData(v.data_fim)}`
+                  : formatData(v.data_inicio);
               return (
-                <Card key={v.id}>
-                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+                <Row key={v.id} compact>
+                  <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                     <AppText variant="subtitle" numberOfLines={1} style={{ flex: 1 }}>
                       {v.nome_visitante}
                     </AppText>
                     <Badge label={st.label} tone={st.tone} />
                   </View>
-                  <AppText color="muted" variant="caption" style={{ marginTop: 4 }}>
-                    {formatData(v.data_inicio)}
-                    {v.data_fim && v.data_fim !== v.data_inicio ? ` até ${formatData(v.data_fim)}` : ''}
-                    {v.documento ? ` · ${v.documento}` : ''}
-                  </AppText>
+                  <MetaLine style={{ marginTop: 3 }} itens={[periodo, v.documento]} />
                   {v.observacao ? (
                     <AppText color="subtle" variant="caption" style={{ marginTop: 2 }}>
                       {v.observacao}
                     </AppText>
                   ) : null}
-                </Card>
+                </Row>
               );
             })}
-          </View>
+          </Panel>
         )}
       </Screen>
       {unidadeId ? <Fab icon="add" label="Autorizar" onPress={() => router.push('/(app)/visitantes/novo')} /> : null}
