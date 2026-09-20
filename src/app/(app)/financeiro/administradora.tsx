@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
 import { Pressable, Share, View } from 'react-native';
 
-import { Acoes, AppHeader, AppText, Badge, Button, Card, EmptyState, IconButton, Input, Loading, Screen, Segmented } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, Card, EmptyState, IconButton, Input, Loading, MetaLine, Panel, Row, Screen, Segmented } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { atualizarAdministradora, atualizarStatusLancamento, listarLancamentos, marcarDespesasEnviadas } from '@/lib/db';
@@ -162,30 +162,49 @@ export default function ContasAdministradora() {
             description={aba === 'a_enviar' ? 'As despesas pendentes aparecerão aqui para envio à administradora.' : undefined}
           />
         ) : (
-          <View style={{ gap: spacing.sm }}>
+          // Era um card por despesa — vinte caixas com borda e vão entre elas
+          // para o que é uma lista de conferência. Vira o mesmo painel de linhas
+          // das demais listas do app: a seleção múltipla fica mais fácil de
+          // varrer, e o dinheiro alinha na mesma vertical de uma linha à outra.
+          <Panel>
             {lista.map((d) => {
               const cat = categoriaFinanceira[d.categoria];
               const marcada = selecionadas.has(d.id);
               return (
-                <Card key={d.id} onPress={aba === 'a_enviar' ? () => alternar(d.id) : undefined}>
+                <Row
+                  key={d.id}
+                  compact
+                  onPress={aba === 'a_enviar' ? () => alternar(d.id) : undefined}
+                  accessibilityLabel={`${d.descricao}. ${formatMoeda(d.valor)}`}
+                >
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
                     {aba === 'a_enviar' ? (
-                      <Ionicons name={marcada ? 'checkbox' : 'square-outline'} size={24} color={marcada ? palette.primary : palette.textSubtle} />
+                      <Ionicons
+                        name={marcada ? 'checkbox' : 'square-outline'}
+                        size={22}
+                        color={marcada ? palette.primary : palette.textSubtle}
+                        style={{ width: 22, textAlign: 'center' }}
+                      />
                     ) : null}
-                    <View style={{ flex: 1 }}>
+                    <View style={{ flex: 1, minWidth: 0 }}>
                       <AppText variant="subtitle" numberOfLines={1}>{d.descricao}</AppText>
-                      <AppText color="muted" variant="caption">
-                        {cat.label} · venc. {formatData(d.vencimento)}
-                      </AppText>
+                      <MetaLine style={{ marginTop: 2 }} itens={[cat.label, `venc. ${formatData(d.vencimento)}`]} />
                       {aba === 'enviadas' && d.status !== 'pago' ? (
-                        <Pressable onPress={() => marcarPaga(d.id)} disabled={processando === d.id} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 }}>
+                        <Pressable
+                          onPress={() => marcarPaga(d.id)}
+                          disabled={processando === d.id}
+                          hitSlop={10}
+                          accessibilityRole="button"
+                          accessibilityLabel={`Marcar ${d.descricao} como paga`}
+                          style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 6, minHeight: 28 }}
+                        >
                           <Ionicons name="checkmark-circle-outline" size={15} color={palette.success} />
                           <AppText variant="caption" color="primary">Marcar como paga</AppText>
                         </Pressable>
                       ) : null}
                     </View>
-                    <View style={{ alignItems: 'flex-end', gap: 4 }}>
-                      <AppText variant="label">{formatMoeda(d.valor)}</AppText>
+                    <View style={{ alignItems: 'flex-end', gap: 4, flexShrink: 0 }}>
+                      <AppText variant="label" style={{ fontVariant: ['tabular-nums'] }}>{formatMoeda(d.valor)}</AppText>
                       {aba === 'enviadas' ? (
                         d.status === 'pago' ? <Badge label="Paga" tone="success" /> : <Badge label="Enviada" tone="info" />
                       ) : null}
@@ -199,10 +218,10 @@ export default function ContasAdministradora() {
                       />
                     ) : null}
                   </View>
-                </Card>
+                </Row>
               );
             })}
-          </View>
+          </Panel>
         )}
       </View>
 

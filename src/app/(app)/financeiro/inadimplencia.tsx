@@ -7,11 +7,13 @@ import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { inadimplencia } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
+import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 import { useFetch } from '@/lib/useFetch';
 
 export default function Inadimplencia() {
   const { palette } = useAppTheme();
+  const { compacto } = useLayout();
   const { condominioId } = useAuth();
 
   const { data, loading, refreshing, refetch } = useFetch(
@@ -73,12 +75,19 @@ export default function Inadimplencia() {
                       <AppText variant="subtitle" numberOfLines={1}>
                         {u.unidade.bloco ? `Bloco ${u.unidade.bloco} · ` : ''}Unidade {u.unidade.numero}
                       </AppText>
+                      {/*
+                        "há 145 dias" e "desde 12/01/2026" dizem a mesma coisa. Na
+                        largura de um celular a faixa não cabe inteira e a data era
+                        cortada no meio; aqui ela sai de propósito, em vez de ser
+                        truncada — o síndico tem a mesma informação no "há N dias",
+                        e a data exata continua na tela do boleto.
+                      */}
                       <MetaLine
                         style={{ marginTop: 2 }}
                         itens={[
                           `${u.quantidade} ${u.quantidade === 1 ? 'boleto vencido' : 'boletos vencidos'}`,
                           dias > 0 ? `há ${dias} dia${dias === 1 ? '' : 's'}` : null,
-                          `desde ${formatData(u.maisAntigo)}`,
+                          compacto && dias > 0 ? null : `desde ${formatData(u.maisAntigo)}`,
                         ]}
                       />
                     </View>
