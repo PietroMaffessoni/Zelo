@@ -3,13 +3,15 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
-import { palette, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { listarAreasAdmin } from '@/lib/db';
 import { formatMoeda } from '@/lib/format';
 import { useFetch } from '@/lib/useFetch';
 
 export default function AreasLista() {
+  const { palette } = useAppTheme();
   const router = useRouter();
   const { condominioId } = useAuth();
 

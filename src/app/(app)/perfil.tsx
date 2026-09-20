@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 
 import { AppHeader, AppText, Avatar, Badge, Button, Input, Panel, Row, Screen, SectionHeader } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { supabase } from '@/lib/supabase';
 import { atualizarPreferenciasNotificacao } from '@/lib/db';
@@ -22,7 +22,7 @@ const CATEGORIAS_NOTIFICACAO: { chave: keyof PreferenciasNotificacao; label: str
 
 export default function Perfil() {
   const { user, profile, memberships, condominioId, selecionarCondominio, recarregar, signOut } = useAuth();
-  const { escuro, alternar } = useAppTheme();
+  const { escuro, alternar, palette } = useAppTheme();
   const [nome, setNome] = useState(profile?.nome_completo ?? '');
   const [telefone, setTelefone] = useState(profile?.telefone ?? '');
   const [avatar, setAvatar] = useState(profile?.avatar_url ?? null);

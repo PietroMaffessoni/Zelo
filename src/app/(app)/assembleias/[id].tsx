@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Badge, Button, Card, Divider, Input, Loading, Screen } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import {
   adicionarPauta,
   encerrarAssembleia,
@@ -21,6 +22,7 @@ import { isGestor, type AssembleiaPauta } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function AssembleiaDetalhe() {
+  const { palette } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user, papel, condominioId, membershipAtual } = useAuth();

@@ -5,14 +5,16 @@ import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Button, Input, Screen } from '@/components/ui';
 import { UnidadeSeletor } from '@/components/UnidadeSeletor';
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { criarEncomenda, listarUnidades } from '@/lib/db';
 import { useVoltar } from '@/lib/navegacao';
 import { enviarArquivo, escolherImagem } from '@/lib/storage';
 import { useFetch } from '@/lib/useFetch';
 
 export default function NovaEncomenda() {
+  const { palette } = useAppTheme();
   const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const [unidadeId, setUnidadeId] = useState<string | null>(null);

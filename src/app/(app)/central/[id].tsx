@@ -3,8 +3,9 @@ import { useEffect, useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Avatar, Badge, Button, Card, Input, Loading, Screen, SectionHeader } from '@/components/ui';
-import { palette, radius, spacing, tone as tones } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { getSolicitacao, responderSolicitacao } from '@/lib/db';
 import { formatDataHora } from '@/lib/format';
 import * as L from '@/lib/labels';
@@ -14,6 +15,7 @@ import { useFetch } from '@/lib/useFetch';
 const statuses: SolicitacaoStatus[] = ['aberta', 'em_analise', 'concluida', 'recusada'];
 
 export default function SolicitacaoDetalhe() {
+  const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { papel } = useAuth();
   const gestor = isGestor(papel);

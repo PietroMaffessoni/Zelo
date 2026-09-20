@@ -4,8 +4,9 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, Input, Loading, Panel, Row, Screen, SectionHeader } from '@/components/ui';
-import { palette, radius, spacing, tone as tones } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import {
   atualizarDadosCadastrais,
   atualizarPapelMorador,
@@ -25,6 +26,7 @@ const vinculos: Vinculo[] = ['proprietario', 'inquilino', 'dependente'];
 const especies: EspeciePet[] = ['cachorro', 'gato', 'outro'];
 
 export default function UnidadeDetalhe() {
+  const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { condominioId, membershipAtual, papel } = useAuth();
   const gestor = isGestor(papel);
@@ -331,6 +333,7 @@ function FichaMorador({
   gestor: boolean;
   onSaved: () => void;
 }) {
+  const { palette } = useAppTheme();
   const [editando, setEditando] = useState(false);
   const [cpf, setCpf] = useState(membership.cpf ?? '');
   const [rg, setRg] = useState(membership.rg ?? '');
@@ -389,6 +392,7 @@ function FichaMorador({
 }
 
 function LinhaFicha({ icon, texto }: { icon: keyof typeof Ionicons.glyphMap; texto: string }) {
+  const { palette } = useAppTheme();
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
       <Ionicons name={icon} size={14} color={palette.textSubtle} />

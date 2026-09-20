@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Button, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { alterarStatusAchado, listarAchados } from '@/lib/db';
 import { formatData } from '@/lib/format';
 import * as L from '@/lib/labels';
@@ -15,6 +16,7 @@ import { isGestor, type AchadoPerdido } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 export default function AchadosLista() {
+  const { palette } = useAppTheme();
   const router = useRouter();
   const { condominioId, papel, user } = useAuth();
   const gestor = isGestor(papel);

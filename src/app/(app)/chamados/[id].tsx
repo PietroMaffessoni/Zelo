@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppHeader, AppText, Avatar, Badge, Input, Loading, MetaLine, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
-import { palette, radius, spacing, tone as tones } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { alterarStatusChamado, comentarChamado, getChamado, listarEventos } from '@/lib/db';
 import { formatDataHora, primeiroNome, tempoRelativo } from '@/lib/format';
 import * as L from '@/lib/labels';
@@ -17,6 +18,7 @@ import { useFetch } from '@/lib/useFetch';
 const statusOrdem: ChamadoStatus[] = ['aberto', 'em_andamento', 'resolvido', 'cancelado'];
 
 export default function ChamadoDetalhe() {
+  const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, papel } = useAuth();
   const gestor = isGestor(papel);
@@ -193,6 +195,7 @@ export default function ChamadoDetalhe() {
 }
 
 function EventoLinha({ evento }: { evento: ChamadoEvento }) {
+  const { palette } = useAppTheme();
   const icon =
     evento.tipo === 'criacao'
       ? 'flag-outline'

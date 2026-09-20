@@ -2,9 +2,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { View } from 'react-native';
 
 import { AppText, Card, Screen } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
+import { useAppTheme } from '@/lib/theme';
 
 function Passo({ n, children }: { n: number; children: React.ReactNode }) {
+  const { palette } = useAppTheme();
   return (
     <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'flex-start' }}>
       <View
@@ -30,6 +32,7 @@ function Passo({ n, children }: { n: number; children: React.ReactNode }) {
 }
 
 export default function Setup() {
+  const { palette } = useAppTheme();
   return (
     <Screen>
       <View style={{ alignItems: 'center', marginTop: spacing.xxl, marginBottom: spacing.lg, gap: spacing.sm }}>

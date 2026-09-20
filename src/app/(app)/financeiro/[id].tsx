@@ -5,8 +5,9 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Card, DataRow, Loading, Screen, SectionHeader } from '@/components/ui';
-import { palette, radius, spacing, tone as tones } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { atualizarStatusLancamento, getLancamento } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
 import { categoriaFinanceira, statusFinanceiro } from '@/lib/labels';
@@ -17,6 +18,7 @@ import { useFetch } from '@/lib/useFetch';
 const statusOrdem: StatusFinanceiro[] = ['pendente', 'pago', 'atrasado', 'cancelado'];
 
 export default function FinanceiroDetalhe() {
+  const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { papel } = useAuth();
   const gestor = isGestor(papel);

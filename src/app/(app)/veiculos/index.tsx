@@ -4,13 +4,15 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
-import { palette, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { listarVeiculos, removerVeiculo } from '@/lib/db';
 import { tipoVeiculoLabel } from '@/lib/labels';
 import { useFetch } from '@/lib/useFetch';
 
 export default function VeiculosLista() {
+  const { palette } = useAppTheme();
   const router = useRouter();
   const { condominioId, membershipAtual } = useAuth();
   const unidadeId = membershipAtual?.unidade_id ?? null;

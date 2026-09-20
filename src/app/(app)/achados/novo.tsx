@@ -5,14 +5,16 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Button, Input, Screen } from '@/components/ui';
-import { palette, radius, spacing } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { criarAchado } from '@/lib/db';
 import { mascaraData, parseData } from '@/lib/format';
 import { useVoltar } from '@/lib/navegacao';
 import { enviarArquivo, escolherImagem } from '@/lib/storage';
 
 export default function NovoAchado() {
+  const { palette } = useAppTheme();
   const voltar = useVoltar();
   const { condominioId, user } = useAuth();
   const [foto, setFoto] = useState<string | null>(null);

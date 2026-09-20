@@ -4,14 +4,16 @@ import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppText, Button, Card, Chip, FormRow, Input, Loading, Panel, Row, Screen } from '@/components/ui';
-import { palette, spacing } from '@/constants/theme';
+import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { vinculoLabel } from '@/lib/labels';
 import type { Vinculo } from '@/lib/types';
 
 type Modo = 'escolha' | 'criar' | 'entrar' | 'portaria' | 'zelador';
 
 export default function Onboarding() {
+  const { palette } = useAppTheme();
   const router = useRouter();
   const {
     ready,
@@ -269,6 +271,7 @@ function OpcaoCard({
   descricao: string;
   onPress: () => void;
 }) {
+  const { palette } = useAppTheme();
   return (
     <Row onPress={onPress} accessibilityLabel={`${titulo}. ${descricao}`}>
       <View style={{ flexDirection: 'row', gap: spacing.md, alignItems: 'center' }}>

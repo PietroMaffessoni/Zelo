@@ -4,8 +4,9 @@ import { useMemo, useState } from 'react';
 import { Linking, Pressable, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Badge, Button, Card, DataRow, Input, Loading, Screen, SectionHeader } from '@/components/ui';
-import { palette, radius, spacing, tone as tones } from '@/constants/theme';
+import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useAppTheme } from '@/lib/theme';
 import { useConfirm } from '@/lib/confirm';
 import { alterarStatusReserva, anexarComprovanteReserva, getReserva, listarVistorias, salvarVistoria } from '@/lib/db';
 import { formatData, formatHora, formatMoeda, primeiroNome } from '@/lib/format';
@@ -19,6 +20,7 @@ import { useFetch } from '@/lib/useFetch';
 const statusOrdem: ReservaStatus[] = ['pendente', 'aprovada', 'rejeitada', 'cancelada'];
 
 export default function ReservaDetalhe() {
+  const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, papel } = useAuth();
   const confirmar = useConfirm();
@@ -242,6 +244,7 @@ function VistoriaSecao({
   userId?: string;
   onSalvo: () => void;
 }) {
+  const { palette } = useAppTheme();
   const meta = tipoVistoriaLabel[tipo];
   const [editando, setEditando] = useState(false);
   const [itens, setItens] = useState<ItemVistoria[]>(vistoria?.itens ?? []);
