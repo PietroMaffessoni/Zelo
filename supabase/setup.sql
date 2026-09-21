@@ -1946,4 +1946,63 @@ grant execute on function public.excluir_minha_conta() to authenticated;
 -- 9.2 Retenção de dados operacionais (LGPD art. 15/16) ------------------------
 -- Ver seção 10 para a rotina de expurgo.
 
+-- ============================================================================
+-- 10. PRIVACIDADE DOS DADOS PESSOAIS
+--     Ajustes de RLS em tabelas cujo escopo de leitura era "qualquer membro do
+--     condomínio" — amplo demais para o dado que elas guardam.
+-- ============================================================================
+
+-- 10.1 Sigilo do voto --------------------------------------------------------
+--
+-- `votos_select` liberava a tabela inteira para qualquer membro: o agregado que a
+-- tela mostra era calculado no cliente, lendo TODAS as linhas — e cada linha traz
+-- `user_id` e `unidade_id`. Na prática, qualquer morador conseguia listar em quem
+-- cada unidade votou, mesmo a interface mostrando só o total.
+--
+-- A correção separa as duas necessidades que estavam sendo atendidas pela mesma
+-- permissão:
+--   - APURAÇÃO (todo mundo precisa): vira a RPC `apurar_assembleia`, que devolve
+--     só a contagem por opção — nunca quem votou.
+--   - VOTO NOMINAL (só quem tem razão para ver): o próprio eleitor, para o app
+--     saber que a unidade dele já votou, e o gestor, que precisa dos nomes para
+--     lavrar a ata. Vizinho não entra nessa lista.
+drop policy if exists votos_select on public.assembleia_votos;
+create policy votos_select on public.assembleia_votos for select to authenticated
+  using (
+    public.is_gestor(condominio_id)
+    or user_id = (select auth.uid())
+    or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = assembleia_votos.unidade_id
+        and m.user_id = (select auth.uid())
+        and m.status = 'ativo'
+    )
+  );
+
+-- Apuração agregada. `security definer` porque precisa contar linhas que o
+-- chamador não pode ler — é exatamente esse o ponto: devolve o placar sem
+-- devolver os votos.
+create or replace function public.apurar_assembleia(p_assembleia uuid)
+returns table (pauta_id uuid, opcao_id uuid, votos bigint)
+language plpgsql stable security definer set search_path = public as $$
+declare
+  v_cond uuid;
+begin
+  select a.condominio_id into v_cond from public.assembleias a where a.id = p_assembleia;
+  if v_cond is null then raise exception 'Assembleia não encontrada'; end if;
+  if not public.is_member(v_cond) then raise exception 'Sem permissão'; end if;
+
+  return query
+    select o.pauta_id, o.id as opcao_id, count(v.id) as votos
+    from public.assembleia_pautas p
+    join public.assembleia_opcoes o on o.pauta_id = p.id
+    left join public.assembleia_votos v on v.opcao_id = o.id
+    where p.assembleia_id = p_assembleia
+    group by o.pauta_id, o.id;
+end;
+$$;
+
+revoke all on function public.apurar_assembleia(uuid) from public, anon;
+grant execute on function public.apurar_assembleia(uuid) to authenticated;
+
 -- Fim do setup.

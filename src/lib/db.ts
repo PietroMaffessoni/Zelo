@@ -889,18 +889,23 @@ export async function listarPautas(assembleiaId: string): Promise<AssembleiaPaut
   const pautaIds = pautas.map((p) => p.id);
   if (pautaIds.length === 0) return [];
 
-  const [opcoesRes, votosRes] = await Promise.all([
+  // A contagem vem da RPC de apuração, não de ler a tabela de votos: `assembleia_votos`
+  // só entrega a linha de quem tem razão para vê-la (o próprio eleitor e o gestor,
+  // que lavra a ata). Contar no cliente exigiria baixar o voto nominal de todas as
+  // unidades para mostrar um placar — que é o que expunha em quem cada vizinho votou.
+  const [opcoesRes, apuracaoRes] = await Promise.all([
     supabase.from('assembleia_opcoes').select('*').in('pauta_id', pautaIds).order('ordem'),
-    supabase.from('assembleia_votos').select('pauta_id, opcao_id').in('pauta_id', pautaIds),
+    supabase.rpc('apurar_assembleia', { p_assembleia: assembleiaId }),
   ]);
   const opcoes = unwrap(opcoesRes) as AssembleiaOpcao[];
-  const votos = unwrap(votosRes) as { pauta_id: string; opcao_id: string }[];
+  const apuracao = unwrap(apuracaoRes) as { pauta_id: string; opcao_id: string; votos: number }[];
+  const totalPorOpcao = new Map(apuracao.map((a) => [a.opcao_id, Number(a.votos)]));
 
   return pautas.map((p) => ({
     ...p,
     opcoes: opcoes
       .filter((o) => o.pauta_id === p.id)
-      .map((o) => ({ ...o, votos: votos.filter((v) => v.opcao_id === o.id).length })),
+      .map((o) => ({ ...o, votos: totalPorOpcao.get(o.id) ?? 0 })),
   }));
 }
 
