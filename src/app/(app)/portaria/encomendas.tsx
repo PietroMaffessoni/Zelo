@@ -11,11 +11,12 @@ import { listarEncomendas, marcarEncomendaRetirada } from '@/lib/db';
 import { tempoRelativo } from '@/lib/format';
 import { hapticSuccess } from '@/lib/haptics';
 import * as L from '@/lib/labels';
-import { urlsAssinadas } from '@/lib/storage';
+
 import { useAppTheme } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
 import type { Encomenda } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
+import { useFotosAssinadas } from '@/lib/useFotosAssinadas';
 
 export default function PortariaEncomendas() {
   const router = useRouter();
@@ -27,18 +28,22 @@ export default function PortariaEncomendas() {
   const [assinou, setAssinou] = useState(false);
   const [salvando, setSalvando] = useState(false);
 
+  // Duas consultas em vez de uma: a portaria quer o que está fisicamente lá
+  // (aguardando retirada — poucos, por natureza) e as dez últimas retiradas.
+  // Buscar tudo para filtrar aqui trazia o histórico inteiro de entregas do
+  // prédio só para mostrar dez linhas.
   const { data, loading, refreshing, error, refetch } = useFetch(async () => {
-    if (!condominioId) return { encomendas: [] as Encomenda[], fotoUrls: {} as Record<string, string> };
-    const encomendas = await listarEncomendas(condominioId);
-    const paths = encomendas.map((e) => e.foto_url).filter((p): p is string => !!p);
-    const fotoUrls = await urlsAssinadas('portaria', paths);
-    return { encomendas, fotoUrls };
+    if (!condominioId) return { aguardando: [] as Encomenda[], retiradas: [] as Encomenda[] };
+    const [aguardando, retiradas] = await Promise.all([
+      listarEncomendas(condominioId, { status: 'aguardando_retirada' }),
+      listarEncomendas(condominioId, { status: 'retirada', limite: 10 }),
+    ]);
+    return { aguardando, retiradas };
   }, [condominioId]);
 
-  const encomendas = data?.encomendas ?? [];
-  const fotoUrls = data?.fotoUrls ?? {};
-  const aguardando = encomendas.filter((e) => e.status === 'aguardando_retirada');
-  const retiradas = encomendas.filter((e) => e.status === 'retirada');
+  const aguardando = data?.aguardando ?? [];
+  const retiradas = data?.retiradas ?? [];
+  const fotoUrls = useFotosAssinadas('portaria', [...aguardando, ...retiradas].map((e) => e.foto_url));
 
   function abrirRetirada(id: string) {
     setRetirandoId(id);
@@ -72,7 +77,7 @@ export default function PortariaEncomendas() {
           <SkeletonList />
         ) : error ? (
           <ErrorState onRetry={refetch} />
-        ) : encomendas.length === 0 ? (
+        ) : aguardando.length === 0 && retiradas.length === 0 ? (
           <EmptyState icon="cube-outline" title="Nenhuma encomenda registrada" />
         ) : (
           <View style={{ gap: spacing.xl }}>
@@ -168,7 +173,7 @@ export default function PortariaEncomendas() {
               <View>
                 <SectionHeader title="Retiradas recentemente" />
                 <Panel>
-                  {retiradas.slice(0, 10).map((e) => (
+                  {retiradas.map((e) => (
                     <Row key={e.id} compact>
                       <View style={{ flexDirection: 'row', alignItems: 'flex-start', gap: spacing.sm }}>
                         <View style={{ flex: 1 }}>

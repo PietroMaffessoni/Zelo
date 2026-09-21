@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, CarregarMais, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarLancamentos } from '@/lib/db';
@@ -11,7 +11,7 @@ import { formatData, formatMoeda } from '@/lib/format';
 import { categoriaFinanceira, statusFinanceiro } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
 import { isConselho, isGestor, statusFinanceiroEfetivo, type TipoLancamento } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 export default function FinanceiroLista() {
   const router = useRouter();
@@ -21,12 +21,19 @@ export default function FinanceiroLista() {
   const podeVerDespesas = isConselho(papel);
   const [tipo, setTipo] = useState<TipoLancamento>('boleto');
 
-  const { data, loading, refreshing, error, refetch } = useFetch(
-    async () => (condominioId ? listarLancamentos(condominioId) : []),
-    [condominioId],
+  const {
+    itens: lancamentos,
+    loading,
+    refreshing,
+    error,
+    carregandoMais,
+    temMais,
+    carregarMais,
+    refetch,
+  } = useListaPaginada(
+    (pagina) => (condominioId ? listarLancamentos(condominioId, { tipo, pagina }) : Promise.resolve([])),
+    [condominioId, tipo],
   );
-
-  const lancamentos = (data ?? []).filter((l) => l.tipo === tipo);
 
   return (
     <View style={{ flex: 1 }}>
@@ -120,6 +127,7 @@ export default function FinanceiroLista() {
               })}
             </Panel>
           )}
+        <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
         </View>
       </Screen>
       {gestor ? <Fab icon="add" label="Lançar" onPress={() => router.push('/(app)/financeiro/novo')} /> : null}

@@ -2,14 +2,14 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen, Segmented } from '@/components/ui';
+import { AppHeader, AppText, Badge, CarregarMais, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen, Segmented } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarAssembleias } from '@/lib/db';
 import { formatDataHora } from '@/lib/format';
 import { assembleiaStatus } from '@/lib/labels';
 import { isGestor } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 type Filtro = 'proximas' | 'encerradas';
 
@@ -19,13 +19,17 @@ export default function AssembleiasLista() {
   const gestor = isGestor(papel);
   const [filtro, setFiltro] = useState<Filtro>('proximas');
 
-  const { data, loading, refreshing, refetch } = useFetch(
-    async () => (condominioId ? listarAssembleias(condominioId) : []),
-    [condominioId],
-  );
-
-  const assembleias = (data ?? []).filter((a) =>
-    filtro === 'proximas' ? a.status === 'convocada' || a.status === 'em_andamento' : a.status === 'encerrada' || a.status === 'cancelada',
+  const {
+    itens: assembleias,
+    loading,
+    refreshing,
+    carregandoMais,
+    temMais,
+    carregarMais,
+    refetch,
+  } = useListaPaginada(
+    (pagina) => (condominioId ? listarAssembleias(condominioId, pagina, filtro) : Promise.resolve([])),
+    [condominioId, filtro],
   );
 
   return (
@@ -77,6 +81,7 @@ export default function AssembleiasLista() {
               })}
             </Panel>
           )}
+        <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
         </View>
       </Screen>
       {gestor ? <Fab icon="add" label="Convocar" onPress={() => router.push('/(app)/assembleias/novo')} /> : null}

@@ -1,15 +1,15 @@
 import { useRouter } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, CarregarMais, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarChamados } from '@/lib/db';
 import { primeiroNome, tempoRelativo } from '@/lib/format';
 import * as L from '@/lib/labels';
 import { isGestor, type Chamado, type ChamadoStatus } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 type Filtro = 'todos' | ChamadoStatus;
 
@@ -26,15 +26,22 @@ export default function ChamadosTab() {
   const gestor = isGestor(papel);
   const [filtro, setFiltro] = useState<Filtro>('todos');
 
-  const { data, loading, refreshing, error, refetch } = useFetch(
-    async () => (condominioId ? listarChamados(condominioId) : []),
-    [condominioId],
+  const {
+    itens: lista,
+    loading,
+    refreshing,
+    error,
+    carregandoMais,
+    temMais,
+    carregarMais,
+    refetch,
+  } = useListaPaginada(
+    (pagina) =>
+      condominioId
+        ? listarChamados(condominioId, pagina, filtro === 'todos' ? undefined : filtro)
+        : Promise.resolve([]),
+    [condominioId, filtro],
   );
-
-  const lista = useMemo(() => {
-    const todos = data ?? [];
-    return filtro === 'todos' ? todos : todos.filter((c) => c.status === filtro);
-  }, [data, filtro]);
 
   return (
     <View style={{ flex: 1 }}>
@@ -68,6 +75,7 @@ export default function ChamadosTab() {
             ))}
           </Panel>
         )}
+        <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
       </Screen>
       <Fab icon="add" label="Novo" onPress={() => router.push('/(app)/chamados/novo')} />
     </View>

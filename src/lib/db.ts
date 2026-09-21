@@ -113,15 +113,23 @@ export async function fixarComunicado(id: string, fixado: boolean) {
 }
 
 // ------------------------------------------------------------------- Chamados
-export async function listarChamados(condominioId: string, pagina = 0): Promise<Chamado[]> {
-  return unwrap(
-    await supabase
-      .from('chamados')
-      .select('*, autor:profiles!autor_id(*), responsavel:profiles!responsavel_id(*), unidade:unidades(*)')
-      .eq('condominio_id', condominioId)
-      .order('created_at', { ascending: false })
-      .range(...faixaDaPagina(pagina)),
-  ) as Chamado[];
+/**
+ * O filtro de status desce para o servidor porque a lista é paginada: filtrar
+ * depois de receber descartaria itens da página e poderia devolver uma página
+ * vazia com mais registros logo atrás — a lista pareceria ter acabado.
+ */
+export async function listarChamados(
+  condominioId: string,
+  pagina = 0,
+  status?: ChamadoStatus,
+): Promise<Chamado[]> {
+  let query = supabase
+    .from('chamados')
+    .select('*, autor:profiles!autor_id(*), responsavel:profiles!responsavel_id(*), unidade:unidades(*)')
+    .eq('condominio_id', condominioId)
+    .order('created_at', { ascending: false });
+  if (status) query = query.eq('status', status);
+  return unwrap(await query.range(...faixaDaPagina(pagina))) as Chamado[];
 }
 
 export async function getChamado(id: string): Promise<Chamado> {
@@ -588,18 +596,27 @@ export async function registrarEntradaVisitante(input: {
   return registro;
 }
 
+/**
+ * Encomendas.
+ *
+ * `status` e `limite` existem porque a tela da portaria não quer "as encomendas":
+ * quer as que aguardam retirada (naturalmente poucas — é o que está fisicamente
+ * na portaria) e as dez últimas retiradas. Sem esse recorte, a consulta trazia o
+ * histórico inteiro de todas as entregas já feitas ao prédio para exibir dez.
+ */
 export async function listarEncomendas(
   condominioId: string,
-  unidadeId?: string,
-  pagina = 0,
+  opts?: { unidadeId?: string; status?: EncomendaStatus; limite?: number; pagina?: number },
 ): Promise<Encomenda[]> {
   let query = supabase
     .from('encomendas')
     .select('*, unidade:unidades(*)')
     .eq('condominio_id', condominioId)
     .order('created_at', { ascending: false });
-  if (unidadeId) query = query.eq('unidade_id', unidadeId);
-  return unwrap(await query.range(...faixaDaPagina(pagina))) as Encomenda[];
+  if (opts?.unidadeId) query = query.eq('unidade_id', opts.unidadeId);
+  if (opts?.status) query = query.eq('status', opts.status);
+  if (opts?.limite) return unwrap(await query.limit(opts.limite)) as Encomenda[];
+  return unwrap(await query.range(...faixaDaPagina(opts?.pagina ?? 0))) as Encomenda[];
 }
 
 export async function criarEncomenda(input: {
@@ -883,15 +900,23 @@ export async function removerDocumento(id: string) {
 }
 
 // ------------------------------------------------------------------ Assembleias
-export async function listarAssembleias(condominioId: string, pagina = 0): Promise<Assembleia[]> {
-  return unwrap(
-    await supabase
-      .from('assembleias')
-      .select('*')
-      .eq('condominio_id', condominioId)
-      .order('data_hora', { ascending: false })
-      .range(...faixaDaPagina(pagina)),
-  ) as Assembleia[];
+/** `grupo` filtra no servidor pelo mesmo motivo de `listarChamados`. */
+export async function listarAssembleias(
+  condominioId: string,
+  pagina = 0,
+  grupo?: 'proximas' | 'encerradas',
+): Promise<Assembleia[]> {
+  const statusDoGrupo: Record<'proximas' | 'encerradas', string[]> = {
+    proximas: ['convocada', 'em_andamento'],
+    encerradas: ['encerrada', 'cancelada'],
+  };
+  let query = supabase
+    .from('assembleias')
+    .select('*')
+    .eq('condominio_id', condominioId)
+    .order('data_hora', { ascending: false });
+  if (grupo) query = query.in('status', statusDoGrupo[grupo]);
+  return unwrap(await query.range(...faixaDaPagina(pagina))) as Assembleia[];
 }
 
 export async function getAssembleia(id: string): Promise<Assembleia> {

@@ -4,16 +4,17 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, Button, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, Button, CarregarMais, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import { alterarStatusAchado, listarAchados } from '@/lib/db';
 import { formatData } from '@/lib/format';
 import * as L from '@/lib/labels';
-import { urlsAssinadas } from '@/lib/storage';
+
 import { isGestor, type AchadoPerdido } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useFotosAssinadas } from '@/lib/useFotosAssinadas';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 export default function AchadosLista() {
   const { palette } = useAppTheme();
@@ -22,16 +23,14 @@ export default function AchadosLista() {
   const gestor = isGestor(papel);
   const [processando, setProcessando] = useState<string | null>(null);
 
-  const { data, loading, refreshing, refetch } = useFetch(async () => {
-    if (!condominioId) return { itens: [] as AchadoPerdido[], fotoUrls: {} as Record<string, string> };
-    const itens = await listarAchados(condominioId);
-    const paths = itens.map((a) => a.foto_url).filter((p): p is string => !!p);
-    const fotoUrls = await urlsAssinadas('achados', paths);
-    return { itens, fotoUrls };
-  }, [condominioId]);
+  const { itens, loading, refreshing, carregandoMais, temMais, carregarMais, refetch } = useListaPaginada(
+    (pagina) => (condominioId ? listarAchados(condominioId, pagina) : Promise.resolve([])),
+    [condominioId],
+  );
 
-  const itens = data?.itens ?? [];
-  const fotoUrls = data?.fotoUrls ?? {};
+  // As fotos são assinadas à parte, acumulando conforme a lista cresce: dentro
+  // do carregamento da lista, a segunda página viria com fotos sem URL.
+  const fotoUrls = useFotosAssinadas('achados', itens.map((a) => a.foto_url));
 
   async function marcarDevolvido(a: AchadoPerdido) {
     setProcessando(a.id);
@@ -125,6 +124,7 @@ export default function AchadosLista() {
             })}
           </Panel>
         )}
+        <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
       </Screen>
       <Fab icon="add" label="Registrar" onPress={() => router.push('/(app)/achados/novo')} />
     </View>
