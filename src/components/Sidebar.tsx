@@ -11,6 +11,7 @@ import { radius, SIDEBAR_LARGURA, SIDEBAR_LARGURA_TABLET, spacing } from '@/cons
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
+import { validadeCodigo } from '@/lib/format';
 import { papelLabel } from '@/lib/labels';
 import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
@@ -185,12 +186,14 @@ function CodigosAcesso() {
         icon="shield-checkmark-outline"
         label="Portaria"
         codigo={condominio?.codigo_portaria}
+        expiraEm={condominio?.codigo_portaria_expira_em}
         gerar={condominioId ? () => gerarCodigoPortaria(condominioId) : undefined}
       />
       <CodigoLinha
         icon="construct-outline"
         label="Zeladoria"
         codigo={condominio?.codigo_zelador}
+        expiraEm={condominio?.codigo_zelador_expira_em}
         gerar={condominioId ? () => gerarCodigoZelador(condominioId) : undefined}
       />
     </>
@@ -206,11 +209,14 @@ function CodigoLinha({
   icon,
   label,
   codigo,
+  expiraEm,
   gerar,
 }: {
   icon: keyof typeof Ionicons.glyphMap;
   label: string;
   codigo?: string | null;
+  /** Só os códigos de equipe expiram; o de convite não tem prazo. */
+  expiraEm?: string | null;
   /** Ausente no código de convite, que nasce junto com o condomínio. */
   gerar?: () => Promise<string>;
 }) {
@@ -266,6 +272,7 @@ function CodigoLinha({
 
   const interativo = !!codigo || !!gerar;
   const texto = ocupado ? 'Gerando...' : (codigo ?? (gerar ? 'Gerar código' : '—'));
+  const validade = codigo ? validadeCodigo(expiraEm) : null;
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
@@ -289,9 +296,9 @@ function CodigoLinha({
         ]}
       >
         <Ionicons name={icon} size={20} color={palette.textMuted} />
-        <View style={{ flex: 1 }}>
+        <View style={{ flex: 1, minWidth: 0 }}>
           <AppText variant="caption" color="subtle" numberOfLines={1}>
-            {label}
+            {validade ? `${label} · ${validade.texto}` : label}
           </AppText>
           <AppText
             variant="label"

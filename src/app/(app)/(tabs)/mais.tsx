@@ -7,6 +7,7 @@ import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
+import { validadeCodigo } from '@/lib/format';
 import { papelLabel } from '@/lib/labels';
 import { isConselho as ehConselho, isGestor as ehGestor, veManutencao } from '@/lib/types';
 
@@ -153,7 +154,11 @@ export default function Mais() {
               icon="shield-checkmark-outline"
               iconTone="warning"
               title="Código da portaria"
-              subtitle={membershipAtual?.condominio?.codigo_portaria ?? (gerandoCodigo ? 'Gerando...' : 'Toque para gerar')}
+              subtitle={legendaCodigo(
+                membershipAtual?.condominio?.codigo_portaria,
+                membershipAtual?.condominio?.codigo_portaria_expira_em,
+                gerandoCodigo,
+              )}
               onPress={gerarCodigoDaPortaria}
             />
             <Divider />
@@ -161,7 +166,11 @@ export default function Mais() {
               icon="construct-outline"
               iconTone="info"
               title="Código do zelador"
-              subtitle={membershipAtual?.condominio?.codigo_zelador ?? (gerandoZelador ? 'Gerando...' : 'Toque para gerar')}
+              subtitle={legendaCodigo(
+                membershipAtual?.condominio?.codigo_zelador,
+                membershipAtual?.condominio?.codigo_zelador_expira_em,
+                gerandoZelador,
+              )}
               onPress={gerarCodigoDoZelador}
             />
           </Card>
@@ -199,4 +208,16 @@ export default function Mais() {
       </AppText>
     </Screen>
   );
+}
+
+/**
+ * Legenda de um código de equipe: o código em si e, quando houver prazo, até
+ * quando ele vale. Um código expirado precisa dizer isso na própria linha —
+ * senão o síndico só descobre quando o funcionário não consegue entrar.
+ */
+function legendaCodigo(codigo: string | null | undefined, expiraEm: string | null | undefined, gerando: boolean) {
+  if (gerando) return 'Gerando...';
+  if (!codigo) return 'Toque para gerar';
+  const validade = validadeCodigo(expiraEm);
+  return validade ? `${codigo} · ${validade.texto}` : codigo;
 }

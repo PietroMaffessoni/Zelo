@@ -102,6 +102,22 @@ export function parseMoeda(valor: string): number {
   return d ? Number(d) / 100 : 0;
 }
 
+/**
+ * Estado de validade de um código de equipe, para exibir ao síndico.
+ *
+ * `null` de data significa código antigo, gerado antes de a expiração existir:
+ * segue valendo, e dizer "sem validade" seria mais confuso que não dizer nada.
+ */
+export function validadeCodigo(expiraEm?: string | null): { texto: string; expirado: boolean } | null {
+  if (!expiraEm) return null;
+  const fim = dayjs(expiraEm);
+  if (!fim.isValid()) return null;
+  if (fim.isBefore(dayjs())) return { texto: 'Expirado — gere um novo', expirado: true };
+  const dias = fim.diff(dayjs(), 'day');
+  if (dias <= 0) return { texto: 'Expira hoje', expirado: false };
+  return { texto: `Vale até ${fim.format('DD/MM')}`, expirado: false };
+}
+
 export function primeiroNome(nome?: string | null): string {
   if (!nome) return '';
   return nome.trim().split(/\s+/)[0];

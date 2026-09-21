@@ -84,7 +84,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         gestorEm.map((m) => supabase.rpc('obter_codigos_condominio', { p_cond: m.condominio_id })),
       );
       for (let i = 0; i < gestorEm.length; i++) {
-        const linha = (codigos[i].data as { codigo_convite: string; codigo_portaria: string | null; codigo_zelador: string | null }[] | null)?.[0];
+        const linha = (codigos[i].data as {
+          codigo_convite: string;
+          codigo_portaria: string | null;
+          codigo_zelador: string | null;
+          codigo_portaria_expira_em: string | null;
+          codigo_zelador_expira_em: string | null;
+        }[] | null)?.[0];
         if (!linha) continue;
         const membership = lista.find((m) => m.condominio_id === gestorEm[i].condominio_id);
         if (membership?.condominio) Object.assign(membership.condominio, linha);

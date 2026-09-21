@@ -94,6 +94,10 @@ export type Condominio = {
   codigo_convite?: string;
   codigo_portaria?: string | null;
   codigo_zelador?: string | null;
+  // Validade dos códigos de equipe. Nulo = código antigo, gerado antes de a
+  // expiração existir; segue valendo para não derrubar quem já está operando.
+  codigo_portaria_expira_em?: string | null;
+  codigo_zelador_expira_em?: string | null;
   criado_por: string | null;
   created_at: string;
 };
