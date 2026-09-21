@@ -106,14 +106,33 @@ export type PreferenciasNotificacao = {
   assembleias: boolean;
 };
 
+/**
+ * Cartão público do usuário: o que qualquer co-morador pode ver.
+ *
+ * Telefone e e-mail NÃO moram mais aqui. Esta linha é legível por quem
+ * compartilha condomínio — o nome do autor aparece em comunicado, chamado,
+ * proposta e reserva —, e com o contato dentro dela um select da tabela
+ * devolvia a agenda do prédio inteiro. Ver `PerfilContato`.
+ */
 export type Profile = {
   id: string;
   nome_completo: string | null;
-  telefone: string | null;
-  email: string | null;
   avatar_url: string | null;
   preferencias_notificacao: PreferenciasNotificacao;
   created_at: string;
+  /** Só vem preenchido quando a consulta pede o embed — e só se a RLS permitir. */
+  contato?: PerfilContato | null;
+};
+
+/**
+ * Contato do usuário (tabela `perfis_contato`). Só o dono, o síndico e quem é da
+ * mesma unidade conseguem ler — ver a policy `contato_select`.
+ */
+export type PerfilContato = {
+  user_id: string;
+  telefone: string | null;
+  email: string | null;
+  updated_at: string;
 };
 
 export type Unidade = {

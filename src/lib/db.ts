@@ -443,7 +443,9 @@ export async function getUnidade(id: string): Promise<UnidadeDetalhe> {
     supabase.from('unidades').select('*').eq('id', id).single(),
     supabase
       .from('memberships')
-      .select('*, profile:profiles(*)')
+      // O contato vem aninhado dentro do perfil: mora em `perfis_contato`, com RLS
+      // própria — se o leitor não for o síndico nem da mesma unidade, volta nulo.
+      .select('*, profile:profiles(*, contato:perfis_contato(*))')
       .eq('unidade_id', id)
       .eq('status', 'ativo')
       .order('created_at', { ascending: true }),
@@ -491,7 +493,8 @@ export async function listarMoradores(condominioId: string): Promise<Membership[
   return unwrap(
     await supabase
       .from('memberships')
-      .select('*, profile:profiles(*), unidade:unidades(*)')
+      // O síndico busca morador por e-mail — o dado mora em `perfis_contato`.
+      .select('*, profile:profiles(*, contato:perfis_contato(*)), unidade:unidades(*)')
       .eq('condominio_id', condominioId)
       .eq('status', 'ativo')
       .order('created_at', { ascending: true }),

@@ -45,7 +45,7 @@ export default function UnidadesLista() {
     const mapa = new Map<string, string>();
     for (const m of moradores) {
       if (!m.unidade_id) continue;
-      const trecho = normalizar([m.profile?.nome_completo, m.cpf, m.profile?.email].filter(Boolean).join(' '));
+      const trecho = normalizar([m.profile?.nome_completo, m.cpf, m.profile?.contato?.email].filter(Boolean).join(' '));
       mapa.set(m.unidade_id, (mapa.get(m.unidade_id) ?? '') + ' ' + trecho);
     }
     return mapa;

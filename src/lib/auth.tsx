@@ -3,7 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
-import type { Membership, Papel, Profile, Vinculo } from '@/lib/types';
+import type { Membership, Papel, PerfilContato, Profile, Vinculo } from '@/lib/types';
 
 const CHAVE_CONDOMINIO = 'zelo.condominio_atual';
 
@@ -12,6 +12,8 @@ type AuthState = {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
+  /** Contato do próprio usuário (telefone/e-mail) — tabela separada por privacidade. */
+  contato: PerfilContato | null;
   memberships: Membership[];
   /** Vínculos aguardando aprovação do síndico (entrar_condominio cria como 'pendente'). */
   membershipsPendentes: Membership[];
@@ -50,14 +52,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [ready, setReady] = useState(false);
   const [session, setSession] = useState<Session | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
+  const [contato, setContato] = useState<PerfilContato | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [membershipsPendentes, setMembershipsPendentes] = useState<Membership[]>([]);
   const [condominioId, setCondominioId] = useState<string | null>(null);
   const selecionadoRef = useRef<string | null>(null);
 
   const carregarDados = useCallback(async (uid: string) => {
-    const [{ data: prof }, { data: mbs }] = await Promise.all([
+    const [{ data: prof }, { data: cont }, { data: mbs }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
+      supabase.from('perfis_contato').select('*').eq('user_id', uid).maybeSingle(),
       supabase
         .from('memberships')
         // codigo_convite/codigo_portaria/codigo_zelador não fazem parte do select geral de
@@ -69,6 +73,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     ]);
 
     setProfile((prof as Profile) ?? null);
+    setContato((cont as PerfilContato) ?? null);
     const todas = (mbs as Membership[]) ?? [];
     const lista = todas.filter((m) => m.status === 'ativo');
     setMembershipsPendentes(todas.filter((m) => m.status === 'pendente'));
@@ -289,6 +294,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     session,
     user: session?.user ?? null,
     profile,
+    contato,
     memberships,
     membershipsPendentes,
     membershipAtual,

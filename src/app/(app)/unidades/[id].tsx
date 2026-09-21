@@ -336,8 +336,8 @@ function FichaMorador({
   const [rg, setRg] = useState(membership.rg ?? '');
   const [salvando, setSalvando] = useState(false);
 
-  const email = membership.profile?.email;
-  const telefone = membership.profile?.telefone;
+  const email = membership.profile?.contato?.email;
+  const telefone = membership.profile?.contato?.telefone;
 
   async function salvar() {
     setSalvando(true);

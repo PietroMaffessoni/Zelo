@@ -30,6 +30,7 @@ export default function Perfil() {
   const {
     user,
     profile,
+    contato,
     memberships,
     condominioId,
     selecionarCondominio,
@@ -40,7 +41,7 @@ export default function Perfil() {
   } = useAuth();
   const { escuro, alternar, palette } = useAppTheme();
   const [nome, setNome] = useState(profile?.nome_completo ?? '');
-  const [telefone, setTelefone] = useState(profile?.telefone ?? '');
+  const [telefone, setTelefone] = useState(contato?.telefone ?? '');
   const [avatar, setAvatar] = useState(profile?.avatar_url ?? null);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -132,10 +133,16 @@ export default function Perfil() {
     if (!user) return;
     setSalvando(true);
     setMsg(null);
-    const { error } = await supabase
-      .from('profiles')
-      .update({ nome_completo: nome.trim(), telefone: telefone.trim() || null })
-      .eq('id', user.id);
+    // Nome e telefone vivem em tabelas diferentes desde que o contato saiu do
+    // perfil público (ver `PerfilContato`). São duas escritas, cada uma com a
+    // própria RLS — ambas restritas ao próprio usuário.
+    const [{ error: erroPerfil }, { error: erroContato }] = await Promise.all([
+      supabase.from('profiles').update({ nome_completo: nome.trim() }).eq('id', user.id),
+      supabase
+        .from('perfis_contato')
+        .upsert({ user_id: user.id, telefone: telefone.trim() || null }, { onConflict: 'user_id' }),
+    ]);
+    const error = erroPerfil ?? erroContato;
     await recarregar();
     setSalvando(false);
     setMsg(error ? 'Erro ao salvar.' : 'Dados atualizados!');

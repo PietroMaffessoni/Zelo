@@ -1648,24 +1648,16 @@ grant select (id, nome, cidade, uf, endereco, cnpj, criado_por, created_at) on p
 alter table public.memberships add column if not exists cpf text;
 alter table public.memberships add column if not exists rg text;
 
--- E-mail no perfil: o síndico pediu o e-mail do morador "sempre à mão". Vem do
--- auth.users (fonte da verdade) via trigger + backfill. É menos sensível que
--- CPF e útil para contato entre a gestão e o morador.
-alter table public.profiles add column if not exists email text;
-
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.profiles (id, nome_completo, email)
-  values (new.id, coalesce(new.raw_user_meta_data->>'nome_completo', ''), new.email)
-  on conflict (id) do update set email = excluded.email;
-  return new;
-end;
-$$;
-
--- Backfill dos perfis já existentes (o trigger só cobre novos cadastros).
-update public.profiles p set email = u.email
-  from auth.users u where u.id = p.id and p.email is distinct from u.email;
+-- E-mail no perfil: o síndico pediu o e-mail do morador "sempre à mão".
+--
+-- ESTE BLOCO FICOU HISTÓRICO. O e-mail chegou a morar em `profiles`, mas essa
+-- tabela é legível por qualquer co-morador (o nome do autor aparece em catorze
+-- consultas) — e com o e-mail dentro dela, um select da tabela devolvia a agenda
+-- do prédio inteiro. O dado passou para `perfis_contato`, na seção 10.2, com RLS
+-- própria. O `handle_new_user` definitivo também está lá.
+--
+-- Nada a fazer aqui: recriar a coluna só para a 10.2 derrubá-la de novo a cada
+-- execução deixaria o script batendo em si mesmo.
 
 -- 8.2 Papel "zelador" (equipe operacional: manutenção + chamados) -------------
 -- Login individual (cada zelador com seu e-mail) via código de equipe próprio,
@@ -1818,24 +1810,12 @@ grant select (administradora, administradora_contato) on public.condominios to a
 alter table public.lancamentos_financeiros add column if not exists enviado_administradora_em timestamptz;
 
 -- 8.5 Telefone no cadastro ----------------------------------------------------
--- A tela de criar conta passou a coletar telefone (contato para porteiro/síndico).
--- Vem via options.data no signUp -> raw_user_meta_data; o trigger copia para o
--- perfil junto de nome/e-mail. Só grava no insert (não sobrescreve edição feita
--- depois em /perfil, que é a fonte da verdade a partir dali).
-create or replace function public.handle_new_user()
-returns trigger language plpgsql security definer set search_path = public as $$
-begin
-  insert into public.profiles (id, nome_completo, telefone, email)
-  values (
-    new.id,
-    coalesce(new.raw_user_meta_data->>'nome_completo', ''),
-    nullif(new.raw_user_meta_data->>'telefone', ''),
-    new.email
-  )
-  on conflict (id) do update set email = excluded.email;
-  return new;
-end;
-$$;
+-- A tela de criar conta coleta telefone (contato para porteiro/síndico). Vem via
+-- options.data no signUp -> raw_user_meta_data.
+--
+-- ESTE BLOCO FICOU HISTÓRICO pelo mesmo motivo do 8.1: telefone e e-mail saíram
+-- de `profiles` e vivem em `perfis_contato` (seção 10.2), que é quem define o
+-- `handle_new_user` em vigor.
 
 -- 8.6 Motivo da infração vira texto livre -------------------------------------
 -- Antes o motivo era uma lista fixa (barulho, area_comum, ...) escolhida em
@@ -2004,5 +1984,167 @@ $$;
 
 revoke all on function public.apurar_assembleia(uuid) from public, anon;
 grant execute on function public.apurar_assembleia(uuid) to authenticated;
+
+-- 10.2 Telefone e e-mail saem do perfil público -------------------------------
+--
+-- `profiles_select` libera a linha inteira para quem compartilha condomínio — e
+-- precisa liberar: o nome e o avatar do autor aparecem em comunicado, chamado,
+-- proposta e reserva, em catorze consultas diferentes. O problema não era a
+-- linha, eram DUAS COLUNAS dentro dela: com `telefone` e `email` ali, um
+-- `GET /rest/v1/profiles?select=*` devolvia a agenda telefônica do prédio
+-- inteiro para qualquer morador, independentemente do que a interface mostra.
+--
+-- Por isso o contato sai da tabela em vez de a tabela ser fechada: `profiles`
+-- fica sendo o cartão público (nome + avatar) e o contato vai para uma tabela
+-- própria, com RLS estreita. As consultas de nome seguem intactas; só quem
+-- precisa de telefone/e-mail passa a ler `perfis_contato` — e só consegue se for
+-- o dono, o síndico ou alguém da mesma unidade (cônjuge, filho, colega de
+-- apartamento: quem já convive com o dado no dia a dia).
+create table if not exists public.perfis_contato (
+  user_id uuid primary key references public.profiles(id) on delete cascade,
+  telefone text,
+  email text,
+  updated_at timestamptz not null default now()
+);
+
+-- Migra o que já existe antes de derrubar as colunas. Idempotente e tolerante:
+-- cada coluna é tratada por si, porque `telefone` nasce na definição da tabela
+-- (seção 1) e `email` só existia se a base já tivesse rodado a 8.1 antiga —
+-- então numa base nova uma existe e a outra não, e um insert que citasse as duas
+-- de uma vez quebraria.
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'telefone'
+  ) then
+    execute $mig$
+      insert into public.perfis_contato (user_id, telefone)
+      select p.id, p.telefone from public.profiles p where p.telefone is not null
+      on conflict (user_id) do update
+        set telefone = coalesce(excluded.telefone, public.perfis_contato.telefone)
+    $mig$;
+    alter table public.profiles drop column telefone;
+  end if;
+
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'profiles' and column_name = 'email'
+  ) then
+    execute $mig$
+      insert into public.perfis_contato (user_id, email)
+      select p.id, p.email from public.profiles p where p.email is not null
+      on conflict (user_id) do update
+        set email = coalesce(excluded.email, public.perfis_contato.email)
+    $mig$;
+    alter table public.profiles drop column email;
+  end if;
+end $$;
+
+-- Backfill do e-mail a partir da fonte da verdade (auth.users), para os perfis
+-- que já existiam antes desta seção.
+insert into public.perfis_contato (user_id, email)
+select u.id, u.email from auth.users u
+on conflict (user_id) do update set email = excluded.email
+where public.perfis_contato.email is distinct from excluded.email;
+
+alter table public.perfis_contato enable row level security;
+
+drop policy if exists contato_select on public.perfis_contato;
+create policy contato_select on public.perfis_contato for select to authenticated
+  using (
+    user_id = (select auth.uid())
+    or exists (
+      select 1
+      from public.memberships eu
+      join public.memberships dele on dele.condominio_id = eu.condominio_id
+      where eu.user_id = (select auth.uid())
+        and eu.status = 'ativo'
+        and dele.user_id = perfis_contato.user_id
+        and dele.status = 'ativo'
+        and (
+          eu.papel in ('sindico', 'admin')
+          or (eu.unidade_id is not null and eu.unidade_id = dele.unidade_id)
+        )
+    )
+  );
+
+drop policy if exists contato_write on public.perfis_contato;
+create policy contato_write on public.perfis_contato for all to authenticated
+  using (user_id = (select auth.uid())) with check (user_id = (select auth.uid()));
+
+-- O cadastro passa a alimentar as duas tabelas. `security definer` já roda como
+-- dono, então a RLS de perfis_contato não atrapalha o gatilho.
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, nome_completo)
+  values (new.id, coalesce(new.raw_user_meta_data->>'nome_completo', ''))
+  on conflict (id) do update set nome_completo = coalesce(excluded.nome_completo, public.profiles.nome_completo);
+
+  insert into public.perfis_contato (user_id, telefone, email)
+  values (new.id, nullif(new.raw_user_meta_data->>'telefone', ''), new.email)
+  on conflict (user_id) do update
+    set email = excluded.email,
+        telefone = coalesce(excluded.telefone, public.perfis_contato.telefone);
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function public.handle_new_user();
+
+-- Mantém o e-mail espelhado quando o usuário o troca no Auth.
+create or replace function public.sincronizar_email_contato()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update public.perfis_contato set email = new.email, updated_at = now() where user_id = new.id;
+  return new;
+end;
+$$;
+
+drop trigger if exists on_auth_user_email on auth.users;
+create trigger on_auth_user_email
+  after update of email on auth.users
+  for each row execute function public.sincronizar_email_contato();
+
+-- 10.3 Dependentes e pets deixam de ser públicos no condomínio ----------------
+--
+-- `dependentes_select` e `pets_select` usavam só `is_member(condominio_id)`:
+-- qualquer morador listava os dependentes de TODAS as unidades — e dependente,
+-- na prática, é quase sempre criança. Nome de menor à disposição de duzentos
+-- vizinhos não passa pelos princípios de finalidade e necessidade da LGPD, e
+-- nenhuma tela do app precisava disso: quem abre a ficha de uma unidade é o
+-- síndico ou alguém que mora nela.
+--
+-- O escopo certo já existia no próprio arquivo, em `visitantes` e `encomendas`:
+-- gestor, portaria (que confere quem entra) e os moradores daquela unidade.
+drop policy if exists dependentes_select on public.dependentes;
+create policy dependentes_select on public.dependentes for select to authenticated
+  using (
+    public.is_gestor(condominio_id)
+    or public.is_porteiro(condominio_id)
+    or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = dependentes.unidade_id
+        and m.user_id = (select auth.uid())
+        and m.status = 'ativo'
+    )
+  );
+
+drop policy if exists pets_select on public.pets;
+create policy pets_select on public.pets for select to authenticated
+  using (
+    public.is_gestor(condominio_id)
+    or public.is_porteiro(condominio_id)
+    or exists (
+      select 1 from public.memberships m
+      where m.unidade_id = pets.unidade_id
+        and m.user_id = (select auth.uid())
+        and m.status = 'ativo'
+    )
+  );
 
 -- Fim do setup.
