@@ -41,6 +41,7 @@ export default function Documentos() {
   } = useListaPaginada(
     (pagina) => (condominioId ? listarDocumentos(condominioId, undefined, pagina) : Promise.resolve([])),
     [condominioId],
+    { cache: `documentos:${condominioId}` },
   );
   // O regimento interno é a referência que o morador mais procura: fica fixado no
   // topo, separado do resto. Se ainda não foi publicado, a seção nem aparece.

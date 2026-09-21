@@ -2,6 +2,8 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { gravarCache, lerCache } from '@/lib/cache';
+
 type Estado<T> = {
   data: T | null;
   loading: boolean;
@@ -15,6 +17,14 @@ type Modo = 'inicial' | 'refresh' | 'silent';
 type Opcoes = {
   /** Refaz o fetch quando a tela recupera foco (voltar de um "novo") ou a janela ganha foco no web. Padrão: true. */
   refetchOnFocus?: boolean;
+  /**
+   * Chave de cache local. Informada, a tela pinta com a última resposta
+   * conhecida enquanto a rede responde — e continua legível se ela não
+   * responder. Opt-in de propósito: o cache é texto puro no disco, então só
+   * entram telas de conteúdo que o condomínio já publica a todos. Ver
+   * `lib/cache.ts`.
+   */
+  cache?: string;
 };
 
 /**
@@ -23,9 +33,13 @@ type Opcoes = {
  * depois de criar um item em outra tela e voltar, sem depender de pull-to-refresh.
  */
 export function useFetch<T>(fn: () => Promise<T>, deps: unknown[] = [], opcoes: Opcoes = {}): Estado<T> {
-  const { refetchOnFocus = true } = opcoes;
+  const { refetchOnFocus = true, cache } = opcoes;
   const [data, setData] = useState<T | null>(null);
   const [loading, setLoading] = useState(true);
+  /** Já veio resposta da rede? Impede o cache (assíncrono) de sobrescrever dado fresco. */
+  const respondeuRef = useRef(false);
+  /** Há algo desenhado agora? Marcado onde `data` é escrito, nunca lido no render. */
+  const temConteudoRef = useRef(false);
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -35,10 +49,18 @@ export function useFetch<T>(fn: () => Promise<T>, deps: unknown[] = [], opcoes: 
     if (modo !== 'silent') setError(null);
     try {
       const r = await fn();
+      respondeuRef.current = true;
+      temConteudoRef.current = r != null;
       setData(r);
+      if (cache) gravarCache(cache, r);
       if (modo === 'silent') setError(null);
     } catch (e: any) {
-      setError(e?.message ?? 'Não foi possível carregar os dados.');
+      // Com conteúdo em tela (veio do cache), a falha de rede não vira estado de
+      // erro: apagar o que o usuário já está lendo para mostrar "não foi possível
+      // carregar" é pior do que manter o retrato anterior.
+      if (!respondeuRef.current && !temConteudoRef.current) {
+        setError(e?.message ?? 'Não foi possível carregar os dados.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -49,6 +71,22 @@ export function useFetch<T>(fn: () => Promise<T>, deps: unknown[] = [], opcoes: 
   useEffect(() => {
     executar('inicial');
   }, [executar]);
+
+  // Hidratação: pinta com o que já se sabe enquanto a rede não responde. Se a
+  // resposta chegar primeiro, o cache é descartado — nunca anda para trás.
+  useEffect(() => {
+    if (!cache) return;
+    let ativo = true;
+    lerCache<T>(cache).then((guardado) => {
+      if (!ativo || guardado == null || respondeuRef.current) return;
+      setData(guardado);
+      temConteudoRef.current = true;
+      setLoading(false);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [cache]);
 
   // Refetch silencioso ao recuperar o foco da tela (ex.: voltar após criar um item).
   // Usa uma ref para manter o callback estável e não refazer o fetch a cada mudança de `deps`.

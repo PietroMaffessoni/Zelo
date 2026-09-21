@@ -74,7 +74,11 @@ export default function Agenda() {
         })),
     ];
     return itens.sort((x, y) => new Date(x.quando).getTime() - new Date(y.quando).getTime());
-  }, [condominioId, podeVerManutencao]);
+  }, [condominioId, podeVerManutencao], {
+    // Datas do condomínio: conteúdo público, e é o que se consulta longe do
+    // sinal (garagem, elevador). Ver a regra de cache em `lib/cache.ts`.
+    cache: `agenda:${condominioId}`,
+  });
 
   const itens = data ?? [];
   const agora = Date.now();

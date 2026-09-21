@@ -29,6 +29,10 @@ export default function ComunicadosLista() {
   } = useListaPaginada(
     (pagina) => (condominioId && user ? listarComunicados(condominioId, user.id, pagina) : Promise.resolve([])),
     [condominioId, user?.id],
+    // Guardado em disco: é o que o morador abre ao receber o push, muitas vezes
+    // no elevador ou na garagem. Conteúdo publicado a todo o condomínio, sem
+    // dado pessoal — ver a regra em `lib/cache.ts`.
+    { cache: `comunicados:${condominioId}` },
   );
 
   return (

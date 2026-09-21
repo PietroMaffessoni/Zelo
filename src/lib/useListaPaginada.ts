@@ -2,6 +2,8 @@ import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
+import { gravarCache, lerCache } from '@/lib/cache';
+
 /**
  * Quantos registros por página.
  *
@@ -39,6 +41,12 @@ type Estado<T> = {
 type Opcoes = {
   refetchOnFocus?: boolean;
   tamanhoPagina?: number;
+  /**
+   * Chave de cache local. Guarda apenas a PRIMEIRA página: é o que a tela mostra
+   * ao abrir, e é ela que precisa aparecer sem rede. Páginas seguintes são
+   * navegação deliberada e podem esperar a conexão. Opt-in — ver `lib/cache.ts`.
+   */
+  cache?: string;
 };
 
 /**
@@ -59,7 +67,17 @@ export function useListaPaginada<T>(
   deps: unknown[] = [],
   opcoes: Opcoes = {},
 ): Estado<T> {
-  const { refetchOnFocus = true, tamanhoPagina = TAMANHO_PAGINA } = opcoes;
+  const { refetchOnFocus = true, tamanhoPagina = TAMANHO_PAGINA, cache } = opcoes;
+  /** Já veio resposta da rede? Impede o cache (assíncrono) de sobrescrever dado fresco. */
+  const respondeuRef = useRef(false);
+  /**
+   * Há algo desenhado na tela agora?
+   *
+   * Marcado onde a lista é escrita — nunca lendo o estado durante a renderização,
+   * que é o que o compilador do React proíbe. Serve para decidir se uma falha de
+   * rede vira mensagem de erro ou fica calada por cima do conteúdo já visível.
+   */
+  const temConteudoRef = useRef(false);
 
   const [itens, setItens] = useState<T[]>([]);
   const [loading, setLoading] = useState(true);
@@ -99,20 +117,42 @@ export function useListaPaginada<T>(
       if (modo !== 'silent') setError(null);
       try {
         const pagina = await carregarRef.current(0);
+        respondeuRef.current = true;
         paginaRef.current = 0;
         setItens(pagina);
+        temConteudoRef.current = pagina.length > 0;
         setTemMais(pagina.length >= tamanhoPagina);
         setError(null);
+        if (cache) gravarCache(cache, pagina);
       } catch (e: any) {
-        setError(e?.message ?? 'Não foi possível carregar os dados.');
+        // Já havia conteúdo em tela (do cache): manter o retrato anterior é
+        // melhor do que trocá-lo por uma mensagem de falha.
+        if (!respondeuRef.current && !temConteudoRef.current) {
+          setError(e?.message ?? 'Não foi possível carregar os dados.');
+        }
       } finally {
         ocupadoRef.current = false;
         setLoading(false);
         setRefreshing(false);
       }
     },
-    [tamanhoPagina],
+    [tamanhoPagina, cache],
   );
+
+  // Hidratação da primeira página (ver `cache` em Opcoes).
+  useEffect(() => {
+    if (!cache) return;
+    let ativo = true;
+    lerCache<T[]>(cache).then((guardado) => {
+      if (!ativo || !guardado?.length || respondeuRef.current) return;
+      setItens(guardado);
+      temConteudoRef.current = true;
+      setLoading(false);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [cache]);
 
   // A ref mantém `recomecar` alcançável sem virar dependência de quem o chama.
   // `useRef(recomecar)` já nasce com a primeira versão, então o efeito de carga
@@ -138,6 +178,7 @@ export function useListaPaginada<T>(
       const pagina = await carregarRef.current(proxima);
       paginaRef.current = proxima;
       setItens((atuais) => [...atuais, ...pagina]);
+      temConteudoRef.current = true;
       setTemMais(pagina.length >= tamanhoPagina);
     } catch (e: any) {
       setError(e?.message ?? 'Não foi possível carregar mais itens.');

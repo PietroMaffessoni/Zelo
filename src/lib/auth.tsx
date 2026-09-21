@@ -2,6 +2,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
+import { limparCache } from '@/lib/cache';
 import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Membership, Papel, PerfilContato, Profile, Vinculo } from '@/lib/types';
 
@@ -208,6 +209,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
     await supabase.auth.signOut();
     await AsyncStorage.removeItem(CHAVE_CONDOMINIO);
+    await limparCache();
     selecionadoRef.current = null;
     return {};
   }, []);
@@ -215,6 +217,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     await AsyncStorage.removeItem(CHAVE_CONDOMINIO);
+    // O próximo usuário do aparelho não pode abrir o app e encontrar os
+    // comunicados do condomínio anterior guardados em disco.
+    await limparCache();
     selecionadoRef.current = null;
   }, []);
 
