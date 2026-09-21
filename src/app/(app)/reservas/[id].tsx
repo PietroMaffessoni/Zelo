@@ -5,6 +5,7 @@ import { Linking, Pressable, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Badge, Button, Card, DataRow, IconButton, Input, Loading, Screen, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import { useConfirm } from '@/lib/confirm';
@@ -23,6 +24,7 @@ export default function ReservaDetalhe() {
   const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, papel } = useAuth();
+  const acao = useAcao();
   const confirmar = useConfirm();
   const toast = useToast();
   const gestor = isGestor(papel);
@@ -66,23 +68,27 @@ export default function ReservaDetalhe() {
     const doc = await escolherDocumento();
     if (!doc) return;
     setEnviandoComprovante(true);
-    try {
-      const path = await enviarArquivo('financeiro', doc.uri, data.reserva.condominio_id, doc.nome);
-      await anexarComprovanteReserva(id, path);
-      await refetch();
-    } catch {
-      // silencioso — o usuário pode tentar de novo
-    }
-    setEnviandoComprovante(false);
+    // O envio falhava em silêncio: o morador anexava o comprovante, o upload
+    // quebrava e a tela voltava ao normal como se tivesse dado certo.
+    const reserva = data.reserva;
+    const ok = await acao(
+      async () => {
+        const path = await enviarArquivo('financeiro', doc.uri, reserva.condominio_id, doc.nome);
+        await anexarComprovanteReserva(id, path);
+      },
+      { erro: 'Não foi possível enviar o comprovante.', sempre: () => setEnviandoComprovante(false) },
+    );
+    if (ok) refetch();
   }
 
   async function abrirComprovante(path: string) {
-    try {
-      const url = await urlAssinada('financeiro', path);
-      Linking.openURL(url);
-    } catch {
-      // silencioso
-    }
+    await acao(
+      async () => {
+        const url = await urlAssinada('financeiro', path);
+        await Linking.openURL(url);
+      },
+      { erro: 'Não foi possível abrir o comprovante.' },
+    );
   }
 
   if (loading || !data?.reserva)
@@ -245,6 +251,7 @@ function VistoriaSecao({
   onSalvo: () => void;
 }) {
   const { palette } = useAppTheme();
+  const acao = useAcao();
   const meta = tipoVistoriaLabel[tipo];
   const [editando, setEditando] = useState(false);
   const [itens, setItens] = useState<ItemVistoria[]>(vistoria?.itens ?? []);
@@ -275,8 +282,11 @@ function VistoriaSecao({
   async function salvar() {
     if (!userId) return;
     setSalvando(true);
-    await salvarVistoria({ reserva_id: reservaId, condominio_id: condominioId, tipo, itens, respondida_por: userId });
-    setSalvando(false);
+    const ok = await acao(
+      () => salvarVistoria({ reserva_id: reservaId, condominio_id: condominioId, tipo, itens, respondida_por: userId }),
+      { sempre: () => setSalvando(false) },
+    );
+    if (!ok) return;
     setEditando(false);
     onSalvo();
   }

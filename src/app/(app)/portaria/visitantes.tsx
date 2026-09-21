@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { AppHeader, AppText, Button, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { listarUnidades, listarVisitantesAutorizados, registrarEntradaVisitante } from '@/lib/db';
 import { useFetch } from '@/lib/useFetch';
@@ -11,6 +12,7 @@ import { useFetch } from '@/lib/useFetch';
 export default function PortariaVisitantes() {
   const router = useRouter();
   const { condominioId, user } = useAuth();
+  const acao = useAcao();
   const [processando, setProcessando] = useState<string | null>(null);
 
   const { data, loading, refreshing, refetch } = useFetch(async () => {
@@ -36,16 +38,15 @@ export default function PortariaVisitantes() {
   async function registrarEntrada(autorizacaoId: string, unidadeId: string, nome: string, documento: string | null) {
     if (!condominioId || !user) return;
     setProcessando(autorizacaoId);
-    await registrarEntradaVisitante({
+    const ok = await acao(() => registrarEntradaVisitante({
       condominio_id: condominioId,
       unidade_id: unidadeId,
       autorizacao_id: autorizacaoId,
       nome_visitante: nome,
       documento,
       registrado_por: user.id,
-    });
-    setProcessando(null);
-    refetch();
+    }), { sempre: () => setProcessando(null) });
+    if (ok) refetch();
   }
 
   return (

@@ -4,6 +4,7 @@ import { View } from 'react-native';
 
 import { AppHeader, AppText, Avatar, Badge, Card, Divider, ListItem, Screen, SectionHeader } from '@/components/ui';
 import { spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
@@ -15,6 +16,7 @@ export default function Mais() {
   const router = useRouter();
   const confirmar = useConfirm();
   const { profile, papel, membershipAtual, memberships, condominioId, recarregar, signOut } = useAuth();
+  const acao = useAcao();
   const gestor = ehGestor(papel);
   const conselho = ehConselho(papel);
   const porteiro = papel === 'porteiro';
@@ -37,17 +39,19 @@ export default function Mais() {
   async function gerarCodigoDaPortaria() {
     if (!condominioId) return;
     setGerandoCodigo(true);
-    await gerarCodigoPortaria(condominioId);
-    await recarregar();
-    setGerandoCodigo(false);
+    await acao(async () => {
+      await gerarCodigoPortaria(condominioId);
+      await recarregar();
+    }, { sempre: () => setGerandoCodigo(false) });
   }
 
   async function gerarCodigoDoZelador() {
     if (!condominioId) return;
     setGerandoZelador(true);
-    await gerarCodigoZelador(condominioId);
-    await recarregar();
-    setGerandoZelador(false);
+    await acao(async () => {
+      await gerarCodigoZelador(condominioId);
+      await recarregar();
+    }, { sempre: () => setGerandoZelador(false) });
   }
 
   return (

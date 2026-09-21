@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Badge, Button, CarregarMais, EmptyState, Fab, Loading, Panel, Row, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { alternarApoioProposta, listarPropostas, responderProposta } from '@/lib/db';
 import { primeiroNome, tempoRelativo } from '@/lib/format';
@@ -17,6 +18,7 @@ export default function Propostas() {
   const router = useRouter();
   const { palette } = useAppTheme();
   const { condominioId, user, papel } = useAuth();
+  const acao = useAcao();
   const gestor = isGestor(papel);
 
   const {
@@ -36,16 +38,14 @@ export default function Propostas() {
   async function apoiar(p: PropostaPauta) {
     if (!user) return;
     setOcupado(p.id);
-    await alternarApoioProposta(p.id, user.id, !p.apoiada);
-    await refetch();
-    setOcupado(null);
+    const ok = await acao(() => alternarApoioProposta(p.id, user.id, !p.apoiada), { sempre: () => setOcupado(null) });
+    if (ok) refetch();
   }
 
   async function decidir(p: PropostaPauta, status: 'aprovada' | 'recusada') {
     setOcupado(p.id);
-    await responderProposta(p.id, status);
-    await refetch();
-    setOcupado(null);
+    const ok = await acao(() => responderProposta(p.id, status), { sempre: () => setOcupado(null) });
+    if (ok) refetch();
   }
 
   return (

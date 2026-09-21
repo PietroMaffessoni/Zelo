@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, IconButton, Input, Loading, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import {
@@ -29,6 +30,7 @@ export default function UnidadeDetalhe() {
   const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { condominioId, membershipAtual, papel } = useAuth();
+  const acao = useAcao();
   const gestor = isGestor(papel);
   const souDaUnidade = membershipAtual?.unidade_id === id;
   const podeGerenciar = gestor || souDaUnidade;
@@ -50,54 +52,59 @@ export default function UnidadeDetalhe() {
 
   async function mudarVinculo(membershipId: string, v: Vinculo) {
     setMudandoVinculo(membershipId);
-    await atualizarVinculoMorador(membershipId, v);
-    setMudandoVinculo(null);
-    refetch();
+    const ok = await acao(() => atualizarVinculoMorador(membershipId, v), { sempre: () => setMudandoVinculo(null) });
+    if (ok) refetch();
   }
 
   async function remover(membershipId: string) {
     setRemovendoMorador(membershipId);
-    await removerMoradorDaUnidade(membershipId);
-    setRemovendoMorador(null);
-    refetch();
+    const ok = await acao(() => removerMoradorDaUnidade(membershipId), { sempre: () => setRemovendoMorador(null) });
+    if (ok) refetch();
   }
 
   async function alternarConselheiro(membershipId: string, atual: 'morador' | 'conselheiro') {
     setMudandoVinculo(membershipId);
-    await atualizarPapelMorador(membershipId, atual === 'conselheiro' ? 'morador' : 'conselheiro');
-    setMudandoVinculo(null);
-    refetch();
+    const ok = await acao(() => atualizarPapelMorador(membershipId, atual === 'conselheiro' ? 'morador' : 'conselheiro'), { sempre: () => setMudandoVinculo(null) });
+    if (ok) refetch();
   }
 
   async function salvarDependente() {
     if (!nomeDep.trim() || !condominioId) return;
     setSalvandoDep(true);
-    await criarDependente({
-      condominio_id: condominioId,
-      unidade_id: id,
-      nome: nomeDep.trim(),
-      parentesco: parentesco.trim() || null,
-    });
+    const ok = await acao(
+      () =>
+        criarDependente({
+          condominio_id: condominioId,
+          unidade_id: id,
+          nome: nomeDep.trim(),
+          parentesco: parentesco.trim() || null,
+        }),
+      { sempre: () => setSalvandoDep(false) },
+    );
+    if (!ok) return;
     setNomeDep('');
     setParentesco('');
     setFormDependente(false);
-    setSalvandoDep(false);
     refetch();
   }
 
   async function salvarPet() {
     if (!nomePet.trim() || !condominioId) return;
     setSalvandoPet(true);
-    await criarPet({
-      condominio_id: condominioId,
-      unidade_id: id,
-      nome: nomePet.trim(),
-      especie: especiePet,
-    });
+    const ok = await acao(
+      () =>
+        criarPet({
+          condominio_id: condominioId,
+          unidade_id: id,
+          nome: nomePet.trim(),
+          especie: especiePet,
+        }),
+      { sempre: () => setSalvandoPet(false) },
+    );
+    if (!ok) return;
     setNomePet('');
     setEspeciePet('cachorro');
     setFormPet(false);
-    setSalvandoPet(false);
     refetch();
   }
 
@@ -331,6 +338,7 @@ function FichaMorador({
   onSaved: () => void;
 }) {
   const { palette } = useAppTheme();
+  const acao = useAcao();
   const [editando, setEditando] = useState(false);
   const [cpf, setCpf] = useState(membership.cpf ?? '');
   const [rg, setRg] = useState(membership.rg ?? '');
@@ -341,11 +349,15 @@ function FichaMorador({
 
   async function salvar() {
     setSalvando(true);
-    await atualizarDadosCadastrais(membership.id, {
-      cpf: cpf.trim() || null,
-      rg: rg.trim() || null,
-    });
-    setSalvando(false);
+    const ok = await acao(
+      () =>
+        atualizarDadosCadastrais(membership.id, {
+          cpf: cpf.trim() || null,
+          rg: rg.trim() || null,
+        }),
+      { sempre: () => setSalvando(false) },
+    );
+    if (!ok) return;
     setEditando(false);
     onSaved();
   }

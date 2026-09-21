@@ -6,6 +6,7 @@ import { View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Button, CarregarMais, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import { alterarStatusAchado, listarAchados } from '@/lib/db';
@@ -20,6 +21,7 @@ export default function AchadosLista() {
   const { palette } = useAppTheme();
   const router = useRouter();
   const { condominioId, papel, user } = useAuth();
+  const acao = useAcao();
   const gestor = isGestor(papel);
   const [processando, setProcessando] = useState<string | null>(null);
 
@@ -34,9 +36,8 @@ export default function AchadosLista() {
 
   async function marcarDevolvido(a: AchadoPerdido) {
     setProcessando(a.id);
-    await alterarStatusAchado(a.id, 'devolvido');
-    setProcessando(null);
-    refetch();
+    const ok = await acao(() => alterarStatusAchado(a.id, 'devolvido'), { sempre: () => setProcessando(null) });
+    if (ok) refetch();
   }
 
   return (

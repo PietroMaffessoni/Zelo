@@ -5,6 +5,7 @@ import { View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Avatar, Button, EmptyState, ErrorState, Fab, Input, MetaLine, Panel, Row, Screen, SectionHeader, SkeletonList } from '@/components/ui';
 import { spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { aprovarMembership, listarMembershipsPendentes, listarMoradores, listarUnidades, recusarMembership } from '@/lib/db';
@@ -27,6 +28,7 @@ export default function UnidadesLista() {
   const { palette } = useAppTheme();
   const confirmar = useConfirm();
   const { condominioId } = useAuth();
+  const acao = useAcao();
   const [processando, setProcessando] = useState<string | null>(null);
   const [busca, setBusca] = useState('');
 
@@ -61,9 +63,8 @@ export default function UnidadesLista() {
 
   async function aprovar(id: string) {
     setProcessando(id);
-    await aprovarMembership(id);
-    setProcessando(null);
-    refetch();
+    const ok = await acao(() => aprovarMembership(id), { sempre: () => setProcessando(null) });
+    if (ok) refetch();
   }
 
   async function recusar(id: string) {
@@ -76,9 +77,8 @@ export default function UnidadesLista() {
     });
     if (!ok) return;
     setProcessando(id);
-    await recusarMembership(id);
-    setProcessando(null);
-    refetch();
+    const recusou = await acao(() => recusarMembership(id), { sempre: () => setProcessando(null) });
+    if (recusou) refetch();
   }
 
   return (

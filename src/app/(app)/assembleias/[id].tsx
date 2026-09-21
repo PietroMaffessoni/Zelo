@@ -4,6 +4,7 @@ import { Pressable, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Badge, Button, Card, Divider, IconButton, Input, Loading, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import {
@@ -25,6 +26,7 @@ export default function AssembleiaDetalhe() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { user, papel, condominioId, membershipAtual } = useAuth();
+  const acao = useAcao();
   const gestor = isGestor(papel);
   const unidadeId = membershipAtual?.unidade_id ?? null;
 
@@ -53,13 +55,14 @@ export default function AssembleiaDetalhe() {
   async function votarNaOpcao(pauta: AssembleiaPauta, opcaoId: string) {
     if (!condominioId || !user || !unidadeId) return;
     setVotando(opcaoId);
-    try {
-      await votar({ pauta_id: pauta.id, opcao_id: opcaoId, condominio_id: condominioId, unidade_id: unidadeId, user_id: user.id });
-      refetch();
-    } catch {
-      // erro exibido implicitamente via estado não atualizado; unidade já votou nessa pauta
-    }
-    setVotando(null);
+    // O erro mais comum aqui é a unidade já ter votado (unique pauta+unidade) —
+    // e antes ele era engolido: o voto simplesmente não acontecia e nada era
+    // dito, o que num app de assembleia é grave.
+    const ok = await acao(
+      () => votar({ pauta_id: pauta.id, opcao_id: opcaoId, condominio_id: condominioId, unidade_id: unidadeId, user_id: user.id }),
+      { sempre: () => setVotando(null) },
+    );
+    if (ok) refetch();
   }
 
   function alterarOpcaoPauta(i: number, texto: string) {
@@ -69,26 +72,32 @@ export default function AssembleiaDetalhe() {
   async function salvarPauta() {
     if (!tituloPauta.trim() || !condominioId) return;
     setSalvandoPauta(true);
-    await adicionarPauta({
-      assembleia_id: id,
-      condominio_id: condominioId,
-      titulo: tituloPauta.trim(),
-      descricao: descricaoPauta.trim() || null,
-      opcoes: opcoesPauta.map((o) => o.trim()).filter(Boolean),
-    });
+    const ok = await acao(
+      () =>
+        adicionarPauta({
+          assembleia_id: id,
+          condominio_id: condominioId,
+          titulo: tituloPauta.trim(),
+          descricao: descricaoPauta.trim() || null,
+          opcoes: opcoesPauta.map((o) => o.trim()).filter(Boolean),
+        }),
+      { sempre: () => setSalvandoPauta(false) },
+    );
+    if (!ok) return;
     setTituloPauta('');
     setDescricaoPauta('');
     setOpcoesPauta(['', '']);
     setFormPauta(false);
-    setSalvandoPauta(false);
     refetch();
   }
 
   async function encerrar() {
     setEncerrando(true);
-    await encerrarAssembleia(id);
-    setEncerrando(false);
-    refetch();
+    const ok = await acao(() => encerrarAssembleia(id), {
+      sucesso: 'Assembleia encerrada.',
+      sempre: () => setEncerrando(false),
+    });
+    if (ok) refetch();
   }
 
   if (loading || !data?.assembleia)

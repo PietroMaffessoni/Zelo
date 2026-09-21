@@ -6,6 +6,7 @@ import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Card, DataRow, Loading, Screen, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import { atualizarStatusLancamento, getLancamento } from '@/lib/db';
@@ -21,6 +22,7 @@ export default function FinanceiroDetalhe() {
   const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { papel } = useAuth();
+  const acao = useAcao();
   const gestor = isGestor(papel);
   const [mudando, setMudando] = useState(false);
   const [abrindoAnexo, setAbrindoAnexo] = useState(false);
@@ -30,9 +32,10 @@ export default function FinanceiroDetalhe() {
   async function mudarStatus(novo: StatusFinanceiro) {
     if (!lancamento || novo === lancamento.status) return;
     setMudando(true);
-    await atualizarStatusLancamento(id, novo);
-    setMudando(false);
-    refetch();
+    const ok = await acao(() => atualizarStatusLancamento(id, novo), {
+      sempre: () => setMudando(false),
+    });
+    if (ok) refetch();
   }
 
   async function abrirAnexo() {

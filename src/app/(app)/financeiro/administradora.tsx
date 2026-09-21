@@ -4,6 +4,7 @@ import { Pressable, Share, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Badge, Button, Card, EmptyState, IconButton, Input, Loading, MetaLine, Panel, Row, Screen, Segmented } from '@/components/ui';
 import { spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { atualizarAdministradora, atualizarStatusLancamento, listarLancamentos, marcarDespesasEnviadas } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
@@ -19,6 +20,7 @@ export default function ContasAdministradora() {
   const { palette } = useAppTheme();
   const toast = useToast();
   const { condominioId, membershipAtual, recarregar } = useAuth();
+  const acao = useAcao();
   const cond = membershipAtual?.condominio;
 
   const [aba, setAba] = useState<Aba>('a_enviar');
@@ -56,14 +58,17 @@ export default function ContasAdministradora() {
   async function salvarAdministradora() {
     if (!condominioId) return;
     setSalvandoAdm(true);
-    await atualizarAdministradora(condominioId, {
-      administradora: nomeAdm.trim() || null,
-      administradora_contato: contatoAdm.trim() || null,
-    });
-    await recarregar();
-    setSalvandoAdm(false);
-    setEditandoAdm(false);
-    toast.sucesso('Administradora atualizada ✓');
+    const ok = await acao(
+      async () => {
+        await atualizarAdministradora(condominioId, {
+          administradora: nomeAdm.trim() || null,
+          administradora_contato: contatoAdm.trim() || null,
+        });
+        await recarregar();
+      },
+      { sucesso: 'Administradora atualizada ✓', sempre: () => setSalvandoAdm(false) },
+    );
+    if (ok) setEditandoAdm(false);
   }
 
   function resumoTexto(itens: LancamentoFinanceiro[]): string {
@@ -95,16 +100,14 @@ export default function ContasAdministradora() {
 
   async function marcarPaga(id: string) {
     setProcessando(id);
-    await atualizarStatusLancamento(id, 'pago');
-    setProcessando(null);
-    refetch();
+    const ok = await acao(() => atualizarStatusLancamento(id, 'pago'), { sempre: () => setProcessando(null) });
+    if (ok) refetch();
   }
 
   async function reabrir(id: string) {
     setProcessando(id);
-    await marcarDespesasEnviadas([id], false);
-    setProcessando(null);
-    refetch();
+    const ok = await acao(() => marcarDespesasEnviadas([id], false), { sempre: () => setProcessando(null) });
+    if (ok) refetch();
   }
 
   return (

@@ -6,6 +6,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { Acoes, AppHeader, AppText, Badge, Button, EmptyState, Loading, MetaLine, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAppTheme } from '@/lib/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { alterarStatusReserva, listarAreas, listarReservas } from '@/lib/db';
 import { formatData, formatHora, primeiroNome } from '@/lib/format';
@@ -17,6 +18,7 @@ export default function ReservasTab() {
   const router = useRouter();
   const { palette } = useAppTheme();
   const { condominioId, papel } = useAuth();
+  const acao = useAcao();
   const gestor = isGestor(papel);
   const [processando, setProcessando] = useState<string | null>(null);
 
@@ -34,9 +36,8 @@ export default function ReservasTab() {
 
   async function responder(id: string, status: 'aprovada' | 'rejeitada') {
     setProcessando(id);
-    await alterarStatusReserva(id, status);
-    setProcessando(null);
-    refetch();
+    const ok = await acao(() => alterarStatusReserva(id, status), { sempre: () => setProcessando(null) });
+    if (ok) refetch();
   }
 
   return (

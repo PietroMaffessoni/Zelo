@@ -6,6 +6,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppHeader, AppText, Avatar, Badge, Input, Loading, MetaLine, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import { alterarStatusChamado, comentarChamado, getChamado, listarEventos } from '@/lib/db';
@@ -21,6 +22,7 @@ export default function ChamadoDetalhe() {
   const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { user, papel } = useAuth();
+  const acao = useAcao();
   const gestor = isGestor(papel);
   const [comentario, setComentario] = useState('');
   const [enviando, setEnviando] = useState(false);
@@ -48,9 +50,10 @@ export default function ChamadoDetalhe() {
   async function mudarStatus(novo: ChamadoStatus) {
     if (!user || !chamado || novo === chamado.status) return;
     setMudando(true);
-    await alterarStatusChamado(id, user.id, novo);
-    setMudando(false);
-    refetch();
+    const ok = await acao(() => alterarStatusChamado(id, user.id, novo), {
+      sempre: () => setMudando(false),
+    });
+    if (ok) refetch();
   }
 
   if (loading || !chamado)

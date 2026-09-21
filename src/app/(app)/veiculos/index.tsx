@@ -5,6 +5,7 @@ import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
 import { listarVeiculos, removerVeiculo } from '@/lib/db';
@@ -15,6 +16,7 @@ export default function VeiculosLista() {
   const { palette } = useAppTheme();
   const router = useRouter();
   const { condominioId, membershipAtual } = useAuth();
+  const acao = useAcao();
   const unidadeId = membershipAtual?.unidade_id ?? null;
   const [removendo, setRemovendo] = useState<string | null>(null);
 
@@ -27,9 +29,8 @@ export default function VeiculosLista() {
 
   async function remover(id: string) {
     setRemovendo(id);
-    await removerVeiculo(id);
-    setRemovendo(null);
-    refetch();
+    const ok = await acao(() => removerVeiculo(id), { sempre: () => setRemovendo(null) });
+    if (ok) refetch();
   }
 
   return (

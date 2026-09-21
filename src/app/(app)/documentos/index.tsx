@@ -6,6 +6,7 @@ import { View } from 'react-native';
 
 import { AppHeader, AppText, CarregarMais, EmptyState, Fab, IconButton, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { spacing } from '@/constants/theme';
+import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { listarDocumentos, removerDocumento } from '@/lib/db';
 import { formatData } from '@/lib/format';
@@ -24,6 +25,7 @@ function formatTamanho(bytes?: number | null): string {
 export default function Documentos() {
   const router = useRouter();
   const { condominioId, papel } = useAuth();
+  const acao = useAcao();
   const gestor = isGestor(papel);
   const [abrindoId, setAbrindoId] = useState<string | null>(null);
   const [removendoId, setRemovendoId] = useState<string | null>(null);
@@ -57,9 +59,8 @@ export default function Documentos() {
 
   async function remover(id: string) {
     setRemovendoId(id);
-    await removerDocumento(id);
-    setRemovendoId(null);
-    refetch();
+    const ok = await acao(() => removerDocumento(id), { sempre: () => setRemovendoId(null) });
+    if (ok) refetch();
   }
 
   function renderLinha(d: Documento, comCategoria: boolean) {
