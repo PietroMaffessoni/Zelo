@@ -417,3 +417,53 @@ export function ActionRow({
     </Pressable>
   );
 }
+
+/**
+ * Rodapé de lista paginada: "Carregar mais".
+ *
+ * Fica fora do `Panel` de propósito — é um controle da lista, não um registro
+ * dela, e dentro do painel viraria mais uma linha entre os dados. Some quando
+ * não há mais o que buscar, para a lista terminar em silêncio em vez de terminar
+ * num botão morto.
+ */
+export function CarregarMais({
+  temMais,
+  carregando,
+  onPress,
+}: {
+  temMais: boolean;
+  carregando: boolean;
+  onPress: () => void;
+}) {
+  const { palette } = useAppTheme();
+  if (!temMais) return null;
+
+  return (
+    <Pressable
+      onPress={onPress}
+      disabled={carregando}
+      accessibilityRole="button"
+      accessibilityLabel="Carregar mais itens"
+      accessibilityState={{ busy: carregando }}
+      style={({ hovered, pressed, focused }: any) => [
+        {
+          marginTop: spacing.md,
+          minHeight: TOQUE_MINIMO,
+          flexDirection: 'row',
+          alignItems: 'center',
+          justifyContent: 'center',
+          gap: spacing.sm,
+          borderRadius: radius.md,
+          backgroundColor: hovered || pressed ? palette.surfaceAlt : 'transparent',
+          opacity: carregando ? 0.6 : 1,
+        },
+        focusRing(focused, palette.primary),
+      ]}
+    >
+      <Ionicons name={carregando ? 'hourglass-outline' : 'chevron-down'} size={16} color={palette.primary} />
+      <AppText variant="label" color="primary">
+        {carregando ? 'Carregando...' : 'Carregar mais'}
+      </AppText>
+    </Pressable>
+  );
+}

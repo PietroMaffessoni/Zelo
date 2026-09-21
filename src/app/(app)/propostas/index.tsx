@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { Acoes, AppHeader, AppText, Badge, Button, EmptyState, Fab, Loading, Panel, Row, Screen } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Badge, Button, CarregarMais, EmptyState, Fab, Loading, Panel, Row, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { alternarApoioProposta, listarPropostas, responderProposta } from '@/lib/db';
@@ -11,7 +11,7 @@ import { primeiroNome, tempoRelativo } from '@/lib/format';
 import { statusProposta } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
 import { isGestor, type PropostaPauta } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 export default function Propostas() {
   const router = useRouter();
@@ -19,12 +19,19 @@ export default function Propostas() {
   const { condominioId, user, papel } = useAuth();
   const gestor = isGestor(papel);
 
-  const { data, loading, refreshing, refetch } = useFetch(
-    async () => (condominioId && user ? listarPropostas(condominioId, user.id) : []),
+  const {
+    itens: propostas,
+    loading,
+    refreshing,
+    carregandoMais,
+    temMais,
+    carregarMais,
+    refetch,
+  } = useListaPaginada(
+    (pagina) => (condominioId && user ? listarPropostas(condominioId, user.id, pagina) : Promise.resolve([])),
     [condominioId, user?.id],
   );
   const [ocupado, setOcupado] = useState<string | null>(null);
-  const propostas = data ?? [];
 
   async function apoiar(p: PropostaPauta) {
     if (!user) return;
@@ -117,6 +124,8 @@ export default function Propostas() {
             })}
           </Panel>
         )}
+        {/* Rodapé de paginação: some sozinho quando não há mais o que buscar. */}
+        <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
       </Screen>
       <Fab icon="add" label="Propor" onPress={() => router.push('/(app)/propostas/nova')} />
     </View>

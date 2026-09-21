@@ -1,14 +1,14 @@
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, CarregarMais, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarInfracoes } from '@/lib/db';
 import { formatData, formatMoeda } from '@/lib/format';
 import { statusInfracao, tipoInfracaoLabel } from '@/lib/labels';
 import { isConselho, isGestor } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 export default function InfracoesLista() {
   const router = useRouter();
@@ -16,12 +16,21 @@ export default function InfracoesLista() {
   const gestor = isGestor(papel);
   const conselho = isConselho(papel);
 
-  const { data, loading, refreshing, refetch } = useFetch(
-    async () => (condominioId ? listarInfracoes(condominioId, conselho ? null : membershipAtual?.unidade_id) : []),
+  const {
+    itens: infracoes,
+    loading,
+    refreshing,
+    carregandoMais,
+    temMais,
+    carregarMais,
+    refetch,
+  } = useListaPaginada(
+    (pagina) =>
+      condominioId
+        ? listarInfracoes(condominioId, conselho ? null : membershipAtual?.unidade_id, pagina)
+        : Promise.resolve([]),
     [condominioId, conselho, membershipAtual?.unidade_id],
   );
-
-  const infracoes = data ?? [];
 
   return (
     <View style={{ flex: 1 }}>
@@ -80,6 +89,8 @@ export default function InfracoesLista() {
             })}
           </Panel>
         )}
+        {/* Rodapé de paginação: some sozinho quando não há mais o que buscar. */}
+        <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
       </Screen>
       {gestor ? <Fab icon="add" label="Aplicar" onPress={() => router.push('/(app)/infracoes/nova')} /> : null}
     </View>

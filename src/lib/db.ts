@@ -1,4 +1,5 @@
 import { supabase } from '@/lib/supabase';
+import { faixaDaPagina } from '@/lib/useListaPaginada';
 import type {
   AchadoPerdido,
   AchadoStatus,
@@ -60,34 +61,28 @@ function unwrap<T>({ data, error }: { data: T | null; error: any }): T {
 }
 
 // ---------------------------------------------------------------- Comunicados
-/**
- * Grupo de destaque: fixado+urgente > fixado > urgente > demais. Um urgente sobe
- * acima de qualquer aviso comum, por mais recente que o outro seja, e a urgência
- * também desempata entre os que o síndico fixou à mão.
- */
-function grupoComunicado(c: Comunicado): number {
-  const urgente = c.prioridade === 'alta';
-  if (c.fixado) return urgente ? 0 : 1;
-  return urgente ? 2 : 3;
-}
-
-export async function listarComunicados(condominioId: string, userId: string): Promise<Comunicado[]> {
+export async function listarComunicados(
+  condominioId: string,
+  userId: string,
+  pagina = 0,
+): Promise<Comunicado[]> {
   const [comRes, leiRes] = await Promise.all([
     supabase
       .from('comunicados')
       .select('*, autor:profiles!autor_id(*)')
       .eq('condominio_id', condominioId)
-      .order('created_at', { ascending: false }),
+      // `ordem_destaque` é coluna gerada no banco (fixado+urgente > fixado >
+      // urgente > demais) justamente para este ORDER BY existir no servidor:
+      // ordenar no cliente só ordenaria dentro da página, e um aviso fixado que
+      // caísse na página 3 apareceria abaixo de um comum da página 1.
+      .order('ordem_destaque', { ascending: true })
+      .order('created_at', { ascending: false })
+      .range(...faixaDaPagina(pagina)),
     supabase.from('comunicado_leituras').select('comunicado_id').eq('user_id', userId),
   ]);
   const comunicados = unwrap(comRes) as Comunicado[];
   const lidos = new Set((leiRes.data ?? []).map((l: any) => l.comunicado_id));
-  // O agrupamento não é uma coluna, então não dá para pedir ao PostgREST: ordena
-  // aqui. O sort do JS é estável, então dentro de cada grupo vale o created_at
-  // desc que já veio do servidor.
-  return comunicados
-    .map((c) => ({ ...c, lido: lidos.has(c.id) }))
-    .sort((a, b) => grupoComunicado(a) - grupoComunicado(b));
+  return comunicados.map((c) => ({ ...c, lido: lidos.has(c.id) }));
 }
 
 export async function getComunicado(id: string): Promise<Comunicado> {
@@ -118,13 +113,14 @@ export async function fixarComunicado(id: string, fixado: boolean) {
 }
 
 // ------------------------------------------------------------------- Chamados
-export async function listarChamados(condominioId: string): Promise<Chamado[]> {
+export async function listarChamados(condominioId: string, pagina = 0): Promise<Chamado[]> {
   return unwrap(
     await supabase
       .from('chamados')
       .select('*, autor:profiles!autor_id(*), responsavel:profiles!responsavel_id(*), unidade:unidades(*)')
       .eq('condominio_id', condominioId)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .range(...faixaDaPagina(pagina)),
   ) as Chamado[];
 }
 
@@ -236,11 +232,17 @@ export async function atualizarArea(id: string, patch: Partial<AreaComum>) {
 }
 
 export async function listarReservas(condominioId: string): Promise<Reserva[]> {
+  // Sem paginação de propósito: a tela só mostra reserva futura ou pendente de
+  // aprovação, e paginar em ordem crescente entregaria primeiro as mais antigas
+  // — exatamente as que seriam descartadas. O recorte desce para o servidor, o
+  // que já limita a consulta pela natureza do dado em vez de por um `range`.
+  const agora = new Date().toISOString();
   return unwrap(
     await supabase
       .from('reservas')
       .select('*, area:areas_comuns(*), morador:profiles(*), unidade:unidades(*)')
       .eq('condominio_id', condominioId)
+      .or(`fim.gte.${agora},status.eq.pendente`)
       .order('inicio', { ascending: true }),
   ) as Reserva[];
 }
@@ -348,13 +350,14 @@ export async function salvarVistoria(input: {
 }
 
 // ------------------------------------------------------------- Achados e perdidos
-export async function listarAchados(condominioId: string): Promise<AchadoPerdido[]> {
+export async function listarAchados(condominioId: string, pagina = 0): Promise<AchadoPerdido[]> {
   return unwrap(
     await supabase
       .from('achados_perdidos')
       .select('*')
       .eq('condominio_id', condominioId)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .range(...faixaDaPagina(pagina)),
   ) as AchadoPerdido[];
 }
 
@@ -375,13 +378,14 @@ export async function alterarStatusAchado(id: string, status: AchadoStatus) {
 }
 
 // ----------------------------------------------------- Central do morador (solicitações)
-export async function listarSolicitacoes(condominioId: string): Promise<Solicitacao[]> {
+export async function listarSolicitacoes(condominioId: string, pagina = 0): Promise<Solicitacao[]> {
   return unwrap(
     await supabase
       .from('solicitacoes')
       .select('*, morador:profiles(*)')
       .eq('condominio_id', condominioId)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .range(...faixaDaPagina(pagina)),
   ) as Solicitacao[];
 }
 
@@ -584,14 +588,18 @@ export async function registrarEntradaVisitante(input: {
   return registro;
 }
 
-export async function listarEncomendas(condominioId: string, unidadeId?: string): Promise<Encomenda[]> {
+export async function listarEncomendas(
+  condominioId: string,
+  unidadeId?: string,
+  pagina = 0,
+): Promise<Encomenda[]> {
   let query = supabase
     .from('encomendas')
     .select('*, unidade:unidades(*)')
     .eq('condominio_id', condominioId)
     .order('created_at', { ascending: false });
   if (unidadeId) query = query.eq('unidade_id', unidadeId);
-  return unwrap(await query) as Encomenda[];
+  return unwrap(await query.range(...faixaDaPagina(pagina))) as Encomenda[];
 }
 
 export async function criarEncomenda(input: {
@@ -698,7 +706,7 @@ export async function resumoPortaria(condominioId: string): Promise<ResumoPortar
 // ---------------------------------------------------------------------- Financeiro
 export async function listarLancamentos(
   condominioId: string,
-  opts?: { tipo?: TipoLancamento; unidadeId?: string },
+  opts?: { tipo?: TipoLancamento; unidadeId?: string; pagina?: number },
 ): Promise<LancamentoFinanceiro[]> {
   let query = supabase
     .from('lancamentos_financeiros')
@@ -707,7 +715,7 @@ export async function listarLancamentos(
     .order('vencimento', { ascending: false });
   if (opts?.tipo) query = query.eq('tipo', opts.tipo);
   if (opts?.unidadeId) query = query.eq('unidade_id', opts.unidadeId);
-  return unwrap(await query) as LancamentoFinanceiro[];
+  return unwrap(await query.range(...faixaDaPagina(opts?.pagina ?? 0))) as LancamentoFinanceiro[];
 }
 
 export async function getLancamento(id: string): Promise<LancamentoFinanceiro> {
@@ -843,14 +851,18 @@ export async function atualizarAdministradora(
 }
 
 // ---------------------------------------------------------------------- Documentos
-export async function listarDocumentos(condominioId: string, categoria?: CategoriaDocumento): Promise<Documento[]> {
+export async function listarDocumentos(
+  condominioId: string,
+  categoria?: CategoriaDocumento,
+  pagina = 0,
+): Promise<Documento[]> {
   let query = supabase
     .from('documentos')
     .select('*')
     .eq('condominio_id', condominioId)
     .order('created_at', { ascending: false });
   if (categoria) query = query.eq('categoria', categoria);
-  return unwrap(await query) as Documento[];
+  return unwrap(await query.range(...faixaDaPagina(pagina))) as Documento[];
 }
 
 export async function criarDocumento(input: {
@@ -871,13 +883,14 @@ export async function removerDocumento(id: string) {
 }
 
 // ------------------------------------------------------------------ Assembleias
-export async function listarAssembleias(condominioId: string): Promise<Assembleia[]> {
+export async function listarAssembleias(condominioId: string, pagina = 0): Promise<Assembleia[]> {
   return unwrap(
     await supabase
       .from('assembleias')
       .select('*')
       .eq('condominio_id', condominioId)
-      .order('data_hora', { ascending: false }),
+      .order('data_hora', { ascending: false })
+      .range(...faixaDaPagina(pagina)),
   ) as Assembleia[];
 }
 
@@ -1144,14 +1157,18 @@ export async function registrarManutencao(input: {
 }
 
 // -------------------------------------------------------------- Infrações (multas/advertências)
-export async function listarInfracoes(condominioId: string, unidadeId?: string | null): Promise<Infracao[]> {
+export async function listarInfracoes(
+  condominioId: string,
+  unidadeId?: string | null,
+  pagina = 0,
+): Promise<Infracao[]> {
   let query = supabase
     .from('infracoes')
     .select('*, unidade:unidades(*)')
     .eq('condominio_id', condominioId)
     .order('created_at', { ascending: false });
   if (unidadeId) query = query.eq('unidade_id', unidadeId);
-  return unwrap(await query) as Infracao[];
+  return unwrap(await query.range(...faixaDaPagina(pagina))) as Infracao[];
 }
 
 export async function getInfracao(id: string): Promise<Infracao> {
@@ -1197,13 +1214,18 @@ export async function responderInfracao(id: string, status: StatusInfracao, resp
 }
 
 // -------------------------------------------------------- Propostas de pauta (moradores)
-export async function listarPropostas(condominioId: string, userId: string): Promise<PropostaPauta[]> {
+export async function listarPropostas(
+  condominioId: string,
+  userId: string,
+  pagina = 0,
+): Promise<PropostaPauta[]> {
   const propostas = unwrap(
     await supabase
       .from('propostas_pauta')
       .select('*, autor:profiles!autor_id(*)')
       .eq('condominio_id', condominioId)
-      .order('created_at', { ascending: false }),
+      .order('created_at', { ascending: false })
+      .range(...faixaDaPagina(pagina)),
   ) as PropostaPauta[];
   const ids = propostas.map((p) => p.id);
   if (ids.length === 0) return propostas;

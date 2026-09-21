@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, EmptyState, Fab, IconButton, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
+import { AppHeader, AppText, CarregarMais, EmptyState, Fab, IconButton, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarDocumentos, removerDocumento } from '@/lib/db';
@@ -13,7 +13,7 @@ import { categoriaDocumento } from '@/lib/labels';
 import { urlAssinada } from '@/lib/storage';
 import { useAppTheme } from '@/lib/theme';
 import { isGestor, type Documento } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 function formatTamanho(bytes?: number | null): string {
   if (!bytes) return '';
@@ -28,12 +28,18 @@ export default function Documentos() {
   const [abrindoId, setAbrindoId] = useState<string | null>(null);
   const [removendoId, setRemovendoId] = useState<string | null>(null);
 
-  const { data, loading, refreshing, refetch } = useFetch(
-    async () => (condominioId ? listarDocumentos(condominioId) : []),
+  const {
+    itens: documentos,
+    loading,
+    refreshing,
+    carregandoMais,
+    temMais,
+    carregarMais,
+    refetch,
+  } = useListaPaginada(
+    (pagina) => (condominioId ? listarDocumentos(condominioId, undefined, pagina) : Promise.resolve([])),
     [condominioId],
   );
-
-  const documentos = data ?? [];
   // O regimento interno é a referência que o morador mais procura: fica fixado no
   // topo, separado do resto. Se ainda não foi publicado, a seção nem aparece.
   const regimento = documentos.filter((d) => d.categoria === 'regimento_interno');
@@ -102,6 +108,8 @@ export default function Documentos() {
               ) : null}
             </View>
           )}
+          {/* Rodapé de paginação: some sozinho quando não há mais o que buscar. */}
+          <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
         </View>
       </Screen>
       {gestor ? <Fab icon="add" label="Publicar" onPress={() => router.push('/(app)/documentos/novo')} /> : null}

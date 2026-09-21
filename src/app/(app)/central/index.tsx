@@ -2,7 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
+import { AppHeader, AppText, Badge, CarregarMais, EmptyState, Fab, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useAppTheme } from '@/lib/theme';
@@ -10,7 +10,7 @@ import { listarSolicitacoes } from '@/lib/db';
 import { primeiroNome, tempoRelativo } from '@/lib/format';
 import * as L from '@/lib/labels';
 import { isGestor } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 export default function CentralLista() {
   const { palette } = useAppTheme();
@@ -18,12 +18,10 @@ export default function CentralLista() {
   const { condominioId, papel } = useAuth();
   const gestor = isGestor(papel);
 
-  const { data, loading, refreshing, refetch } = useFetch(
-    async () => (condominioId ? listarSolicitacoes(condominioId) : []),
+  const { itens, loading, refreshing, carregandoMais, temMais, carregarMais, refetch } = useListaPaginada(
+    (pagina) => (condominioId ? listarSolicitacoes(condominioId, pagina) : Promise.resolve([])),
     [condominioId],
   );
-
-  const itens = data ?? [];
 
   return (
     <View style={{ flex: 1 }}>
@@ -86,6 +84,8 @@ export default function CentralLista() {
             })}
           </Panel>
         )}
+        {/* Rodapé de paginação: some sozinho quando não há mais o que buscar. */}
+        <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
       </Screen>
       <Fab icon="add" label="Solicitar" onPress={() => router.push('/(app)/central/nova')} />
     </View>

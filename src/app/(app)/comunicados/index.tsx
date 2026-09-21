@@ -2,14 +2,14 @@ import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, EmptyState, ErrorState, Fab, Panel, Row, Screen, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, CarregarMais, EmptyState, ErrorState, Fab, Panel, Row, Screen, SkeletonList } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarComunicados } from '@/lib/db';
 import { tempoRelativo } from '@/lib/format';
 import { useAppTheme } from '@/lib/theme';
 import { isGestor } from '@/lib/types';
-import { useFetch } from '@/lib/useFetch';
+import { useListaPaginada } from '@/lib/useListaPaginada';
 
 export default function ComunicadosLista() {
   const router = useRouter();
@@ -17,12 +17,19 @@ export default function ComunicadosLista() {
   const { condominioId, user, papel } = useAuth();
   const gestor = isGestor(papel);
 
-  const { data, loading, refreshing, error, refetch } = useFetch(
-    async () => (condominioId && user ? listarComunicados(condominioId, user.id) : []),
-    [condominioId],
+  const {
+    itens: comunicados,
+    loading,
+    refreshing,
+    error,
+    carregandoMais,
+    temMais,
+    carregarMais,
+    refetch,
+  } = useListaPaginada(
+    (pagina) => (condominioId && user ? listarComunicados(condominioId, user.id, pagina) : Promise.resolve([])),
+    [condominioId, user?.id],
   );
-
-  const comunicados = data ?? [];
 
   return (
     <View style={{ flex: 1 }}>
@@ -64,6 +71,8 @@ export default function ComunicadosLista() {
             ))}
           </Panel>
         )}
+        {/* Rodapé de paginação: some sozinho quando não há mais o que buscar. */}
+        <CarregarMais temMais={temMais} carregando={carregandoMais} onPress={carregarMais} />
       </Screen>
       {gestor ? <Fab icon="add" label="Publicar" onPress={() => router.push('/(app)/comunicados/novo')} /> : null}
     </View>
