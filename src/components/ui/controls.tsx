@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
-import { Platform, Pressable, ScrollView, View, type ViewStyle } from 'react-native';
+import { Platform, Pressable, ScrollView, TextInput, View, type ViewStyle } from 'react-native';
 
-import { radius, shadow, spacing, type Tone } from '@/constants/theme';
+import { fontSize, radius, shadow, spacing, type Tone } from '@/constants/theme';
 import { AppText } from '@/components/ui/Text';
 import { TOQUE_MINIMO, useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
@@ -465,5 +465,59 @@ export function CarregarMais({
         {carregando ? 'Carregando...' : 'Carregar mais'}
       </AppText>
     </Pressable>
+  );
+}
+
+/**
+ * Campo de busca de uma lista.
+ *
+ * Só nas listas que de fato crescem — pôr busca onde há cinco itens é ruído. O
+ * botão de limpar aparece assim que há texto: numa tela de toque, apagar letra
+ * por letra para voltar à lista inteira é trabalho à toa.
+ */
+export function CampoBusca({
+  valor,
+  onChange,
+  placeholder = 'Buscar...',
+}: {
+  valor: string;
+  onChange: (v: string) => void;
+  placeholder?: string;
+}) {
+  const { palette } = useAppTheme();
+
+  return (
+    <View
+      style={{
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: spacing.sm,
+        minHeight: TOQUE_MINIMO,
+        paddingHorizontal: spacing.md,
+        borderRadius: radius.md,
+        borderWidth: 1,
+        borderColor: palette.border,
+        backgroundColor: palette.surface,
+      }}
+    >
+      <Ionicons name="search-outline" size={17} color={palette.textSubtle} />
+      <TextInput
+        value={valor}
+        onChangeText={onChange}
+        placeholder={placeholder}
+        placeholderTextColor={palette.textSubtle}
+        autoCapitalize="none"
+        autoCorrect={false}
+        returnKeyType="search"
+        accessibilityLabel={placeholder}
+        style={[
+          { flex: 1, minWidth: 0, fontSize: fontSize.md, color: palette.text, paddingVertical: spacing.sm },
+          Platform.OS === 'web' ? ({ outlineStyle: 'none', outlineWidth: 0 } as object) : null,
+        ]}
+      />
+      {valor ? (
+        <IconButton icon="close-circle" label="Limpar busca" size={17} onPress={() => onChange('')} />
+      ) : null}
+    </View>
   );
 }

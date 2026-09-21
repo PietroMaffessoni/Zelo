@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
-import { AppHeader, AppText, Badge, CarregarMais, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, CampoBusca, CarregarMais, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarLancamentos } from '@/lib/db';
@@ -11,6 +11,7 @@ import { formatData, formatMoeda } from '@/lib/format';
 import { categoriaFinanceira, statusFinanceiro } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
 import { isConselho, isGestor, statusFinanceiroEfetivo, type TipoLancamento } from '@/lib/types';
+import { useDebounce } from '@/lib/useDebounce';
 import { useListaPaginada } from '@/lib/useListaPaginada';
 
 export default function FinanceiroLista() {
@@ -20,6 +21,8 @@ export default function FinanceiroLista() {
   const gestor = isGestor(papel);
   const podeVerDespesas = isConselho(papel);
   const [tipo, setTipo] = useState<TipoLancamento>('boleto');
+  const [busca, setBusca] = useState('');
+  const buscaAtrasada = useDebounce(busca);
 
   const {
     itens: lancamentos,
@@ -31,8 +34,9 @@ export default function FinanceiroLista() {
     carregarMais,
     refetch,
   } = useListaPaginada(
-    (pagina) => (condominioId ? listarLancamentos(condominioId, { tipo, pagina }) : Promise.resolve([])),
-    [condominioId, tipo],
+    (pagina) =>
+      condominioId ? listarLancamentos(condominioId, { tipo, pagina, busca: buscaAtrasada }) : Promise.resolve([]),
+    [condominioId, tipo, buscaAtrasada],
   );
 
   return (
@@ -64,6 +68,10 @@ export default function FinanceiroLista() {
             ) : undefined
           }
         />
+
+        <View style={{ marginBottom: spacing.md }}>
+          <CampoBusca valor={busca} onChange={setBusca} placeholder="Buscar por descrição" />
+        </View>
 
         {podeVerDespesas ? (
           <Segmented

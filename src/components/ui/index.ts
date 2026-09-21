@@ -5,7 +5,7 @@ export { Card } from './Card';
 export { Input } from './Input';
 export { Avatar } from './Avatar';
 export { Screen, AppHeader, Loading, EmptyState, ErrorState } from './Layout';
-export { Divider, Chip, Segmented, IconButton, ListItem, Fab, ActionTile, ActionRow, CarregarMais } from './controls';
+export { Divider, Chip, Segmented, IconButton, ListItem, Fab, ActionTile, ActionRow, CarregarMais, CampoBusca } from './controls';
 export { Skeleton, SkeletonCard, SkeletonList } from './Skeleton';
 export { Panel, Row, SectionHeader, MetaLine, Section, DataRow } from './Surface';
 export { FormRow, Acoes, Grade } from './Form';

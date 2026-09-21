@@ -4,7 +4,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, CarregarMais, EmptyState, Fab, IconButton, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
+import { AppHeader, AppText, CampoBusca, CarregarMais, EmptyState, Fab, IconButton, Loading, MetaLine, Panel, Row, Screen, SectionHeader } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
@@ -14,6 +14,7 @@ import { categoriaDocumento } from '@/lib/labels';
 import { urlAssinada } from '@/lib/storage';
 import { useAppTheme } from '@/lib/theme';
 import { isGestor, type Documento } from '@/lib/types';
+import { useDebounce } from '@/lib/useDebounce';
 import { useListaPaginada } from '@/lib/useListaPaginada';
 
 function formatTamanho(bytes?: number | null): string {
@@ -27,6 +28,8 @@ export default function Documentos() {
   const { condominioId, papel } = useAuth();
   const acao = useAcao();
   const gestor = isGestor(papel);
+  const [busca, setBusca] = useState('');
+  const buscaAtrasada = useDebounce(busca);
   const [abrindoId, setAbrindoId] = useState<string | null>(null);
   const [removendoId, setRemovendoId] = useState<string | null>(null);
 
@@ -39,9 +42,13 @@ export default function Documentos() {
     carregarMais,
     refetch,
   } = useListaPaginada(
-    (pagina) => (condominioId ? listarDocumentos(condominioId, undefined, pagina) : Promise.resolve([])),
-    [condominioId],
-    { cache: `documentos:${condominioId}` },
+    (pagina) =>
+      condominioId ? listarDocumentos(condominioId, undefined, pagina, buscaAtrasada) : Promise.resolve([]),
+    [condominioId, buscaAtrasada],
+    // Só guarda a lista completa: com busca ativa, o cache gravaria o resultado
+    // do termo como se fosse o acervo inteiro, e a próxima abertura offline
+    // mostraria três documentos achando que são todos.
+    { cache: buscaAtrasada ? undefined : `documentos:${condominioId}` },
   );
   // O regimento interno é a referência que o morador mais procura: fica fixado no
   // topo, separado do resto. Se ainda não foi publicado, a seção nem aparece.
@@ -83,6 +90,7 @@ export default function Documentos() {
     <View style={{ flex: 1 }}>
       <Screen refreshing={refreshing} onRefresh={refetch}>
         <AppHeader title="Documentos" back subtitle="Documentos do condomínio" />
+        <CampoBusca valor={busca} onChange={setBusca} placeholder="Buscar documento" />
 
         <View style={{ marginTop: spacing.lg }}>
           {loading ? (

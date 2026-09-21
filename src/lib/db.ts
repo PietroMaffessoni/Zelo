@@ -55,6 +55,22 @@ import type {
   Vinculo,
 } from '@/lib/types';
 
+/**
+ * Trecho de busca para `ilike`, com curinga dos dois lados.
+ *
+ * A busca acontece NO SERVIDOR porque as listas são paginadas: filtrar no
+ * cliente só procuraria dentro das páginas já baixadas, e o usuário concluiria
+ * que o registro não existe quando ele está na página seguinte.
+ *
+ * `%` e `_` do que foi digitado são escapados — sem isso, digitar "%" na busca
+ * casaria com tudo, e "_" com qualquer caractere.
+ */
+function termoBusca(busca?: string | null): string | null {
+  const limpo = busca?.trim();
+  if (!limpo) return null;
+  return `%${limpo.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
+}
+
 function unwrap<T>({ data, error }: { data: T | null; error: any }): T {
   if (error) throw new Error(error.message);
   return data as T;
@@ -122,6 +138,7 @@ export async function listarChamados(
   condominioId: string,
   pagina = 0,
   status?: ChamadoStatus,
+  busca?: string,
 ): Promise<Chamado[]> {
   let query = supabase
     .from('chamados')
@@ -129,6 +146,8 @@ export async function listarChamados(
     .eq('condominio_id', condominioId)
     .order('created_at', { ascending: false });
   if (status) query = query.eq('status', status);
+  const termo = termoBusca(busca);
+  if (termo) query = query.or(`titulo.ilike.${termo},descricao.ilike.${termo}`);
   return unwrap(await query.range(...faixaDaPagina(pagina))) as Chamado[];
 }
 
@@ -723,7 +742,7 @@ export async function resumoPortaria(condominioId: string): Promise<ResumoPortar
 // ---------------------------------------------------------------------- Financeiro
 export async function listarLancamentos(
   condominioId: string,
-  opts?: { tipo?: TipoLancamento; unidadeId?: string; pagina?: number },
+  opts?: { tipo?: TipoLancamento; unidadeId?: string; pagina?: number; busca?: string },
 ): Promise<LancamentoFinanceiro[]> {
   let query = supabase
     .from('lancamentos_financeiros')
@@ -732,6 +751,8 @@ export async function listarLancamentos(
     .order('vencimento', { ascending: false });
   if (opts?.tipo) query = query.eq('tipo', opts.tipo);
   if (opts?.unidadeId) query = query.eq('unidade_id', opts.unidadeId);
+  const termo = termoBusca(opts?.busca);
+  if (termo) query = query.or(`descricao.ilike.${termo},observacao.ilike.${termo}`);
   return unwrap(await query.range(...faixaDaPagina(opts?.pagina ?? 0))) as LancamentoFinanceiro[];
 }
 
@@ -872,6 +893,7 @@ export async function listarDocumentos(
   condominioId: string,
   categoria?: CategoriaDocumento,
   pagina = 0,
+  busca?: string,
 ): Promise<Documento[]> {
   let query = supabase
     .from('documentos')
@@ -879,6 +901,8 @@ export async function listarDocumentos(
     .eq('condominio_id', condominioId)
     .order('created_at', { ascending: false });
   if (categoria) query = query.eq('categoria', categoria);
+  const termo = termoBusca(busca);
+  if (termo) query = query.or(`titulo.ilike.${termo},descricao.ilike.${termo}`);
   return unwrap(await query.range(...faixaDaPagina(pagina))) as Documento[];
 }
 

@@ -2,13 +2,14 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Badge, CarregarMais, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
+import { AppHeader, AppText, Badge, CampoBusca, CarregarMais, EmptyState, ErrorState, Fab, MetaLine, Panel, Row, Screen, Segmented, SkeletonList } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarChamados } from '@/lib/db';
 import { primeiroNome, tempoRelativo } from '@/lib/format';
 import * as L from '@/lib/labels';
 import { isGestor, type Chamado, type ChamadoStatus } from '@/lib/types';
+import { useDebounce } from '@/lib/useDebounce';
 import { useListaPaginada } from '@/lib/useListaPaginada';
 
 type Filtro = 'todos' | ChamadoStatus;
@@ -25,6 +26,9 @@ export default function ChamadosTab() {
   const { condominioId, papel } = useAuth();
   const gestor = isGestor(papel);
   const [filtro, setFiltro] = useState<Filtro>('todos');
+  const [busca, setBusca] = useState('');
+  // A busca vai ao servidor; sem o atraso, cada tecla viraria uma requisição.
+  const buscaAtrasada = useDebounce(busca);
 
   const {
     itens: lista,
@@ -38,9 +42,9 @@ export default function ChamadosTab() {
   } = useListaPaginada(
     (pagina) =>
       condominioId
-        ? listarChamados(condominioId, pagina, filtro === 'todos' ? undefined : filtro)
+        ? listarChamados(condominioId, pagina, filtro === 'todos' ? undefined : filtro, buscaAtrasada)
         : Promise.resolve([]),
-    [condominioId, filtro],
+    [condominioId, filtro, buscaAtrasada],
   );
 
   return (
@@ -52,7 +56,8 @@ export default function ChamadosTab() {
           onRefresh={refetch}
         />
 
-        <View style={{ marginBottom: spacing.md }}>
+        <View style={{ gap: spacing.sm, marginBottom: spacing.md }}>
+          <CampoBusca valor={busca} onChange={setBusca} placeholder="Buscar por título ou descrição" />
           <Segmented options={filtros} value={filtro} onChange={setFiltro} />
         </View>
 
@@ -64,7 +69,13 @@ export default function ChamadosTab() {
           <EmptyState
             icon="construct-outline"
             title="Nenhum chamado"
-            description={gestor ? 'Não há chamados neste filtro.' : 'Abra um chamado para falar com a administração.'}
+            description={
+              buscaAtrasada
+                ? `Nenhum chamado encontrado para "${buscaAtrasada}".`
+                : gestor
+                  ? 'Não há chamados neste filtro.'
+                  : 'Abra um chamado para falar com a administração.'
+            }
             actionLabel="Abrir chamado"
             onAction={() => router.push('/(app)/chamados/novo')}
           />
