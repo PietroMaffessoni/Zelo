@@ -22,6 +22,10 @@ type AuthState = {
   signIn: (email: string, senha: string) => Promise<{ error?: string }>;
   signUp: (nome: string, email: string, senha: string, telefone?: string) => Promise<{ error?: string }>;
   resetarSenha: (email: string) => Promise<{ error?: string }>;
+  /** Troca a senha exigindo a atual — ver `alterarSenha` para por que a reautenticação. */
+  alterarSenha: (senhaAtual: string, senhaNova: string) => Promise<{ error?: string }>;
+  /** Apaga a conta e os dados pessoais. Irreversível. */
+  excluirConta: () => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   selecionarCondominio: (id: string) => Promise<void>;
   recarregar: () => Promise<void>;
@@ -146,6 +150,57 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return { error: error ? traduzErro(error.message) : undefined };
   }, []);
 
+  /**
+   * Troca de senha do usuário logado.
+   *
+   * `updateUser({ password })` do Supabase NÃO confere a senha atual: quem tiver
+   * uma sessão aberta — um celular emprestado, um navegador esquecido — trocaria
+   * a senha sem saber a antiga e tomaria a conta. Por isso a reautenticação
+   * explícita antes: um `signInWithPassword` com a senha informada, que serve de
+   * prova de conhecimento. Só depois a troca acontece.
+   */
+  const alterarSenha: AuthState['alterarSenha'] = useCallback(async (senhaAtual, senhaNova) => {
+    // Lê do cliente em vez de fechar sobre o estado: evita closure velha sem
+    // precisar de `session` nas dependências (o que recriaria o callback a cada
+    // renovação de token).
+    const { data: atual } = await supabase.auth.getUser();
+    const email = atual.user?.email;
+    if (!email) return { error: 'Sessão expirada. Entre novamente.' };
+    if (senhaNova.length < 8) return { error: 'A nova senha deve ter no mínimo 8 caracteres.' };
+    if (senhaNova === senhaAtual) return { error: 'A nova senha precisa ser diferente da atual.' };
+
+    const { error: erroLogin } = await supabase.auth.signInWithPassword({ email, password: senhaAtual });
+    if (erroLogin) {
+      return { error: erroLogin.message.toLowerCase().includes('invalid login')
+        ? 'Senha atual incorreta.'
+        : traduzErro(erroLogin.message) };
+    }
+
+    const { error } = await supabase.auth.updateUser({ password: senhaNova });
+    return { error: error ? traduzErro(error.message) : undefined };
+  }, []);
+
+  /**
+   * Exclusão de conta (App Store 5.1.1(v) e LGPD art. 18, VI).
+   *
+   * Quem apaga é a RPC `excluir_minha_conta` — o cliente não tem permissão para
+   * mexer em `auth.users`, e é lá que mora a regra de "não deixar condomínio sem
+   * síndico". Se a RPC recusar, a mensagem dela já vem pronta para o usuário
+   * (diz de quais condomínios ele é o único síndico), então passa direto.
+   */
+  const excluirConta: AuthState['excluirConta'] = useCallback(async () => {
+    const { error } = await supabase.rpc('excluir_minha_conta');
+    if (error) {
+      const msg = error.message ?? '';
+      if (msg.includes('único síndico')) return { error: msg };
+      return { error: traduzErro(msg) };
+    }
+    await supabase.auth.signOut();
+    await AsyncStorage.removeItem(CHAVE_CONDOMINIO);
+    selecionadoRef.current = null;
+    return {};
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     await AsyncStorage.removeItem(CHAVE_CONDOMINIO);
@@ -241,6 +296,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     papel: membershipAtual?.papel ?? null,
     signIn,
     signUp,
+    alterarSenha,
+    excluirConta,
     resetarSenha,
     signOut,
     selecionarCondominio,

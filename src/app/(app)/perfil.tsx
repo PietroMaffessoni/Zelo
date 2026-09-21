@@ -1,10 +1,13 @@
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Button, Input, Panel, Row, Screen, SectionHeader } from '@/components/ui';
+import { Acoes, AppHeader, AppText, Avatar, Badge, Button, Input, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { useConfirm } from '@/lib/confirm';
+import { useToast } from '@/lib/toast';
 import { supabase } from '@/lib/supabase';
 import { atualizarPreferenciasNotificacao } from '@/lib/db';
 import { enviarImagem, escolherImagem } from '@/lib/storage';
@@ -21,13 +24,87 @@ const CATEGORIAS_NOTIFICACAO: { chave: keyof PreferenciasNotificacao; label: str
 ];
 
 export default function Perfil() {
-  const { user, profile, memberships, condominioId, selecionarCondominio, recarregar, signOut } = useAuth();
+  const router = useRouter();
+  const confirmar = useConfirm();
+  const toast = useToast();
+  const {
+    user,
+    profile,
+    memberships,
+    condominioId,
+    selecionarCondominio,
+    recarregar,
+    signOut,
+    alterarSenha,
+    excluirConta,
+  } = useAuth();
   const { escuro, alternar, palette } = useAppTheme();
   const [nome, setNome] = useState(profile?.nome_completo ?? '');
   const [telefone, setTelefone] = useState(profile?.telefone ?? '');
   const [avatar, setAvatar] = useState(profile?.avatar_url ?? null);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+
+  // Troca de senha
+  const [formSenha, setFormSenha] = useState(false);
+  const [senhaAtual, setSenhaAtual] = useState('');
+  const [senhaNova, setSenhaNova] = useState('');
+  const [senhaConfirma, setSenhaConfirma] = useState('');
+  const [erroSenha, setErroSenha] = useState<string | null>(null);
+  const [trocandoSenha, setTrocandoSenha] = useState(false);
+
+  const [excluindo, setExcluindo] = useState(false);
+
+  function fecharFormSenha() {
+    setFormSenha(false);
+    setSenhaAtual('');
+    setSenhaNova('');
+    setSenhaConfirma('');
+    setErroSenha(null);
+  }
+
+  async function confirmarTrocaSenha() {
+    setErroSenha(null);
+    if (!senhaAtual || !senhaNova) return setErroSenha('Preencha a senha atual e a nova.');
+    if (senhaNova !== senhaConfirma) return setErroSenha('A confirmação não confere com a nova senha.');
+
+    setTrocandoSenha(true);
+    const { error } = await alterarSenha(senhaAtual, senhaNova);
+    setTrocandoSenha(false);
+
+    if (error) return setErroSenha(error);
+    fecharFormSenha();
+    toast.sucesso('Senha alterada ✓');
+  }
+
+  /**
+   * Exclusão de conta em dois passos: o diálogo explica o que sai e o que
+   * permanece, e só então chama a RPC. Se o usuário for o único síndico de algum
+   * condomínio, a RPC recusa e devolve a lista — o toast mostra essa mensagem, que
+   * já vem pronta do banco.
+   */
+  async function pedirExclusao() {
+    const ok = await confirmar({
+      titulo: 'Excluir sua conta?',
+      mensagem:
+        'Seus dados pessoais e seus vínculos com os condomínios serão apagados e não há como desfazer. ' +
+        'Registros da administração que você criou (comunicados, lançamentos, atas) permanecem no condomínio, sem o seu nome.',
+      confirmar: 'Excluir conta',
+      cancelar: 'Cancelar',
+      destrutivo: true,
+    });
+    if (!ok) return;
+
+    setExcluindo(true);
+    const { error } = await excluirConta();
+    setExcluindo(false);
+
+    if (error) {
+      toast.erro(error);
+      return;
+    }
+    router.replace('/(auth)/login');
+  }
 
   async function alternarNotificacao(chave: keyof PreferenciasNotificacao, valor: boolean) {
     if (!user || !profile) return;
@@ -190,9 +267,99 @@ export default function Perfil() {
         })}
       </Panel>
 
-      <View style={{ marginTop: spacing.xxl }}>
-        <Button title="Sair da conta" variant="danger" icon="log-out-outline" onPress={signOut} />
-      </View>
+      {/* Segurança */}
+      <SectionHeader title="Segurança" style={{ marginTop: spacing.xxl }} />
+      <Panel>
+        <Row onPress={formSenha ? undefined : () => setFormSenha(true)} accessibilityLabel="Alterar senha" compact>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Ionicons
+              name="lock-closed-outline"
+              size={19}
+              color={palette.textSubtle}
+              style={{ width: 22, textAlign: 'center' }}
+            />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <AppText variant="subtitle">Alterar senha</AppText>
+              <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+                Pede a senha atual para confirmar que é você
+              </AppText>
+            </View>
+            {!formSenha ? <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} /> : null}
+          </View>
+
+          {formSenha ? (
+            <View style={{ gap: spacing.md, marginTop: spacing.lg }}>
+              <Input
+                label="Senha atual"
+                senha
+                value={senhaAtual}
+                onChangeText={setSenhaAtual}
+                autoComplete="current-password"
+                textContentType="password"
+              />
+              <Input
+                label="Nova senha"
+                senha
+                hint="Mínimo de 8 caracteres"
+                value={senhaNova}
+                onChangeText={setSenhaNova}
+                autoComplete="new-password"
+                textContentType="newPassword"
+              />
+              <Input
+                label="Repita a nova senha"
+                senha
+                value={senhaConfirma}
+                onChangeText={setSenhaConfirma}
+                error={erroSenha ?? undefined}
+                autoComplete="new-password"
+                textContentType="newPassword"
+                onSubmitEditing={confirmarTrocaSenha}
+              />
+              <Acoes minimo={130}>
+                <Button title="Cancelar" variant="secondary" size="sm" onPress={fecharFormSenha} />
+                <Button
+                  title="Salvar senha"
+                  size="sm"
+                  icon="checkmark"
+                  loading={trocandoSenha}
+                  onPress={confirmarTrocaSenha}
+                />
+              </Acoes>
+            </View>
+          ) : null}
+        </Row>
+      </Panel>
+
+      <Section>
+        <Button title="Sair da conta" variant="secondary" icon="log-out-outline" onPress={signOut} />
+      </Section>
+
+      {/*
+        Zona de risco. Fica no fim da tela, separada por um fio e com o rótulo
+        explícito: excluir conta não é uma ação que se ofereça no mesmo nível de
+        "sair", e a App Store exige que ela exista e seja encontrável dentro do app.
+      */}
+      <Section>
+        <SectionHeader title="Zona de risco" />
+        <Panel padded>
+          <AppText variant="subtitle">Excluir minha conta</AppText>
+          <AppText variant="caption" color="muted" style={{ marginTop: 4 }}>
+            Apaga seus dados pessoais e seus vínculos com os condomínios. Não há como desfazer.
+          </AppText>
+          <View style={{ marginTop: spacing.md, alignItems: 'flex-start' }}>
+            <Button
+              title="Excluir minha conta"
+              variant="danger"
+              size="sm"
+              icon="trash-outline"
+              fullWidth={false}
+              loading={excluindo}
+              onPress={pedirExclusao}
+            />
+          </View>
+        </Panel>
+      </Section>
     </Screen>
   );
 }
