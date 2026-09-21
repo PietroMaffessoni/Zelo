@@ -53,7 +53,7 @@ export function Screen({
   maxWidth?: number;
 }) {
   const { palette } = useAppTheme();
-  const { gutter } = useLayout();
+  const { gutter, alturaCurta } = useLayout();
 
   // `left`/`right` sempre entram: protegem o recorte de tela em paisagem sem
   // afetar nada em retrato, onde os insets laterais são zero.
@@ -81,7 +81,11 @@ export function Screen({
       >
         {scroll ? (
           <ScrollView
-            contentContainerStyle={{ paddingBottom: spacing.xxxl + spacing.xl, flexGrow: 1 }}
+            // Numa tela baixa (celular deitado) 72px de folga final custam quase
+            // um quinto da altura visível. O que cede é o respiro, nunca o
+            // conteúdo — a folga continua existindo para o FAB não cobrir a
+            // última linha da lista.
+            contentContainerStyle={{ paddingBottom: alturaCurta ? spacing.xl : spacing.xxxl + spacing.xl, flexGrow: 1 }}
             keyboardShouldPersistTaps="handled"
             keyboardDismissMode="interactive"
             showsVerticalScrollIndicator={false}
@@ -127,6 +131,7 @@ export function AppHeader({
 }) {
   const voltar = useVoltar();
   const { palette } = useAppTheme();
+  const { alturaCurta } = useLayout();
 
   // Web: título da aba do navegador por rota (antes toda página ficava "Zelo").
   useEffect(() => {
@@ -141,9 +146,13 @@ export function AppHeader({
         flexDirection: 'row',
         alignItems: 'center',
         gap: spacing.sm,
-        paddingTop: spacing.lg,
-        paddingBottom: spacing.lg,
-        minHeight: 56,
+        // O respiro vertical do cabeçalho acompanha a altura da janela: num
+        // celular deitado (classe de altura compacta do M3, < 480px) os 32px de
+        // folga somados aos 56 de altura mínima tomavam um quarto da tela antes
+        // de qualquer conteúdo aparecer.
+        paddingTop: alturaCurta ? spacing.sm : spacing.lg,
+        paddingBottom: alturaCurta ? spacing.sm : spacing.lg,
+        minHeight: alturaCurta ? 44 : 56,
       }}
     >
       {back ? (

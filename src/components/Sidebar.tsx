@@ -26,7 +26,7 @@ export function Sidebar() {
   const pathname = usePathname();
   const confirmar = useConfirm();
   const { palette } = useAppTheme();
-  const { acima } = useLayout();
+  const { acimaDe } = useLayout();
   const { profile, papel, membershipAtual, signOut } = useAuth();
   const gestor = ehGestor(papel);
   const porteiro = papel === 'porteiro';
@@ -86,8 +86,9 @@ export function Sidebar() {
   return (
     <View
       style={{
-        // Encolhe no tablet: 264px ali seriam mais de um terço da tela.
-        width: acima('xl') ? SIDEBAR_LARGURA : SIDEBAR_LARGURA_TABLET,
+        // Encolhe na faixa expandida (840–1199): 264px num tablet deitado seriam
+        // quase um terço da tela. A largura cheia entra na faixa grande (1200+).
+        width: acimaDe('grande') ? SIDEBAR_LARGURA : SIDEBAR_LARGURA_TABLET,
         backgroundColor: palette.surface,
         borderRightWidth: 1,
         borderRightColor: palette.border,

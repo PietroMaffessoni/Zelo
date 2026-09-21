@@ -207,7 +207,8 @@ export function ListItem({
   chevron?: boolean;
 }) {
   const { palette, tone: tones } = useAppTheme();
-  const { compacto } = useLayout();
+  const { abaixoDe } = useLayout();
+  const duasLinhas = abaixoDe('media');
   const corIcone = iconTone === 'danger' ? tones.danger.fg : palette.textSubtle;
   return (
     <Pressable
@@ -251,7 +252,7 @@ export function ListItem({
           uma linha mantém a lista com altura regular.
         */}
         {subtitle ? (
-          <AppText variant="caption" color="muted" numberOfLines={compacto ? 2 : 1} style={{ marginTop: 1 }}>
+          <AppText variant="caption" color="muted" numberOfLines={duasLinhas ? 2 : 1} style={{ marginTop: 1 }}>
             {subtitle}
           </AppText>
         ) : null}

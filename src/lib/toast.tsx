@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from 'react';
-import { Animated, Platform, View } from 'react-native';
+import { Animated, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { AppText } from '@/components/ui/Text';
@@ -84,12 +84,12 @@ function ToastView({
   onPress: () => void;
 }) {
   const { palette } = useAppTheme();
-  const { amplo } = useLayout();
+  const { navegacaoLateral } = useLayout();
   const insets = useSafeAreaInsets();
-  // A barra de abas só some quando a navegação lateral entra (web, tablet+). Na
+  // A barra de abas existe exatamente quando a navegação lateral não existe. Na
   // web em largura de celular ela continua lá, e o aviso nascia atrás dela — o
   // cálculo antigo só abria espaço no nativo.
-  const barraDeAbas = !(Platform.OS === 'web' && amplo);
+  const barraDeAbas = !navegacaoLateral;
   const cfg = {
     success: { icon: 'checkmark-circle' as const, cor: palette.success },
     error: { icon: 'alert-circle' as const, cor: palette.danger },

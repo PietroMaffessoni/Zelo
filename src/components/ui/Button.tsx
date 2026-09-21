@@ -28,8 +28,12 @@ export type ButtonProps = Omit<PressableProps, 'style'> & {
 
 /**
  * Altura por tamanho. No toque, o `sm` sobe de 40 para 44px: 40px é confortável
- * com ponteiro e pequeno demais para o polegar — 44pt é o mínimo do HIG. O
- * desktop mantém a densidade original, porque lá o alvo não é o dedo.
+ * com ponteiro e pequeno demais para o polegar — 44px é o nível AAA da WCAG 2.2
+ * (critério 2.5.5) e o mínimo do HIG. O ponteiro mantém a densidade original.
+ *
+ * Quem decide é a modalidade de entrada, não a largura da janela: um tablet de
+ * 800px é largo E é tocado com o dedo. Pelo critério anterior — "largura de
+ * celular" — ele caía no tamanho de ponteiro.
  */
 const ALTURAS: Record<Tamanho, { ponteiro: number; toque: number }> = {
   sm: { ponteiro: 40, toque: 44 },
@@ -49,7 +53,7 @@ export function Button({
   ...rest
 }: ButtonProps) {
   const { palette } = useAppTheme();
-  const { compacto } = useLayout();
+  const { toque } = useLayout();
   const bg =
     variant === 'primary'
       ? palette.primary
@@ -66,7 +70,7 @@ export function Button({
         : palette.primary;
   const borderColor = variant === 'secondary' ? palette.border : 'transparent';
   const inativo = disabled || loading;
-  const altura = compacto ? ALTURAS[size].toque : ALTURAS[size].ponteiro;
+  const altura = toque ? ALTURAS[size].toque : ALTURAS[size].ponteiro;
 
   return (
     <Pressable
@@ -100,10 +104,22 @@ export function Button({
       ) : (
         <View style={styles.content}>
           {icon ? <Ionicons name={icon} size={18} color={fg} style={{ flexShrink: 0 }} /> : null}
+          {/*
+            O `lineHeight` acompanha o `fontSize` sobrescrito. A variante `label`
+            traz 18px de linha, calibrados para os 13px dela; o botão sobe a fonte
+            para 15/16 e, herdando os 18, a caixa ficava 1px menor que a linha —
+            com `numberOfLines` (overflow oculto) isso raspa a descendente de um
+            "ç" ou "g". Medido: 15px pede 20 de linha, 16px pede 21.
+          */}
           <AppText
             variant="label"
             numberOfLines={1}
-            style={{ color: fg, fontSize: size === 'lg' ? 16 : 15, flexShrink: 1 }}
+            style={{
+              color: fg,
+              fontSize: size === 'lg' ? 16 : 15,
+              lineHeight: size === 'lg' ? 21 : 20,
+              flexShrink: 1,
+            }}
           >
             {title}
           </AppText>

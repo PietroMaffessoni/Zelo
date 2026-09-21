@@ -200,7 +200,7 @@ export function MetaLine({
   color?: 'muted' | 'subtle';
   style?: TextStyle;
 }) {
-  const { compacto } = useLayout();
+  const { abaixoDe } = useLayout();
   const texto = itens.filter(Boolean).join(' · ');
   if (!texto) return null;
   // No celular a faixa ganha uma segunda linha: numa só, "12 boletos vencidos ·
@@ -208,7 +208,7 @@ export function MetaLine({
   // Estes metadados são o que distingue uma linha da outra na lista — truncá-los
   // devolve todas ao mesmo texto.
   return (
-    <AppText variant="caption" color={color} numberOfLines={compacto ? 2 : 1} style={style}>
+    <AppText variant="caption" color={color} numberOfLines={abaixoDe('media') ? 2 : 1} style={style}>
       {texto}
     </AppText>
   );

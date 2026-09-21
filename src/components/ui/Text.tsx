@@ -37,13 +37,19 @@ const variants: Record<Variant, TextStyle> = {
   body: { fontSize: fontSize.md, lineHeight: 22, fontWeight: fontWeight.regular },
   /** Rótulo de campo, texto de botão, dado em destaque dentro de uma linha. */
   label: { fontSize: fontSize.sm, lineHeight: 18, fontWeight: fontWeight.semibold },
-  /** Metadado de apoio: data, autor, contagem. */
-  caption: { fontSize: fontSize.xs, lineHeight: 16, fontWeight: fontWeight.medium },
+  /** Metadado de apoio: data, autor, contagem. É a variante mais truncada do app
+   *  (`MetaLine`, subtítulos de lista), e 16 de linha era exatamente a caixa
+   *  natural — sem folga nenhuma. Como as métricas da fonte do sistema variam
+   *  entre iOS, Android e Windows, 17 dá 1px de margem e evita que a diferença
+   *  de plataforma vire acento cortado. */
+  caption: { fontSize: fontSize.xs, lineHeight: 17, fontWeight: fontWeight.medium },
   /** Nome de seção. Maiúsculas e entreletra aberta — ordena a página sem competir
    *  em tamanho com os títulos dos itens que a seção contém. */
   overline: {
     fontSize: 11,
-    lineHeight: 14,
+    // A caixa natural destes 11px em caixa alta mede 15: com 14 a linha ficava
+    // menor que o texto e raspava 1px de acento e descendente.
+    lineHeight: 15,
     fontWeight: fontWeight.semibold,
     letterSpacing: 0.7,
     textTransform: 'uppercase',

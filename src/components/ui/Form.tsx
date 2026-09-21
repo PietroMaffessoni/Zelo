@@ -51,9 +51,9 @@ function LinhaFlexivel({
   crescer = 'sempre',
 }: LinhaProps & { gap: number; crescer?: 'sempre' | 'no-toque' }) {
   const itens = achatar(children);
-  const { compacto } = useLayout();
+  const { toque } = useLayout();
   const medida = (i: number) => (Array.isArray(minimo) ? (minimo[i] ?? minimo[minimo.length - 1]) : minimo);
-  const ocupaSobra = crescer === 'sempre' || compacto;
+  const ocupaSobra = crescer === 'sempre' || toque;
 
   return (
     <View style={[{ flexDirection: 'row', flexWrap: 'wrap', gap }, style]}>
@@ -87,10 +87,11 @@ export function FormRow(props: LinhaProps) {
 /**
  * Fileira de ações (botões) de um formulário ou de um bloco.
  *
- * Só estica no toque. Num celular, uma ação que desceu para a própria linha deve
- * ocupá-la inteira — é o alvo mais confortável e a convenção da plataforma. Com
- * ponteiro, esticar "Anexar ata" até meia tela não a torna mais clicável, só
- * pesada; lá o botão fica do tamanho do próprio rótulo, como estava.
+ * Só estica no toque — e "toque" aqui é a modalidade de entrada, não a largura
+ * da janela. Com o dedo, uma ação que desceu para a própria linha deve ocupá-la
+ * inteira: é o alvo mais confortável e a convenção da plataforma. Com ponteiro,
+ * esticar "Anexar ata" até meia tela não a torna mais clicável, só pesada; lá o
+ * botão fica do tamanho do próprio rótulo.
  */
 export function Acoes({ minimo = 150, ...props }: LinhaProps) {
   return <LinhaFlexivel {...props} minimo={minimo} gap={spacing.sm} crescer="no-toque" />;

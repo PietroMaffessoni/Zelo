@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { Platform, StyleSheet } from 'react-native';
+import { StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/auth';
@@ -36,17 +36,11 @@ export default function TabsLayout() {
   const { papel } = useAuth();
   const { palette } = useAppTheme();
   const insets = useSafeAreaInsets();
-  const { amplo } = useLayout();
+  const { navegacaoLateral } = useLayout();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
   const zelador = papel === 'zelador';
   const morador = !gestor && !porteiro && !zelador;
-
-  // Em telas largas (tablet e acima, no web) a navegação vira a sidebar fixa
-  // (renderizada no layout de (app), que envolve todas as telas) e a barra de
-  // abas some. O corte é o mesmo de `(app)/_layout` — as duas precisam trocar
-  // juntas, senão a tela fica sem navegação nenhuma ou com as duas ao mesmo tempo.
-  const lateral = Platform.OS === 'web' && amplo;
 
   // Exibe 3–4 destinos de alto tráfego por papel; os demais ficam ocultos
   // (href: null) mas continuam navegáveis por links/ações rápidas.
@@ -58,7 +52,7 @@ export default function TabsLayout() {
 
   return (
     <Tabs
-      tabBar={lateral ? () => null : undefined}
+      tabBar={navegacaoLateral ? () => null : undefined}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: palette.primary,

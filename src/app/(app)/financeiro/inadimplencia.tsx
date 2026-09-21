@@ -13,7 +13,7 @@ import { useFetch } from '@/lib/useFetch';
 
 export default function Inadimplencia() {
   const { palette } = useAppTheme();
-  const { compacto } = useLayout();
+  const { abaixoDe } = useLayout();
   const { condominioId } = useAuth();
 
   const { data, loading, refreshing, refetch } = useFetch(
@@ -87,7 +87,7 @@ export default function Inadimplencia() {
                         itens={[
                           `${u.quantidade} ${u.quantidade === 1 ? 'boleto vencido' : 'boletos vencidos'}`,
                           dias > 0 ? `há ${dias} dia${dias === 1 ? '' : 's'}` : null,
-                          compacto && dias > 0 ? null : `desde ${formatData(u.maisAntigo)}`,
+                          abaixoDe('media') && dias > 0 ? null : `desde ${formatData(u.maisAntigo)}`,
                         ]}
                       />
                     </View>
