@@ -3,25 +3,11 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { Platform } from 'react-native';
 
 import { gravarCache, lerCache } from '@/lib/cache';
+import { TAMANHO_PAGINA } from '@/lib/consulta';
 
-/**
- * Quantos registros por página.
- *
- * O app inteiro rodava sem nenhum `limit`: `listarChamados`, `listarLancamentos`
- * e companhia traziam a tabela toda. Num condomínio com dois anos de operação e
- * trezentas unidades, isso é baixar milhares de linhas para mostrar as vinte
- * primeiras — e a conta cai no celular do morador, na rede dele.
- *
- * 40 é o dobro do que cabe numa tela cheia: rola-se um pouco antes de precisar
- * da próxima página, e ainda assim a primeira resposta é pequena.
- */
-export const TAMANHO_PAGINA = 40;
-
-/** Intervalo `.range()` do Supabase para a página pedida. */
-export function faixaDaPagina(pagina: number, tamanho = TAMANHO_PAGINA): [number, number] {
-  const inicio = pagina * tamanho;
-  return [inicio, inicio + tamanho - 1];
-}
+// As regras de recorte vivem em `consulta.ts`, sem dependência de React ou do
+// React Native, para poderem ser testadas fora do ambiente do aplicativo.
+export { TAMANHO_PAGINA, faixaDaPagina } from '@/lib/consulta';
 
 type Estado<T> = {
   itens: T[];

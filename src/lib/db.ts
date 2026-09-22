@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { faixaDaPagina } from '@/lib/useListaPaginada';
+import { faixaDaPagina, termoBusca } from '@/lib/consulta';
 import type {
   AchadoPerdido,
   AchadoStatus,
@@ -55,21 +55,6 @@ import type {
   Vinculo,
 } from '@/lib/types';
 
-/**
- * Trecho de busca para `ilike`, com curinga dos dois lados.
- *
- * A busca acontece NO SERVIDOR porque as listas são paginadas: filtrar no
- * cliente só procuraria dentro das páginas já baixadas, e o usuário concluiria
- * que o registro não existe quando ele está na página seguinte.
- *
- * `%` e `_` do que foi digitado são escapados — sem isso, digitar "%" na busca
- * casaria com tudo, e "_" com qualquer caractere.
- */
-function termoBusca(busca?: string | null): string | null {
-  const limpo = busca?.trim();
-  if (!limpo) return null;
-  return `%${limpo.replace(/[\\%_]/g, (c) => `\\${c}`)}%`;
-}
 
 function unwrap<T>({ data, error }: { data: T | null; error: any }): T {
   if (error) throw new Error(error.message);
