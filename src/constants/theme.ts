@@ -155,9 +155,16 @@ const paletteLight: Palette = {
   borderStrong: '#C8D0DE',
 
   // Texto (quase-preto anavajado)
+  //
+  // `textSubtle` escureceu de #7B8798 para #667182. O tom anterior media 3,34:1
+  // sobre o fundo da página — abaixo dos 4,5:1 que a WCAG AA exige para texto
+  // normal (1.4.3). Passava só pela régua de texto GRANDE (3:1), e é exatamente
+  // o contrário do seu uso: ele veste metadado, legenda e placeholder, que são
+  // os menores tipos do app. O matiz e a saturação são os mesmos; só a
+  // luminosidade cedeu o necessário para chegar a 4,53:1.
   text: '#111C2B',
   textMuted: '#516175',
-  textSubtle: '#7B8798',
+  textSubtle: '#667182',
 
   // Utilitárias
   overlay: 'rgba(12, 22, 36, 0.45)',

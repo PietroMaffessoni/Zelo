@@ -49,6 +49,8 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
       <Modal visible={!!opcoes} transparent animationType="fade" onRequestClose={() => responder(false)}>
         <Pressable
           onPress={() => responder(false)}
+          accessibilityRole="button"
+          accessibilityLabel="Fechar sem confirmar"
           style={{
             flex: 1,
             backgroundColor: palette.overlay,
@@ -57,8 +59,13 @@ export function ConfirmProvider({ children }: { children: ReactNode }) {
             padding: spacing.xl,
           }}
         >
+          {/* Só existe para conter o toque e impedir que ele feche o diálogo —
+              não é um controle. `none` evita que o leitor de tela o anuncie como
+              botão, e o papel de diálogo faz o conteúdo ser lido como tal. */}
           <Pressable
             onPress={(e) => e.stopPropagation()}
+            accessibilityRole="none"
+            accessibilityViewIsModal
             style={[
               {
                 width: '100%',

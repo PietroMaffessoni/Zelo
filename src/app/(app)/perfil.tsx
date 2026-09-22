@@ -236,7 +236,11 @@ export default function Perfil() {
       <AppHeader title="Meu perfil" back />
 
       <View style={{ alignItems: 'center', gap: spacing.sm, marginVertical: spacing.lg }}>
-        <Pressable onPress={trocarAvatar}>
+        <Pressable
+          onPress={trocarAvatar}
+          accessibilityRole="button"
+          accessibilityLabel={avatar ? 'Trocar foto do perfil' : 'Adicionar foto do perfil'}
+        >
           <Avatar nome={nome || profile?.nome_completo} url={avatar} size={76} />
           <View
             style={{
