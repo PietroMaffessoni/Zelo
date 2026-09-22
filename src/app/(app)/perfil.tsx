@@ -1,6 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
+import { Image } from 'expo-image';
 import { useRouter } from 'expo-router';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Pressable, Switch, View } from 'react-native';
 
 import { Acoes, AppHeader, AppText, Avatar, Badge, Button, Input, Panel, Row, Screen, Section, SectionHeader } from '@/components/ui';
@@ -38,6 +39,11 @@ export default function Perfil() {
     signOut,
     alterarSenha,
     excluirConta,
+    sairDeTodosAparelhos,
+    fatorMFA,
+    iniciarMFA,
+    confirmarMFA,
+    removerMFA,
   } = useAuth();
   const { escuro, alternar, palette } = useAppTheme();
   const [nome, setNome] = useState(profile?.nome_completo ?? '');
@@ -55,6 +61,83 @@ export default function Perfil() {
   const [trocandoSenha, setTrocandoSenha] = useState(false);
 
   const [excluindo, setExcluindo] = useState(false);
+
+  // --- Verificação em duas etapas ---
+  const [fator2FA, setFator2FA] = useState<{ id: string } | null>(null);
+  const [carregando2FA, setCarregando2FA] = useState(true);
+  const [ativando2FA, setAtivando2FA] = useState<{ qr: string; segredo: string; fatorId: string } | null>(null);
+  const [codigo2FA, setCodigo2FA] = useState('');
+  const [erro2FA, setErro2FA] = useState<string | null>(null);
+  const [ocupado2FA, setOcupado2FA] = useState(false);
+
+  useEffect(() => {
+    let ativo = true;
+    fatorMFA().then((f) => {
+      if (!ativo) return;
+      setFator2FA(f);
+      setCarregando2FA(false);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, [fatorMFA]);
+
+  async function comecar2FA() {
+    setErro2FA(null);
+    setOcupado2FA(true);
+    const { error, qr, segredo, fatorId } = await iniciarMFA();
+    setOcupado2FA(false);
+    if (error || !qr || !segredo || !fatorId) return setErro2FA(error ?? 'Não foi possível iniciar.');
+    setAtivando2FA({ qr, segredo, fatorId });
+    setCodigo2FA('');
+  }
+
+  async function confirmar2FA() {
+    if (!ativando2FA) return;
+    setErro2FA(null);
+    setOcupado2FA(true);
+    const { error } = await confirmarMFA(ativando2FA.fatorId, codigo2FA);
+    setOcupado2FA(false);
+    if (error) return setErro2FA(error);
+    setAtivando2FA(null);
+    setCodigo2FA('');
+    setFator2FA(await fatorMFA());
+    toast.sucesso('Verificação em duas etapas ativada ✓');
+  }
+
+  async function desativar2FA() {
+    if (!fator2FA) return;
+    const ok = await confirmar({
+      titulo: 'Desativar a verificação em duas etapas?',
+      mensagem: 'Sua conta voltará a ser protegida apenas pela senha.',
+      confirmar: 'Desativar',
+      cancelar: 'Manter ativa',
+      destrutivo: true,
+    });
+    if (!ok) return;
+    setOcupado2FA(true);
+    const { error } = await removerMFA(fator2FA.id);
+    setOcupado2FA(false);
+    if (error) return toast.erro(error);
+    setFator2FA(null);
+    toast.sucesso('Verificação desativada.');
+  }
+
+  async function sairDeTudo() {
+    const ok = await confirmar({
+      titulo: 'Sair de todos os aparelhos?',
+      mensagem:
+        'A sessão será encerrada em todos os celulares e navegadores em que você entrou, inclusive neste. ' +
+        'Use isto se perdeu um aparelho ou desconfia de um acesso.',
+      confirmar: 'Sair de tudo',
+      cancelar: 'Cancelar',
+      destrutivo: true,
+    });
+    if (!ok) return;
+    const { error } = await sairDeTodosAparelhos();
+    if (error) return toast.erro(error);
+    router.replace('/(auth)/login');
+  }
 
   function fecharFormSenha() {
     setFormSenha(false);
@@ -335,6 +418,122 @@ export default function Perfil() {
               </Acoes>
             </View>
           ) : null}
+        </Row>
+
+        {/*
+          Verificação em duas etapas. O síndico alcança CPF, RG e o financeiro de
+          todo o condomínio protegido por uma senha só — este é o segundo fator, e
+          é TOTP em vez de SMS porque SMS é interceptável e tem custo por mensagem.
+        */}
+        <Row compact>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Ionicons
+              name="shield-checkmark-outline"
+              size={19}
+              color={fator2FA ? palette.success : palette.textSubtle}
+              style={{ width: 22, textAlign: 'center' }}
+            />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <AppText variant="subtitle">Verificação em duas etapas</AppText>
+              <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+                {carregando2FA
+                  ? 'Verificando...'
+                  : fator2FA
+                    ? 'Ativa — pede um código do seu aplicativo a cada entrada'
+                    : 'Um código de 6 dígitos além da senha'}
+              </AppText>
+            </View>
+            {!carregando2FA && !ativando2FA ? (
+              <Button
+                title={fator2FA ? 'Desativar' : 'Ativar'}
+                variant={fator2FA ? 'secondary' : 'primary'}
+                size="sm"
+                fullWidth={false}
+                loading={ocupado2FA}
+                onPress={fator2FA ? desativar2FA : comecar2FA}
+              />
+            ) : null}
+          </View>
+
+          {ativando2FA ? (
+            <View style={{ gap: spacing.md, marginTop: spacing.lg }}>
+              <AppText variant="caption" color="muted">
+                Leia o código abaixo no seu aplicativo autenticador (Google Authenticator, Authy,
+                1Password) ou digite a chave manualmente.
+              </AppText>
+              {/* O Supabase devolve o QR já pronto como data URI — não é preciso
+                  gerar a imagem aqui. */}
+              <View style={{ alignItems: 'center' }}>
+                <Image
+                  source={{ uri: ativando2FA.qr }}
+                  style={{ width: 180, height: 180, borderRadius: radius.md, backgroundColor: palette.white }}
+                  contentFit="contain"
+                  accessibilityLabel="Código QR da verificação em duas etapas"
+                />
+              </View>
+              <View
+                style={{
+                  padding: spacing.md,
+                  borderRadius: radius.md,
+                  backgroundColor: palette.surfaceAlt,
+                  borderWidth: 1,
+                  borderColor: palette.border,
+                }}
+              >
+                <AppText variant="caption" color="subtle">
+                  Chave manual
+                </AppText>
+                <AppText variant="label" selectable style={{ marginTop: 2, letterSpacing: 1 }}>
+                  {ativando2FA.segredo}
+                </AppText>
+              </View>
+              <Input
+                label="Código do aplicativo"
+                placeholder="000000"
+                keyboardType="number-pad"
+                maxLength={6}
+                value={codigo2FA}
+                onChangeText={setCodigo2FA}
+                error={erro2FA ?? undefined}
+                onSubmitEditing={confirmar2FA}
+              />
+              <Acoes minimo={130}>
+                <Button
+                  title="Cancelar"
+                  variant="secondary"
+                  size="sm"
+                  onPress={() => {
+                    setAtivando2FA(null);
+                    setErro2FA(null);
+                  }}
+                />
+                <Button title="Confirmar" size="sm" icon="checkmark" loading={ocupado2FA} onPress={confirmar2FA} />
+              </Acoes>
+            </View>
+          ) : null}
+          {!ativando2FA && erro2FA ? (
+            <AppText variant="caption" color="danger" style={{ marginTop: spacing.sm }}>
+              {erro2FA}
+            </AppText>
+          ) : null}
+        </Row>
+
+        <Row onPress={sairDeTudo} accessibilityLabel="Sair de todos os aparelhos" compact>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
+            <Ionicons
+              name="phone-portrait-outline"
+              size={19}
+              color={palette.textSubtle}
+              style={{ width: 22, textAlign: 'center' }}
+            />
+            <View style={{ flex: 1, minWidth: 0 }}>
+              <AppText variant="subtitle">Sair de todos os aparelhos</AppText>
+              <AppText variant="caption" color="muted" style={{ marginTop: 2 }}>
+                Encerra a sessão em todo celular e navegador onde você entrou
+              </AppText>
+            </View>
+            <Ionicons name="chevron-forward" size={16} color={palette.textSubtle} />
+          </View>
         </Row>
       </Panel>
 

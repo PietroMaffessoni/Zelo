@@ -30,6 +30,22 @@ type AuthState = {
   /** Apaga a conta e os dados pessoais. Irreversível. */
   excluirConta: () => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
+  /** Encerra a sessão em TODOS os aparelhos, não só neste. */
+  sairDeTodosAparelhos: () => Promise<{ error?: string }>;
+
+  // --- Verificação em duas etapas (TOTP) ---
+  /** Fator TOTP já confirmado, se houver. */
+  fatorMFA: () => Promise<{ id: string } | null>;
+  /** Começa a ativação: devolve o QR (data URI), o segredo e o id do fator. */
+  iniciarMFA: () => Promise<{ error?: string; qr?: string; segredo?: string; fatorId?: string }>;
+  /** Confirma a ativação com o código do aplicativo autenticador. */
+  confirmarMFA: (fatorId: string, codigo: string) => Promise<{ error?: string }>;
+  /** Desativa a verificação em duas etapas. */
+  removerMFA: (fatorId: string) => Promise<{ error?: string }>;
+  /** Responde ao desafio de 2FA depois do login por senha. */
+  verificarDesafioMFA: (codigo: string) => Promise<{ error?: string }>;
+  /** `true` quando a sessão ainda precisa passar pelo segundo fator. */
+  precisaSegundoFator: () => Promise<boolean>;
   selecionarCondominio: (id: string) => Promise<void>;
   recarregar: () => Promise<void>;
   criarCondominio: (dados: {
@@ -214,6 +230,79 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return {};
   }, []);
 
+  /**
+   * Sai de todos os aparelhos.
+   *
+   * O Supabase não expõe uma lista de sessões ao cliente, mas expõe o encerramento
+   * global — que é o que de fato importa depois de perder o celular ou desconfiar
+   * de um acesso: derrubar tudo de uma vez, inclusive o aparelho que não está na
+   * mão. Combinado com a troca de senha, recupera a conta por completo.
+   */
+  const sairDeTodosAparelhos: AuthState['sairDeTodosAparelhos'] = useCallback(async () => {
+    const { error } = await supabase.auth.signOut({ scope: 'global' });
+    if (error) return { error: traduzErro(error.message) };
+    await AsyncStorage.removeItem(CHAVE_CONDOMINIO);
+    await limparCache();
+    selecionadoRef.current = null;
+    return {};
+  }, []);
+
+  // --- Verificação em duas etapas -------------------------------------------
+  //
+  // O síndico alcança CPF, RG e o financeiro de todo o condomínio protegido por
+  // uma senha só. TOTP é o segundo fator que não depende de SMS (interceptável,
+  // e com custo por mensagem) nem de servidor de e-mail.
+
+  const fatorMFA: AuthState['fatorMFA'] = useCallback(async () => {
+    const { data, error } = await supabase.auth.mfa.listFactors();
+    if (error) return null;
+    const totp = data?.totp?.find((f) => f.status === 'verified');
+    return totp ? { id: totp.id } : null;
+  }, []);
+
+  const iniciarMFA: AuthState['iniciarMFA'] = useCallback(async () => {
+    // Fatores não confirmados de tentativas anteriores ficariam acumulados e o
+    // Supabase recusa nomes repetidos — limpa antes de começar de novo.
+    const { data: existentes } = await supabase.auth.mfa.listFactors();
+    for (const f of existentes?.totp ?? []) {
+      if (f.status !== 'verified') await supabase.auth.mfa.unenroll({ factorId: f.id });
+    }
+
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'Zelo' });
+    if (error) return { error: traduzErro(error.message) };
+    return { qr: data.totp.qr_code, segredo: data.totp.secret, fatorId: data.id };
+  }, []);
+
+  const confirmarMFA: AuthState['confirmarMFA'] = useCallback(async (fatorId, codigo) => {
+    const { data: desafio, error: erroDesafio } = await supabase.auth.mfa.challenge({ factorId: fatorId });
+    if (erroDesafio) return { error: traduzErro(erroDesafio.message) };
+    const { error } = await supabase.auth.mfa.verify({
+      factorId: fatorId,
+      challengeId: desafio.id,
+      code: codigo.trim(),
+    });
+    return { error: error ? traduzErroMFA(error.message) : undefined };
+  }, []);
+
+  const removerMFA: AuthState['removerMFA'] = useCallback(async (fatorId) => {
+    const { error } = await supabase.auth.mfa.unenroll({ factorId: fatorId });
+    return { error: error ? traduzErro(error.message) : undefined };
+  }, []);
+
+  const verificarDesafioMFA: AuthState['verificarDesafioMFA'] = useCallback(async (codigo) => {
+    const { data, error: erroLista } = await supabase.auth.mfa.listFactors();
+    if (erroLista) return { error: traduzErro(erroLista.message) };
+    const fator = data?.totp?.find((f) => f.status === 'verified');
+    if (!fator) return { error: 'Nenhuma verificação em duas etapas configurada.' };
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: fator.id, code: codigo.trim() });
+    return { error: error ? traduzErroMFA(error.message) : undefined };
+  }, []);
+
+  const precisaSegundoFator: AuthState['precisaSegundoFator'] = useCallback(async () => {
+    const { data } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+    return data?.nextLevel === 'aal2' && data?.currentLevel !== 'aal2';
+  }, []);
+
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     await AsyncStorage.removeItem(CHAVE_CONDOMINIO);
@@ -315,6 +404,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     signUp,
     alterarSenha,
     excluirConta,
+    sairDeTodosAparelhos,
+    fatorMFA,
+    iniciarMFA,
+    confirmarMFA,
+    removerMFA,
+    verificarDesafioMFA,
+    precisaSegundoFator,
     resetarSenha,
     signOut,
     selecionarCondominio,
@@ -332,6 +428,13 @@ export function useAuth(): AuthState {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth deve ser usado dentro de AuthProvider');
   return ctx;
+}
+
+/** O erro de código inválido precisa ser específico: é o mais comum e o único acionável. */
+function traduzErroMFA(msg: string): string {
+  const m = msg.toLowerCase();
+  if (m.includes('invalid') || m.includes('code')) return 'Código incorreto ou expirado. Tente o próximo.';
+  return traduzErro(msg);
 }
 
 function traduzErro(msg: string): string {

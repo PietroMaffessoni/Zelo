@@ -11,11 +11,21 @@ import { useAppTheme } from '@/lib/theme';
 export default function Login() {
   const router = useRouter();
   const { palette } = useAppTheme();
-  const { signIn } = useAuth();
+  const { signIn, precisaSegundoFator, verificarDesafioMFA } = useAuth();
   const [email, setEmail] = useState('');
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+  /**
+   * Segundo fator pendente.
+   *
+   * O `signInWithPassword` do Supabase SUCEDE mesmo com 2FA ativa — ele apenas
+   * devolve uma sessão de nível aal1. Quem exige o código é a aplicação: sem
+   * esta etapa, ativar a verificação em duas etapas não protegeria nada, porque
+   * a senha sozinha continuaria abrindo o app.
+   */
+  const [pedindoCodigo, setPedindoCodigo] = useState(false);
+  const [codigo, setCodigo] = useState('');
 
   async function entrar() {
     if (!email || !senha) {
@@ -25,9 +35,30 @@ export default function Login() {
     setCarregando(true);
     setErro(null);
     const { error } = await signIn(email, senha);
+    if (error) {
+      setCarregando(false);
+      setErro(error);
+      return;
+    }
+
+    const exige = await precisaSegundoFator();
     setCarregando(false);
-    if (error) setErro(error);
-    else router.replace('/');
+    if (exige) {
+      setPedindoCodigo(true);
+      setCodigo('');
+      return;
+    }
+    router.replace('/');
+  }
+
+  async function confirmarCodigo() {
+    if (codigo.trim().length < 6) return setErro('Digite os 6 dígitos do aplicativo.');
+    setCarregando(true);
+    setErro(null);
+    const { error } = await verificarDesafioMFA(codigo);
+    setCarregando(false);
+    if (error) return setErro(error);
+    router.replace('/');
   }
 
   return (
@@ -36,6 +67,52 @@ export default function Login() {
         <Brand size="lg" tagline />
       </View>
 
+      {pedindoCodigo ? (
+        <View style={{ gap: spacing.lg }}>
+          <View>
+            <AppText variant="heading">Verificação em duas etapas</AppText>
+            <AppText variant="caption" color="muted" style={{ marginTop: 4 }}>
+              Digite o código de 6 dígitos do seu aplicativo autenticador.
+            </AppText>
+          </View>
+
+          <Input
+            label="Código"
+            placeholder="000000"
+            keyboardType="number-pad"
+            maxLength={6}
+            autoFocus
+            value={codigo}
+            onChangeText={setCodigo}
+            onSubmitEditing={confirmarCodigo}
+          />
+
+          {erro ? (
+            <View
+              style={{
+                backgroundColor: palette.dangerSoft,
+                borderRadius: radius.md,
+                paddingVertical: spacing.sm + 2,
+                paddingHorizontal: spacing.md,
+              }}
+            >
+              <AppText variant="caption" style={{ color: palette.danger }}>
+                {erro}
+              </AppText>
+            </View>
+          ) : null}
+
+          <Button title="Confirmar" onPress={confirmarCodigo} loading={carregando} size="lg" />
+          <Button
+            title="Voltar"
+            variant="ghost"
+            onPress={() => {
+              setPedindoCodigo(false);
+              setErro(null);
+            }}
+          />
+        </View>
+      ) : (
       <View style={{ gap: spacing.lg }}>
         <AppText variant="heading">Entrar</AppText>
 
@@ -93,6 +170,7 @@ export default function Login() {
           </Link>
         </View>
       </View>
+      )}
     </Screen>
   );
 }
