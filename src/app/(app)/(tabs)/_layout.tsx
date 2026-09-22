@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
-import { StyleSheet } from 'react-native';
+import { PixelRatio, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useAuth } from '@/lib/auth';
@@ -28,15 +28,32 @@ const ALTURA_ICONE = 28;
 /** Respiro próprio do item da aba no react-navigation: 5px em cima e 5 embaixo. */
 const RESPIRO_ITEM = 10;
 const LINHA_ROTULO = 14;
-const ALTURA_CONTEUDO = RESPIRO_ITEM + ALTURA_ICONE + LINHA_ROTULO;
 const PADDING_TOPO = 6;
 const PADDING_BASE = 8;
+
+/**
+ * Teto do fator de ampliação de fonte considerado no cálculo da barra.
+ *
+ * O rótulo acompanha o ajuste de tamanho de fonte do sistema (`allowFontScaling`
+ * segue ligado — desligá-lo tiraria a acessibilidade de quem depende dele). Só
+ * que a altura da barra era calculada para 14px de linha fixos: com a fonte
+ * grande do sistema, o texto voltava a ser cortado.
+ *
+ * A barra passa a crescer junto, até 1,4×, e para aí. O teto existe porque em 2×
+ * uma barra de abas tomaria um terço da tela do celular; desse ponto em diante
+ * quem cede é o rótulo, que é a troca menos ruim — o ícone e o alvo de toque
+ * continuam inteiros.
+ */
+const FATOR_FONTE_MAX = 1.4;
 
 export default function TabsLayout() {
   const { papel } = useAuth();
   const { palette } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { navegacaoLateral } = useLayout();
+  // `getFontScale` reflete o ajuste de tamanho de fonte do sistema operacional.
+  const fatorFonte = Math.min(PixelRatio.getFontScale(), FATOR_FONTE_MAX);
+  const alturaConteudo = RESPIRO_ITEM + ALTURA_ICONE + Math.ceil(LINHA_ROTULO * fatorFonte);
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
   const zelador = papel === 'zelador';
@@ -62,10 +79,11 @@ export default function TabsLayout() {
           borderTopColor: palette.border,
           // A altura é o conteúdo MAIS os respiros, nunca um número fixo: assim a
           // área útil é a mesma com ou sem safe area, e o rótulo tem onde caber
-          // nos dois casos. Ver ALTURA_CONTEUDO.
+          // nos dois casos. `alturaConteudo` já considera o ajuste de tamanho de
+          // fonte do sistema — ver FATOR_FONTE_MAX.
           height:
             PADDING_TOPO +
-            ALTURA_CONTEUDO +
+            alturaConteudo +
             Math.max(insets.bottom, PADDING_BASE) +
             // O fio de cima entra na altura (a caixa do RN é border-box); sem
             // somá-lo, falta exatamente ele de área útil e o rótulo perde 1px.
@@ -78,7 +96,8 @@ export default function TabsLayout() {
         // Rótulo um grau menor e com entreletra aberta: a barra fica mais calma e
         // o ícone volta a ser o que identifica a aba. `lineHeight` é explícito
         // porque o leading padrão varia por plataforma — e é ele que entra na
-        // conta de ALTURA_CONTEUDO.
+        // conta da altura. Vai sem o fator de fonte de propósito: o RN já amplia
+        // fonte e linha juntos, e multiplicar aqui dobraria o espaçamento.
         tabBarLabelStyle: {
           fontSize: 10.5,
           lineHeight: LINHA_ROTULO,

@@ -2,7 +2,7 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Card, Divider, ListItem, Screen, SectionHeader } from '@/components/ui';
+import { AppHeader, AppText, Avatar, Badge, Card, ListItem, Panel, Screen, SectionHeader } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
@@ -75,59 +75,48 @@ export default function Mais() {
 
       {/* Serviços */}
       <SectionHeader title="Serviços" style={{ marginTop: spacing.xl }} />
-      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+      <Panel style={{ paddingHorizontal: spacing.lg }}>
         <ListItem icon="megaphone-outline" iconTone="primary" title="Comunicados" subtitle="Avisos do condomínio" onPress={() => router.push('/(app)/comunicados')} />
         {!equipe ? (
           <>
-            <Divider />
             <ListItem icon="documents-outline" iconTone="info" title="Central do morador" subtitle="Solicitações à administração" onPress={() => router.push('/(app)/central')} />
-            <Divider />
             <ListItem icon="cash-outline" iconTone="success" title="Financeiro" subtitle="Boletos e despesas do condomínio" onPress={() => router.push('/(app)/financeiro')} />
           </>
         ) : null}
-        <Divider />
         <ListItem icon="book-outline" iconTone="info" title="Documentos" subtitle="Regimento, convenção, atas e editais" onPress={() => router.push('/(app)/documentos')} />
         {!equipe ? (
           <>
-            <Divider />
             <ListItem icon="podium-outline" iconTone="primary" title="Assembleias" subtitle="Convocações e votações" onPress={() => router.push('/(app)/assembleias')} />
-            <Divider />
             <ListItem icon="bulb-outline" iconTone="warning" title="Propostas de pauta" subtitle="Sugira e apoie ideias para o condomínio" onPress={() => router.push('/(app)/propostas')} />
           </>
         ) : null}
-        <Divider />
         <ListItem icon="calendar-outline" iconTone="info" title="Agenda" subtitle="Eventos e datas importantes" onPress={() => router.push('/(app)/agenda')} />
         {!equipe ? (
           <>
-            <Divider />
             <ListItem icon="alert-circle-outline" iconTone="danger" title="Advertências e multas" subtitle={gestor ? 'Aplicar e gerenciar infrações' : 'Infrações da sua unidade'} onPress={() => router.push('/(app)/infracoes')} />
           </>
         ) : null}
-        <Divider />
         <ListItem icon="cube-outline" iconTone="warning" title="Achados e perdidos" subtitle="Objetos encontrados no condomínio" onPress={() => router.push('/(app)/achados')} />
         {membershipAtual?.unidade_id ? (
           <>
-            <Divider />
             <ListItem icon="people-outline" iconTone="info" title="Visitantes" subtitle="Autorizar entrada de visitas" onPress={() => router.push('/(app)/visitantes')} />
-            <Divider />
             <ListItem icon="car-outline" iconTone="primary" title="Veículos" subtitle="Meus veículos cadastrados" onPress={() => router.push('/(app)/veiculos')} />
           </>
         ) : null}
-      </Card>
+      </Panel>
 
       {/* Gestão — síndico, conselho fiscal e zelador (operação/manutenção) */}
       {veManutencao(papel) ? (
         <>
           <SectionHeader title="Gestão" style={{ marginTop: spacing.xl }} />
-          <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+          <Panel style={{ paddingHorizontal: spacing.lg }}>
             <ListItem icon="construct-outline" iconTone="warning" title="Manutenção" subtitle="Equipamentos e manutenção preventiva" onPress={() => router.push('/(app)/manutencao')} />
             {conselho ? (
               <>
-                <Divider />
                 <ListItem icon="bar-chart-outline" iconTone="success" title="Prestação de contas" subtitle="Receitas e despesas por mês" onPress={() => router.push('/(app)/financeiro/prestacao')} />
               </>
             ) : null}
-          </Card>
+          </Panel>
         </>
       ) : null}
 
@@ -135,21 +124,14 @@ export default function Mais() {
       {gestor ? (
         <>
           <SectionHeader title="Administração" style={{ marginTop: spacing.xl }} />
-          <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+          <Panel style={{ paddingHorizontal: spacing.lg }}>
             <ListItem icon="add-circle-outline" iconTone="primary" title="Publicar comunicado" onPress={() => router.push('/(app)/comunicados/novo')} />
-            <Divider />
             <ListItem icon="people-outline" iconTone="info" title="Moradores e unidades" subtitle="Cadastro, ficha (CPF/RG) e busca de moradores" onPress={() => router.push('/(app)/unidades')} />
-            <Divider />
             <ListItem icon="business-outline" iconTone="warning" title="Áreas comuns" subtitle="Taxa de uso, limites e disponibilidade" onPress={() => router.push('/(app)/areas')} />
-            <Divider />
             <ListItem icon="trending-down-outline" iconTone="danger" title="Inadimplência" subtitle="Unidades com boletos vencidos" onPress={() => router.push('/(app)/financeiro/inadimplencia')} />
-            <Divider />
             <ListItem icon="briefcase-outline" iconTone="primary" title="Contas a pagar" subtitle="Enviar despesas para a administradora" onPress={() => router.push('/(app)/financeiro/administradora')} />
-            <Divider />
             <ListItem icon="receipt-outline" iconTone="neutral" title="Registro de atividades" subtitle="Quem fez o quê na administração" onPress={() => router.push('/(app)/auditoria')} />
-            <Divider />
             <ListItem icon="lock-closed-outline" iconTone="neutral" title="Privacidade e retenção" subtitle="Por quanto tempo guardar dados de portaria" onPress={() => router.push('/(app)/privacidade-dados')} />
-            <Divider />
             <ListItem
               icon="key-outline"
               iconTone="success"
@@ -157,7 +139,6 @@ export default function Mais() {
               subtitle={membershipAtual?.condominio?.codigo_convite ?? '—'}
               chevron={false}
             />
-            <Divider />
             <ListItem
               icon="shield-checkmark-outline"
               iconTone="warning"
@@ -169,7 +150,6 @@ export default function Mais() {
               )}
               onPress={gerarCodigoDaPortaria}
             />
-            <Divider />
             <ListItem
               icon="construct-outline"
               iconTone="info"
@@ -181,17 +161,16 @@ export default function Mais() {
               )}
               onPress={gerarCodigoDoZelador}
             />
-          </Card>
+          </Panel>
         </>
       ) : null}
 
       {/* Conta */}
       <SectionHeader title="Conta" style={{ marginTop: spacing.xl }} />
-      <Card padded={false} style={{ paddingHorizontal: spacing.lg }}>
+      <Panel style={{ paddingHorizontal: spacing.lg }}>
         <ListItem icon="person-outline" iconTone="neutral" title="Meu perfil" onPress={() => router.push('/(app)/perfil')} />
         {membershipAtual?.unidade_id ? (
           <>
-            <Divider />
             <ListItem
               icon="home-outline"
               iconTone="primary"
@@ -203,13 +182,11 @@ export default function Mais() {
         ) : null}
         {memberships.length > 1 ? (
           <>
-            <Divider />
             <ListItem icon="swap-horizontal-outline" iconTone="info" title="Trocar de condomínio" onPress={() => router.push('/(app)/perfil')} />
           </>
         ) : null}
-        <Divider />
         <ListItem icon="log-out-outline" iconTone="danger" title="Sair" chevron={false} onPress={sair} />
-      </Card>
+      </Panel>
 
       <AppText color="subtle" center variant="caption" style={{ marginTop: spacing.xxl }}>
         Zelo · versão 1.0

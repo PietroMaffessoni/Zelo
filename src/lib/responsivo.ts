@@ -73,6 +73,25 @@ const GUTTER_ESTREITO = 14;
 const LARGURA_ESTREITA = 360;
 
 /**
+ * Largura a partir da qual a navegação lateral fixa entra.
+ *
+ * O Material 3 põe a gaveta permanente em 840 (faixa `expandida`) e, abaixo
+ * disso, recomenda a régua de navegação — uma coluna estreita com três a sete
+ * destinos. Aqui o corte desce para 768, e é uma divergência deliberada:
+ *
+ *  - O Zelo tem cerca de VINTE destinos. Numa régua eles não cabem: sobrariam
+ *    quatro, e os outros dezesseis voltariam para trás de um "Mais" — que é
+ *    justamente o que a barra lateral existe para evitar.
+ *  - O corte de 840 do M3 é calibrado para aplicativos cujo painel principal é
+ *    denso (planilha, caixa de entrada, editor). Os painéis daqui são listas de
+ *    uma coluna, que se leem bem nos 540px que sobram ao lado da barra de 228.
+ *
+ * Em 768 está o tablet em retrato. Deixá-lo na barra de abas de celular, com
+ * quatro destinos, seria trocar navegação por espaço que ele não precisa.
+ */
+const LARGURA_NAVEGACAO_LATERAL = 768;
+
+/**
  * Modalidade de entrada: o dedo precisa de alvo grande, o ponteiro não.
  *
  * No nativo é sempre toque. No web, `pointer: coarse` descreve o dispositivo
@@ -130,10 +149,10 @@ export type Layout = {
    * navegação nenhuma ou com as duas ao mesmo tempo.
    *
    * Exige três coisas: web (no nativo a convenção é a barra de abas), largura
-   * expandida (840+, o corte em que o M3 libera a gaveta permanente — abaixo
-   * dela os 264px da barra espremem demais o conteúdo) e altura pelo menos
-   * média. Esse último é o que impede um celular deitado, que tem largura de
-   * sobra e altura de menos, de receber uma barra lateral de tela cheia.
+   * de pelo menos 768 (ver `LARGURA_NAVEGACAO_LATERAL` para por que 768 e não
+   * os 840 do M3) e altura pelo menos média. Esse último é o que impede um
+   * celular deitado, que tem largura de sobra e altura de menos, de receber uma
+   * barra lateral de tela cheia.
    */
   navegacaoLateral: boolean;
   /** `true` da classe informada para cima. */
@@ -164,7 +183,7 @@ export function useLayout(): Layout {
     toque,
     alturaCurta: classeAltura === 'compacta',
     navegacaoLateral:
-      Platform.OS === 'web' && width >= LARGURA.expandida && height >= ALTURA.media,
+      Platform.OS === 'web' && width >= LARGURA_NAVEGACAO_LATERAL && height >= ALTURA.media,
     acimaDe: (classe) => width >= LARGURA[classe],
     abaixoDe: (classe) => width < LARGURA[classe],
   };
