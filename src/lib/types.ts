@@ -567,3 +567,19 @@ export function statusFinanceiroEfetivo(l: Pick<LancamentoFinanceiro, 'status' |
   if (l.status === 'pendente' && l.vencimento < new Date().toISOString().slice(0, 10)) return 'atrasado';
   return l.status;
 }
+
+/** Um ato de gestão registrado na trilha de auditoria (setup.sql seção 13). */
+export type RegistroAuditoria = {
+  id: string;
+  condominio_id: string;
+  ator_id: string | null;
+  /** Nome no momento do ato — sobrevive à exclusão da conta de quem agiu. */
+  ator_nome: string | null;
+  acao: 'criou' | 'alterou' | 'removeu';
+  /** Nome da tabela. Ver `entidadeLabel` em `@/lib/labels`. */
+  entidade: string;
+  entidade_id: string | null;
+  /** `{ campo: 'alterado' }` ou `{ campo: { de, para } }` nos campos de decisão. */
+  detalhes: Record<string, unknown>;
+  created_at: string;
+};

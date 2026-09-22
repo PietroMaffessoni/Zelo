@@ -71,6 +71,7 @@ export function Sidebar() {
         { label: 'Áreas comuns', icon: 'business-outline', href: '/(app)/areas', match: 'areas' },
         { label: 'Inadimplência', icon: 'trending-down-outline', href: '/(app)/financeiro/inadimplencia', match: 'inadimplencia' },
         { label: 'Contas a pagar', icon: 'briefcase-outline', href: '/(app)/financeiro/administradora', match: 'administradora' },
+        { label: 'Registro de atividades', icon: 'receipt-outline', href: '/(app)/auditoria', match: 'auditoria' },
       ]
     : [];
 

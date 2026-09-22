@@ -146,6 +146,8 @@ export default function Mais() {
             <Divider />
             <ListItem icon="briefcase-outline" iconTone="primary" title="Contas a pagar" subtitle="Enviar despesas para a administradora" onPress={() => router.push('/(app)/financeiro/administradora')} />
             <Divider />
+            <ListItem icon="receipt-outline" iconTone="neutral" title="Registro de atividades" subtitle="Quem fez o quê na administração" onPress={() => router.push('/(app)/auditoria')} />
+            <Divider />
             <ListItem
               icon="key-outline"
               iconTone="success"

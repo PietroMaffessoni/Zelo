@@ -286,3 +286,61 @@ export function checklistDaCategoria(categoria: string): string[] {
 export function opcoes<T extends string>(meta: Record<T, { label: string }>) {
   return (Object.keys(meta) as T[]).map((value) => ({ value, label: meta[value].label }));
 }
+
+/**
+ * Nome de tabela → o que o síndico chama aquilo.
+ *
+ * A trilha de auditoria grava `TG_TABLE_NAME`, que é vocabulário de banco.
+ * "lancamentos_financeiros" não diz nada a quem presta contas; "Lançamento
+ * financeiro" diz.
+ */
+export const entidadeLabel: Record<string, { label: string; icon: string }> = {
+  lancamentos_financeiros: { label: 'Lançamento financeiro', icon: 'cash-outline' },
+  memberships: { label: 'Morador / vínculo', icon: 'people-outline' },
+  reservas: { label: 'Reserva', icon: 'calendar-outline' },
+  infracoes: { label: 'Advertência ou multa', icon: 'alert-circle-outline' },
+  documentos: { label: 'Documento', icon: 'book-outline' },
+  areas_comuns: { label: 'Área comum', icon: 'business-outline' },
+  assembleias: { label: 'Assembleia', icon: 'podium-outline' },
+};
+
+/** Campos de decisão em português, para a linha do log se ler como frase. */
+const campoLabel: Record<string, string> = {
+  status: 'situação',
+  papel: 'papel',
+  vinculo: 'vínculo',
+  valor: 'valor',
+  pago_em: 'data de pagamento',
+  vencimento: 'vencimento',
+  tipo: 'tipo',
+  fixado: 'destaque',
+  encerrada: 'encerramento',
+  ativo: 'disponibilidade',
+  enviado_administradora_em: 'envio à administradora',
+};
+
+/**
+ * Descreve em uma frase o que mudou num registro de auditoria.
+ *
+ * Para os campos de decisão mostra o antes e o depois (é isso que se contesta);
+ * para os demais, apenas que foram alterados — o valor pode ser dado pessoal e
+ * de propósito não é guardado. Ver a seção 13 do setup.sql.
+ */
+export function descreverAuditoria(detalhes: Record<string, unknown>): string {
+  const partes = Object.entries(detalhes ?? {}).map(([campo, valor]) => {
+    const nome = campoLabel[campo] ?? campo.replace(/_/g, ' ');
+    if (valor && typeof valor === 'object' && 'de' in (valor as object)) {
+      const { de, para } = valor as { de: unknown; para: unknown };
+      return `${nome}: ${formatarValor(de)} → ${formatarValor(para)}`;
+    }
+    return nome;
+  });
+  if (partes.length === 0) return '';
+  return partes.join(' · ');
+}
+
+function formatarValor(v: unknown): string {
+  if (v === null || v === undefined) return '—';
+  if (typeof v === 'boolean') return v ? 'sim' : 'não';
+  return String(v).replace(/_/g, ' ');
+}

@@ -32,6 +32,7 @@ import type {
   PreferenciasNotificacao,
   Prioridade,
   PropostaPauta,
+  RegistroAuditoria,
   RegistroVisitante,
   Reserva,
   ReservaStatus,
@@ -1347,4 +1348,24 @@ export async function prestacaoDeContas(condominioId: string, meses = 6): Promis
     }
   }
   return buckets;
+}
+
+// ------------------------------------------------------------------ Auditoria
+/**
+ * Trilha de auditoria do condomínio (síndico e conselho — ver `auditoria_select`).
+ * Paginada como as demais listas: é a tabela que mais cresce no produto, já que
+ * ganha uma linha a cada ato de gestão.
+ */
+export async function listarAuditoria(
+  condominioId: string,
+  pagina = 0,
+  entidade?: string,
+): Promise<RegistroAuditoria[]> {
+  let query = supabase
+    .from('auditoria')
+    .select('*')
+    .eq('condominio_id', condominioId)
+    .order('created_at', { ascending: false });
+  if (entidade) query = query.eq('entidade', entidade);
+  return unwrap(await query.range(...faixaDaPagina(pagina))) as RegistroAuditoria[];
 }
