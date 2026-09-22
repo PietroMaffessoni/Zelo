@@ -1369,3 +1369,14 @@ export async function listarAuditoria(
   if (entidade) query = query.eq('entidade', entidade);
   return unwrap(await query.range(...faixaDaPagina(pagina))) as RegistroAuditoria[];
 }
+
+/**
+ * Prazos de retenção de dados de portaria (LGPD — ver setup.sql seção 14).
+ * `0` significa "nunca expurgar", para condomínios cuja convenção exija guardar.
+ */
+export async function atualizarRetencao(
+  condominioId: string,
+  dados: { retencao_visitantes_dias?: number; retencao_encomendas_dias?: number },
+) {
+  await supabase.from('condominios').update(dados).eq('id', condominioId);
+}

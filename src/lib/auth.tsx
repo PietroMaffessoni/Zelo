@@ -67,7 +67,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .from('memberships')
         // codigo_convite/codigo_portaria/codigo_zelador não fazem parte do select geral de
         // condominios (são segredos de acesso) — quem é gestor os busca à parte, via RPC, logo abaixo.
-        .select('*, condominio:condominios(id, nome, cidade, uf, endereco, cnpj, administradora, administradora_contato, criado_por, created_at), unidade:unidades(*)')
+        .select('*, condominio:condominios(id, nome, cidade, uf, endereco, cnpj, administradora, administradora_contato, retencao_visitantes_dias, retencao_encomendas_dias, criado_por, created_at), unidade:unidades(*)')
         .eq('user_id', uid)
         .in('status', ['ativo', 'pendente'])
         .order('created_at', { ascending: true }),

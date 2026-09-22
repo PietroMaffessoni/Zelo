@@ -98,6 +98,9 @@ export type Condominio = {
   // expiração existir; segue valendo para não derrubar quem já está operando.
   codigo_portaria_expira_em?: string | null;
   codigo_zelador_expira_em?: string | null;
+  // Retenção de dados de portaria (LGPD). 0 = nunca expurgar. Ver setup.sql 14.
+  retencao_visitantes_dias?: number;
+  retencao_encomendas_dias?: number;
   criado_por: string | null;
   created_at: string;
 };

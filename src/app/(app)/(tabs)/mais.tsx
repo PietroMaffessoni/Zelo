@@ -148,6 +148,8 @@ export default function Mais() {
             <Divider />
             <ListItem icon="receipt-outline" iconTone="neutral" title="Registro de atividades" subtitle="Quem fez o quê na administração" onPress={() => router.push('/(app)/auditoria')} />
             <Divider />
+            <ListItem icon="lock-closed-outline" iconTone="neutral" title="Privacidade e retenção" subtitle="Por quanto tempo guardar dados de portaria" onPress={() => router.push('/(app)/privacidade-dados')} />
+            <Divider />
             <ListItem
               icon="key-outline"
               iconTone="success"

@@ -29,7 +29,7 @@ const especies: EspeciePet[] = ['cachorro', 'gato', 'outro'];
 export default function UnidadeDetalhe() {
   const { palette, tone: tones } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { condominioId, membershipAtual, papel } = useAuth();
+  const { condominioId, membershipAtual, papel, user } = useAuth();
   const acao = useAcao();
   const gestor = isGestor(papel);
   const souDaUnidade = membershipAtual?.unidade_id === id;
@@ -207,7 +207,14 @@ export default function UnidadeDetalhe() {
                 </Pressable>
               ) : null}
 
-              {podeGerenciar ? <FichaMorador membership={m} gestor={gestor} onSaved={refetch} /> : null}
+              {podeGerenciar ? (
+                <FichaMorador
+                  membership={m}
+                  gestor={gestor}
+                  ehVoce={m.user_id === user?.id}
+                  onSaved={refetch}
+                />
+              ) : null}
             </Row>
           ))}
         </Panel>
@@ -324,17 +331,30 @@ export default function UnidadeDetalhe() {
 }
 
 /**
- * Ficha cadastral do morador na visão da unidade: contato + documentos. O gestor
- * edita CPF/RG (só ele e o próprio morador enxergam esses campos, ver RLS de
- * memberships). E-mail/telefone vêm do perfil.
+ * Ficha cadastral do morador na visão da unidade: contato + documentos.
+ *
+ * A tela prometia mais do que o banco entrega. `podeGerenciar` é
+ * `gestor || souDaUnidade`, mas `memberships_select` só devolve a linha para o
+ * PRÓPRIO usuário ou para o gestor — então um morador que abria "Minha unidade"
+ * via o bloco da ficha do colega de apartamento sempre vazio, com a frase "ficha
+ * cadastral não preenchida" mesmo quando ela estava preenchida.
+ *
+ * A correção é alinhar a interface ao que a regra permite, e não afrouxar a
+ * regra: CPF e RG de quem divide o apartamento não é dado que o outro precise
+ * ver, e alargar a policy exporia o documento a mais gente para consertar um
+ * texto errado. Contato (`perfis_contato`) segue visível entre quem é da mesma
+ * unidade, que é a informação de fato útil ali — ver a seção 10.2 do setup.sql.
  */
 function FichaMorador({
   membership,
   gestor,
+  ehVoce,
   onSaved,
 }: {
   membership: Membership;
   gestor: boolean;
+  /** O próprio usuário: a RLS devolve a linha dele, então o CPF/RG aparece. */
+  ehVoce: boolean;
   onSaved: () => void;
 }) {
   const { palette } = useAppTheme();
@@ -346,6 +366,9 @@ function FichaMorador({
 
   const email = membership.profile?.contato?.email;
   const telefone = membership.profile?.contato?.telefone;
+  // Só gestor e o próprio morador recebem CPF/RG do banco. Para os demais os
+  // campos chegam indefinidos — não adianta reservar espaço para eles.
+  const vêDocumentos = gestor || ehVoce;
 
   async function salvar() {
     setSalvando(true);
@@ -376,7 +399,7 @@ function FichaMorador({
     );
   }
 
-  const temFicha = email || telefone || membership.cpf || membership.rg;
+  const temFicha = email || telefone || (vêDocumentos && (membership.cpf || membership.rg));
   return (
     <View style={{ marginTop: spacing.sm }}>
       <Divider style={{ marginBottom: spacing.sm }} />
@@ -384,11 +407,13 @@ function FichaMorador({
         <View style={{ gap: 3 }}>
           {email ? <LinhaFicha icon="mail-outline" texto={email} /> : null}
           {telefone ? <LinhaFicha icon="call-outline" texto={telefone} /> : null}
-          {membership.cpf ? <LinhaFicha icon="card-outline" texto={`CPF ${membership.cpf}`} /> : null}
-          {membership.rg ? <LinhaFicha icon="document-text-outline" texto={`RG ${membership.rg}`} /> : null}
+          {vêDocumentos && membership.cpf ? <LinhaFicha icon="card-outline" texto={`CPF ${membership.cpf}`} /> : null}
+          {vêDocumentos && membership.rg ? <LinhaFicha icon="document-text-outline" texto={`RG ${membership.rg}`} /> : null}
         </View>
       ) : (
-        <AppText color="subtle" variant="caption">Ficha cadastral não preenchida.</AppText>
+        <AppText color="subtle" variant="caption">
+          {vêDocumentos ? 'Ficha cadastral não preenchida.' : 'Sem contato cadastrado.'}
+        </AppText>
       )}
       {gestor ? (
         <Pressable onPress={() => setEditando(true)} hitSlop={6} style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: spacing.sm }}>
