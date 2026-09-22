@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { View } from 'react-native';
 
 import { AppHeader, AppText, Badge, EmptyState, Input, Loading, MetaLine, Panel, Row, Screen } from '@/components/ui';
@@ -17,15 +17,18 @@ export default function PortariaVeiculos() {
     [condominioId],
   );
 
+  // Sem `useMemo`: é filtro puro sobre dados já carregados, e o compilador do
+  // React memoiza sozinho. O memo manual dependia de `data ?? []`, uma expressão
+  // que cria um array novo a cada renderização — a dependência mudava sempre e o
+  // memo nunca servia para nada.
   const veiculos = data ?? [];
-  const filtrados = useMemo(() => {
-    const termo = busca.trim().toLowerCase();
-    if (!termo) return veiculos;
-    return veiculos.filter((v) => {
-      const unidadeTxt = `${v.unidade?.bloco ?? ''} ${v.unidade?.numero ?? ''}`.toLowerCase();
-      return v.placa.toLowerCase().includes(termo) || unidadeTxt.includes(termo);
-    });
-  }, [veiculos, busca]);
+  const termo = busca.trim().toLowerCase();
+  const filtrados = !termo
+    ? veiculos
+    : veiculos.filter((v) => {
+        const unidadeTxt = `${v.unidade?.bloco ?? ''} ${v.unidade?.numero ?? ''}`.toLowerCase();
+        return v.placa.toLowerCase().includes(termo) || unidadeTxt.includes(termo);
+      });
 
   return (
     <Screen refreshing={refreshing} onRefresh={refetch}>

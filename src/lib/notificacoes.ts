@@ -146,10 +146,16 @@ export function useNotificacoesRealtime(
   preferencias: PreferenciasNotificacao | undefined,
   papel?: string | null,
 ) {
+  // As refs guardam o valor mais recente para o callback do realtime, que é
+  // criado uma vez e não pode depender de props. A escrita acontece em efeito,
+  // não durante a renderização — escrever numa ref no meio do render torna o
+  // componente impuro.
   const prefsRef = useRef(preferencias);
-  prefsRef.current = preferencias;
   const staffRef = useRef(papel);
-  staffRef.current = papel;
+  useEffect(() => {
+    prefsRef.current = preferencias;
+    staffRef.current = papel;
+  });
 
   useEffect(() => {
     if (!condominioId || !userId) return;

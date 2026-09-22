@@ -140,7 +140,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   useEffect(() => {
     let ativo = true;
+    // Mesmo caso do `useFetch`: recuperar a sessão é sincronizar com um sistema
+    // externo (o Supabase), e `ready` é o sinal de que essa sincronização
+    // terminou. Sem a sessão não há o que renderizar, então não dá para derivar
+    // isso de outra coisa.
     if (!isSupabaseConfigured) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setReady(true);
       return;
     }

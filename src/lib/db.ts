@@ -14,7 +14,6 @@ import type {
   ChamadoStatus,
   Comunicado,
   CategoriaDocumento,
-  CategoriaEquipamento,
   CategoriaFinanceira,
   Dependente,
   Documento,

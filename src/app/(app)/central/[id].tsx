@@ -1,5 +1,5 @@
 import { useLocalSearchParams } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Avatar, Badge, Button, Card, Input, Loading, Screen, SectionHeader } from '@/components/ui';
@@ -9,35 +9,18 @@ import { useAppTheme } from '@/lib/theme';
 import { getSolicitacao, responderSolicitacao } from '@/lib/db';
 import { formatDataHora } from '@/lib/format';
 import * as L from '@/lib/labels';
-import { isGestor, type SolicitacaoStatus } from '@/lib/types';
+import { useAcao } from '@/lib/acao';
+import { isGestor, type Solicitacao, type SolicitacaoStatus } from '@/lib/types';
 import { useFetch } from '@/lib/useFetch';
 
 const statuses: SolicitacaoStatus[] = ['aberta', 'em_analise', 'concluida', 'recusada'];
 
 export default function SolicitacaoDetalhe() {
-  const { palette, tone: tones } = useAppTheme();
+  const { palette } = useAppTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { papel } = useAuth();
   const gestor = isGestor(papel);
   const { data: s, loading, refetch } = useFetch(() => getSolicitacao(id), [id]);
-
-  const [status, setStatus] = useState<SolicitacaoStatus>('em_analise');
-  const [resposta, setResposta] = useState('');
-  const [salvando, setSalvando] = useState(false);
-
-  useEffect(() => {
-    if (s) {
-      setStatus(s.status === 'aberta' ? 'em_analise' : s.status);
-      setResposta(s.resposta ?? '');
-    }
-  }, [s]);
-
-  async function salvar() {
-    setSalvando(true);
-    await responderSolicitacao(id, status, resposta.trim() || undefined);
-    setSalvando(false);
-    refetch();
-  }
 
   if (loading || !s)
     return (
@@ -110,50 +93,81 @@ export default function SolicitacaoDetalhe() {
       ) : null}
 
       {/* Painel de resposta (gestor) */}
-      {gestor ? (
-        <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
-          <SectionHeader title="Responder" />
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
-            {statuses.map((s2) => {
-              const meta = L.solicitacaoStatus[s2];
-              const ativo = status === s2;
-              return (
-                <Pressable
-                  key={s2}
-                  onPress={() => setStatus(s2)}
-                  accessibilityRole="button"
-                  accessibilityState={{ selected: ativo }}
-                  accessibilityLabel={meta.label}
-                  style={{
-                    minHeight: 32,
-                    justifyContent: 'center',
-                    paddingHorizontal: spacing.md - 1,
-                    paddingVertical: 6,
-                    borderRadius: radius.md,
-                    borderWidth: 1,
-                    borderColor: ativo ? tones[meta.tone].fg : palette.border,
-                    backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,
-                  }}
-                >
-                  <AppText variant="label" style={{ color: ativo ? tones[meta.tone].fg : palette.textMuted }}>
-                    {meta.label}
-                  </AppText>
-                </Pressable>
-              );
-            })}
-          </View>
-          <Input
-            label="Mensagem ao morador"
-            placeholder="Escreva a resposta..."
-            value={resposta}
-            onChangeText={setResposta}
-            multiline
-            numberOfLines={4}
-            style={{ minHeight: 90, textAlignVertical: 'top' }}
-          />
-          <Button title="Salvar resposta" icon="checkmark" onPress={salvar} loading={salvando} size="lg" />
-        </View>
-      ) : null}
+      {gestor ? <FormResposta key={s.id} solicitacao={s} onSalvo={refetch} /> : null}
     </Screen>
+  );
+}
+
+/**
+ * Painel de resposta do gestor.
+ *
+ * Componente separado, e montado com `key={s.id}`, para que o estado do
+ * formulário NASÇA do registro em vez de ser copiado nele por um efeito. O
+ * padrão anterior — `useEffect` chamando quatro `setState` quando os dados
+ * chegavam — provoca uma renderização a mais a cada carga e é o que o
+ * compilador do React sinaliza: efeito serve para conversar com o mundo de
+ * fora, não para copiar dado de um lugar do React para outro.
+ */
+function FormResposta({ solicitacao, onSalvo }: { solicitacao: Solicitacao; onSalvo: () => void }) {
+  const { palette, tone: tones } = useAppTheme();
+  const acao = useAcao();
+  const [status, setStatus] = useState<SolicitacaoStatus>(
+    solicitacao.status === 'aberta' ? 'em_analise' : solicitacao.status,
+  );
+  const [resposta, setResposta] = useState(solicitacao.resposta ?? '');
+  const [salvando, setSalvando] = useState(false);
+
+  async function salvar() {
+    setSalvando(true);
+    const ok = await acao(() => responderSolicitacao(solicitacao.id, status, resposta.trim() || undefined), {
+      sucesso: 'Resposta enviada ✓',
+      sempre: () => setSalvando(false),
+    });
+    if (ok) onSalvo();
+  }
+
+  return (
+    <View style={{ marginTop: spacing.xl, gap: spacing.md }}>
+      <SectionHeader title="Responder" />
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: spacing.sm }}>
+        {statuses.map((s2) => {
+          const meta = L.solicitacaoStatus[s2];
+          const ativo = status === s2;
+          return (
+            <Pressable
+              key={s2}
+              onPress={() => setStatus(s2)}
+              accessibilityRole="button"
+              accessibilityState={{ selected: ativo }}
+              accessibilityLabel={meta.label}
+              style={{
+                minHeight: 32,
+                justifyContent: 'center',
+                paddingHorizontal: spacing.md - 1,
+                paddingVertical: 6,
+                borderRadius: radius.md,
+                borderWidth: 1,
+                borderColor: ativo ? tones[meta.tone].fg : palette.border,
+                backgroundColor: ativo ? tones[meta.tone].bg : palette.surface,
+              }}
+            >
+              <AppText variant="label" style={{ color: ativo ? tones[meta.tone].fg : palette.textMuted }}>
+                {meta.label}
+              </AppText>
+            </Pressable>
+          );
+        })}
+      </View>
+      <Input
+        label="Mensagem ao morador"
+        placeholder="Escreva a resposta..."
+        value={resposta}
+        onChangeText={setResposta}
+        multiline
+        numberOfLines={4}
+        style={{ minHeight: 90, textAlignVertical: 'top' }}
+      />
+      <Button title="Salvar resposta" icon="checkmark" onPress={salvar} loading={salvando} size="lg" />
+    </View>
   );
 }

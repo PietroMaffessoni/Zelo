@@ -1,6 +1,6 @@
 import dayjs from 'dayjs';
 import { useLocalSearchParams } from 'expo-router';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
 
 import { AppHeader, AppText, Button, Chip, Input, Loading, Screen } from '@/components/ui';
@@ -42,18 +42,20 @@ export default function NovaReserva() {
   const areaSelecionada = areas?.find((a) => a.id === areaId);
   const abertura = horaDe(areaSelecionada?.hora_abertura, 7);
   const fechamento = horaDe(areaSelecionada?.hora_fechamento, 23);
-  const horas = useMemo(
-    () => Array.from({ length: Math.max(0, fechamento - abertura) }, (_, i) => abertura + i),
-    [abertura, fechamento],
-  );
+  // Sem `useMemo`: é função pura de abertura/fechamento e o compilador do React
+  // memoiza sozinho. O `useMemo` manual, aqui, fazia o compilador DESISTIR de
+  // otimizar a tela inteira — ele não consegue provar que a lista de
+  // dependências escrita à mão está correta.
+  const horas = Array.from({ length: Math.max(0, fechamento - abertura) }, (_, i) => abertura + i);
 
-  const dias = useMemo(
-    () =>
-      Array.from({ length: 30 }, (_, i) => {
-        const d = dayjs().add(i, 'day');
-        return { value: d.format('YYYY-MM-DD'), label: i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : d.format('ddd DD/MM') };
-      }),
-    [],
+  // Este, ao contrário, precisa ser calculado uma vez só: lê o relógio. Num
+  // inicializador preguiçoso de estado ele roda na montagem e nunca mais — em
+  // pleno render, `dayjs()` tornaria a tela impura.
+  const [dias] = useState(() =>
+    Array.from({ length: 30 }, (_, i) => {
+      const d = dayjs().add(i, 'day');
+      return { value: d.format('YYYY-MM-DD'), label: i === 0 ? 'Hoje' : i === 1 ? 'Amanhã' : d.format('ddd DD/MM') };
+    }),
   );
 
   // Reservas ativas da área no dia escolhido — para pintar os horários ocupados.
@@ -64,8 +66,10 @@ export default function NovaReserva() {
     return reservasDaArea(areaId, de, ate);
   }, [areaId, dia]);
 
-  // Conjunto de horas ocupadas (a hora h cobre o intervalo [h, h+1)).
-  const ocupadas = useMemo(() => {
+  // Conjunto de horas ocupadas (a hora h cobre o intervalo [h, h+1)). Sem
+  // `useMemo` pelo mesmo motivo de `horas`: é puro e depende só do dia escolhido
+  // e das reservas carregadas.
+  const ocupadas = (() => {
     const set = new Set<number>();
     for (const h of horas) {
       const slotIni = dayjs(dia).hour(h).minute(0).second(0);
@@ -76,7 +80,7 @@ export default function NovaReserva() {
       if (conflito) set.add(h);
     }
     return set;
-  }, [ocupadasReservas, horas, dia]);
+  })();
 
   // Passou uma hora e não sobra livre entre inicio e uma nova hora final?
   function intervaloLivre(a: number, b: number): boolean {

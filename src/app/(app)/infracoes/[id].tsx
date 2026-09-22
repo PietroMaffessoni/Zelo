@@ -1,4 +1,4 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
@@ -13,7 +13,6 @@ import { useFetch } from '@/lib/useFetch';
 
 export default function InfracaoDetalhe() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const router = useRouter();
   const { papel, membershipAtual } = useAuth();
   const gestor = isGestor(papel);
 

@@ -25,8 +25,9 @@ type ToastAtual = { mensagem: string; tone: ToastTone } | null;
 
 export function ToastProvider({ children }: { children: ReactNode }) {
   const [atual, setAtual] = useState<ToastAtual>(null);
-  const opacidade = useRef(new Animated.Value(0)).current;
-  const deslocamento = useRef(new Animated.Value(12)).current;
+  // Ver Skeleton: criados uma vez, sem leitura de ref no render.
+  const [opacidade] = useState(() => new Animated.Value(0));
+  const [deslocamento] = useState(() => new Animated.Value(12));
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const esconder = useCallback(() => {

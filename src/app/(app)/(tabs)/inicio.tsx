@@ -51,16 +51,21 @@ export default function Inicio() {
       morador ? resumoFinanceiroMorador(condominioId, unidadeId) : Promise.resolve(null),
       listarAssembleias(condominioId),
     ]);
-    return { comunicados, resumo, resumoPortaria: resumoPort, resumoFinanceiro: resumoFin, assembleias };
+    // A próxima assembleia é escolhida aqui, e não no render: `Date.now()`
+    // durante a renderização deixa o componente impuro e desliga a memoização.
+    const agora = Date.now();
+    const proximaAssembleia = assembleias
+      .filter((a) => (a.status === 'convocada' || a.status === 'em_andamento') && new Date(a.data_hora).getTime() >= agora)
+      .sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime())[0] ?? null;
+
+    return { comunicados, resumo, resumoPortaria: resumoPort, resumoFinanceiro: resumoFin, proximaAssembleia };
   }, [condominioId, gestor, porteiro, zelador, morador, unidadeId]);
 
   const comunicados = dados.data?.comunicados ?? [];
   const resumo = dados.data?.resumo ?? null;
   const resumoPort = dados.data?.resumoPortaria ?? null;
   const resumoFin = dados.data?.resumoFinanceiro ?? null;
-  const proximaAssembleia = (dados.data?.assembleias ?? [])
-    .filter((a) => (a.status === 'convocada' || a.status === 'em_andamento') && new Date(a.data_hora).getTime() >= Date.now())
-    .sort((a, b) => new Date(a.data_hora).getTime() - new Date(b.data_hora).getTime())[0];
+  const proximaAssembleia = dados.data?.proximaAssembleia ?? null;
 
   const temPainel = gestor || zelador || porteiro || (!!resumoFin && resumoFin.pendentes > 0);
 

@@ -21,14 +21,17 @@ export default function ComunicadoDetalhe() {
   const toast = useToast();
   const { data: c, loading, error } = useFetch(() => getComunicado(id), [id]);
 
-  // Espelha o `fixado` do servidor para o switch responder na hora; se o update
-  // falhar, o valor volta ao anterior.
-  const [fixado, setFixado] = useState(false);
+  /**
+   * Estado otimista do "fixado".
+   *
+   * Guarda só o que o usuário acabou de escolher — `null` significa "nada
+   * escolhido ainda, vale o que veio do servidor". Antes era um `useState(false)`
+   * sincronizado por efeito: além da renderização extra a cada carga, o switch
+   * nascia desligado e pulava para ligado quando os dados chegavam.
+   */
+  const [fixadoOtimista, setFixadoOtimista] = useState<boolean | null>(null);
   const [salvandoFixado, setSalvandoFixado] = useState(false);
-
-  useEffect(() => {
-    if (c) setFixado(!!c.fixado);
-  }, [c]);
+  const fixado = fixadoOtimista ?? !!c?.fixado;
 
   useEffect(() => {
     if (c && user) marcarComunicadoLido(c.id, user.id).catch(() => undefined);
@@ -36,14 +39,14 @@ export default function ComunicadoDetalhe() {
 
   async function alternarFixado(novo: boolean) {
     if (!c) return;
-    setFixado(novo);
+    setFixadoOtimista(novo);
     setSalvandoFixado(true);
     try {
       await fixarComunicado(c.id, novo);
       toast.sucesso(novo ? 'Comunicado fixado no topo ✓' : 'Comunicado desafixado ✓');
       hapticSuccess();
     } catch (e: any) {
-      setFixado(!novo);
+      setFixadoOtimista(!novo);
       toast.erro(e?.message ?? 'Não foi possível alterar.');
       hapticError();
     } finally {

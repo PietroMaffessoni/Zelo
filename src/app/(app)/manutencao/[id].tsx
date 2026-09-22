@@ -1,7 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams } from 'expo-router';
 import dayjs from 'dayjs';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 import { Pressable, View } from 'react-native';
 
 import { AppHeader, AppText, Badge, Button, Card, Divider, Input, Loading, Screen, SectionHeader } from '@/components/ui';
@@ -33,10 +33,9 @@ export default function EquipamentoDetalhe() {
   const [salvando, setSalvando] = useState(false);
   const [erro, setErro] = useState<string | null>(null);
 
-  const template = useMemo(
-    () => (data?.equipamento ? checklistDaCategoria(data.equipamento.categoria) : []),
-    [data?.equipamento],
-  );
+  // Sem `useMemo`: função pura, memoizada pelo compilador. O memo manual fazia
+  // o compilador desistir de otimizar a tela inteira.
+  const template = data?.equipamento ? checklistDaCategoria(data.equipamento.categoria) : [];
 
   if (loading || !data?.equipamento) {
     return (

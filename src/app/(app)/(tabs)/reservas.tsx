@@ -29,8 +29,11 @@ export default function ReservasTab() {
   }, [condominioId]);
 
   const areas = data?.areas ?? [];
-  const agora = Date.now();
-  const reservas = (data?.reservas ?? []).filter((r) => new Date(r.fim).getTime() >= agora || r.status === 'pendente');
+  // `listarReservas` já devolve só futuras ou pendentes (o recorte desceu para o
+  // servidor). Repetir o filtro aqui obrigava a chamar Date.now() a cada
+  // renderização — leitura de relógio no meio do render, que é justamente o que
+  // impede o compilador do React de memoizar a tela.
+  const reservas = data?.reservas ?? [];
   const pendentes = reservas.filter((r) => r.status === 'pendente');
   const proximas = reservas.filter((r) => r.status !== 'pendente' && r.status !== 'rejeitada' && r.status !== 'cancelada');
 

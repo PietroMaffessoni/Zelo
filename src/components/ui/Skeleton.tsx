@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useState } from 'react';
 import { Animated, View, type ViewStyle } from 'react-native';
 
 import { radius, spacing } from '@/constants/theme';
@@ -17,7 +17,10 @@ export function Skeleton({
   style?: ViewStyle;
 }) {
   const { palette } = useAppTheme();
-  const pulso = useRef(new Animated.Value(0.55)).current;
+  // `useState` com inicializador preguiçoso em vez de `useRef(...).current`: cria
+  // o valor uma única vez e sem ler uma ref durante a renderização, que é o que
+  // impede o compilador do React de memoizar o componente.
+  const [pulso] = useState(() => new Animated.Value(0.55));
 
   useEffect(() => {
     const anim = Animated.loop(

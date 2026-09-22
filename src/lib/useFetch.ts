@@ -43,6 +43,16 @@ export function useFetch<T>(fn: () => Promise<T>, deps: unknown[] = [], opcoes: 
   const [refreshing, setRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  /**
+   * Chave das dependências.
+   *
+   * `useCallback` exige um array literal — passar `deps` direto deixa a regra
+   * sem como verificar o que entra. Como as dependências deste hook são sempre
+   * primitivas (ids, papéis, booleanos), serializá-las dá uma dependência única,
+   * estável e comparada por valor.
+   */
+  const chaveDeps = JSON.stringify(deps);
+
   const executar = useCallback(async (modo: Modo) => {
     if (modo === 'refresh') setRefreshing(true);
     else if (modo === 'inicial') setLoading(true);
@@ -65,10 +75,18 @@ export function useFetch<T>(fn: () => Promise<T>, deps: unknown[] = [], opcoes: 
       setLoading(false);
       setRefreshing(false);
     }
+    // `fn` é recriada a cada renderização pelo chamador; quem governa quando
+    // refazer a busca é `chaveDeps`, que compara as dependências por valor.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, deps);
+  }, [chaveDeps, cache]);
 
   useEffect(() => {
+    // A regra "não chame setState dentro de efeito" existe para impedir que o
+    // React seja usado para copiar estado de um lugar para outro. Aqui é o caso
+    // legítimo que ela não distingue: buscar dados é sincronizar com um sistema
+    // externo, e acender o indicador de carregamento faz parte dessa mesma
+    // operação. Não há como expressar "comece a buscar ao montar" sem isto.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     executar('inicial');
   }, [executar]);
 
@@ -91,7 +109,9 @@ export function useFetch<T>(fn: () => Promise<T>, deps: unknown[] = [], opcoes: 
   // Refetch silencioso ao recuperar o foco da tela (ex.: voltar após criar um item).
   // Usa uma ref para manter o callback estável e não refazer o fetch a cada mudança de `deps`.
   const executarRef = useRef(executar);
-  executarRef.current = executar;
+  useEffect(() => {
+    executarRef.current = executar;
+  });
   const primeiroFoco = useRef(true);
   useFocusEffect(
     useCallback(() => {

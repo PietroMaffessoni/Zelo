@@ -73,16 +73,20 @@ export default function Agenda() {
           rota: `/(app)/manutencao/${eq.id}`,
         })),
     ];
-    return itens.sort((x, y) => new Date(x.quando).getTime() - new Date(y.quando).getTime());
+    // O corte do "futuro" acontece aqui, na carga, e não no render: ler o
+     // relógio durante a renderização torna a tela impura e impede a memoização.
+     // Uma hora de tolerância mantém à vista o evento que começou agora.
+    const limite = Date.now() - 3600_000;
+    return itens
+      .filter((i) => new Date(i.quando).getTime() >= limite)
+      .sort((x, y) => new Date(x.quando).getTime() - new Date(y.quando).getTime());
   }, [condominioId, podeVerManutencao], {
     // Datas do condomínio: conteúdo público, e é o que se consulta longe do
     // sinal (garagem, elevador). Ver a regra de cache em `lib/cache.ts`.
     cache: `agenda:${condominioId}`,
   });
 
-  const itens = data ?? [];
-  const agora = Date.now();
-  const futuros = itens.filter((i) => new Date(i.quando).getTime() >= agora - 3600_000);
+  const futuros = data ?? [];
 
   // Agrupa por mês.
   const grupos: { mes: string; itens: ItemAgenda[] }[] = [];
