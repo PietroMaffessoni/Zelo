@@ -148,11 +148,16 @@ export type Layout = {
    * corte por conta própria, bastava um deles mudar para a tela ficar sem
    * navegação nenhuma ou com as duas ao mesmo tempo.
    *
-   * Exige três coisas: web (no nativo a convenção é a barra de abas), largura
-   * de pelo menos 768 (ver `LARGURA_NAVEGACAO_LATERAL` para por que 768 e não
-   * os 840 do M3) e altura pelo menos média. Esse último é o que impede um
-   * celular deitado, que tem largura de sobra e altura de menos, de receber uma
-   * barra lateral de tela cheia.
+   * Exige duas coisas: largura de pelo menos 768 (ver
+   * `LARGURA_NAVEGACAO_LATERAL` para por que 768 e não os 840 do M3) e altura
+   * pelo menos média. A segunda é o que impede um celular deitado — largura de
+   * sobra, altura de menos — de receber uma barra lateral de tela cheia.
+   *
+   * Vale no nativo também, e não só no web. Um iPad em retrato tem 810 de
+   * largura: é tablet, não celular grande, e a convenção da plataforma para
+   * essa medida é barra lateral, não barra de abas com quatro destinos e 500px
+   * de vazio ao lado. Nenhum celular entra por engano — deitado a altura
+   * reprova, e em pé nem o maior chega perto de 768.
    */
   navegacaoLateral: boolean;
   /** `true` da classe informada para cima. */
@@ -182,8 +187,7 @@ export function useLayout(): Layout {
     estreito,
     toque,
     alturaCurta: classeAltura === 'compacta',
-    navegacaoLateral:
-      Platform.OS === 'web' && width >= LARGURA_NAVEGACAO_LATERAL && height >= ALTURA.media,
+    navegacaoLateral: width >= LARGURA_NAVEGACAO_LATERAL && height >= ALTURA.media,
     acimaDe: (classe) => width >= LARGURA[classe],
     abaixoDe: (classe) => width < LARGURA[classe],
   };

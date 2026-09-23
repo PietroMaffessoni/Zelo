@@ -2,6 +2,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { usePathname, useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
 import { Pressable, ScrollView, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ZeloWordmark } from '@/components/Brand';
 import { Avatar } from '@/components/ui/Avatar';
@@ -20,14 +21,19 @@ import { isGestor as ehGestor, veManutencao } from '@/lib/types';
 
 type Item = { label: string; icon: keyof typeof Ionicons.glyphMap; href: Href; match: string };
 
-/** Navegação lateral fixa para telas largas (web ≥ 1024px). Substitui a tab bar
- *  inferior e absorve os itens do menu "Mais", que deixa de existir no desktop. */
+/** Navegação lateral fixa para telas largas — desktop e tablet (inclusive iPad).
+ *  Substitui a barra de abas inferior e absorve os itens do menu "Mais", que
+ *  deixa de existir nessas larguras. Quem decide se ela entra é `useLayout`. */
 export function Sidebar() {
   const router = useRouter();
   const pathname = usePathname();
   const confirmar = useConfirm();
   const { palette } = useAppTheme();
   const { acimaDe } = useLayout();
+  // No web a barra começa no topo da janela e acabou. Num tablet ela começa
+  // embaixo da barra de status e termina na barra de gestos — sem isto, a marca
+  // fica atrás do relógio e o botão "Sair" atrás da faixa inferior.
+  const insets = useSafeAreaInsets();
   const { profile, papel, membershipAtual, signOut } = useAuth();
   const gestor = ehGestor(papel);
   const porteiro = papel === 'porteiro';
@@ -102,7 +108,7 @@ export function Sidebar() {
       <View
         style={{
           paddingHorizontal: spacing.md + spacing.sm,
-          paddingTop: spacing.lg,
+          paddingTop: spacing.lg + insets.top,
           paddingBottom: spacing.md,
           borderBottomWidth: 1,
           borderBottomColor: palette.border,
@@ -111,7 +117,10 @@ export function Sidebar() {
         <ZeloWordmark size={22} />
       </View>
 
-      <ScrollView contentContainerStyle={{ padding: spacing.sm, gap: 1, flexGrow: 1 }} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.sm, paddingBottom: spacing.sm + insets.bottom, gap: 1, flexGrow: 1 }}
+        showsVerticalScrollIndicator={false}
+      >
 
         {principais.map((it) => (
           <NavLink key={it.match} item={it} pathname={pathname} onPress={() => router.push(it.href)} />

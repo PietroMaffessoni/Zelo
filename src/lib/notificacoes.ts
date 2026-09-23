@@ -1,5 +1,6 @@
 import * as Device from 'expo-device';
 import * as Notifications from 'expo-notifications';
+import { useRouter } from 'expo-router';
 import { useEffect, useRef } from 'react';
 import { Platform } from 'react-native';
 
@@ -18,19 +19,90 @@ Notifications.setNotificationHandler({
 });
 
 /**
+ * Verdadeiro quando este aparelho está registrado para receber push do servidor.
+ *
+ * Existe para não notificar duas vezes. Com push remoto funcionando, o servidor
+ * avisa em todos os aparelhos da pessoa — inclusive neste, inclusive com o app
+ * aberto. Se o aviso local do tempo real continuasse ligado junto, cada
+ * comunicado apareceria duas vezes na tela de quem está com o app na mão.
+ *
+ * É variável de módulo, e não estado de React, porque descreve o aparelho e não
+ * a interface: nada precisa ser redesenhado quando ela muda, e quem a lê são os
+ * callbacks do tempo real, fora do render.
+ *
+ * Enquanto as credenciais de push não estiverem configuradas no EAS, o token
+ * não sai, isto fica falso e o aviso local segue cobrindo o app aberto — a
+ * transição não deixa ninguém sem notificação nenhuma.
+ */
+let pushRemotoAtivo = false;
+
+/**
  * Pede permissão e tenta obter um push token remoto (falha silenciosamente no Expo Go,
  * que não suporta push remoto desde o SDK 53 — a notificação local continua funcionando).
  * Chamar uma vez ao abrir o app.
  */
 export async function configurarNotificacoes(): Promise<string | null> {
   try {
+    // O canal tem que existir ANTES da primeira notificação e vale para as
+    // locais também. Sem ele, o Android 8+ joga tudo num canal padrão de
+    // importância baixa: chega sem som, sem vibrar e sem aparecer na tela.
+    // O nome é o que a pessoa vê nas configurações do sistema.
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Avisos do condomínio',
+        importance: Notifications.AndroidImportance.HIGH,
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#12568F',
+      });
+    }
+
+    // A checagem de aparelho vem antes de pedir permissão: num emulador não há
+    // push para conceder, e o diálogo só atrapalharia quem está testando.
+    if (!Device.isDevice) return null;
+
     const permissao = await Notifications.requestPermissionsAsync();
-    if (!permissao.granted || !Device.isDevice) return null;
+    if (!permissao.granted) return null;
+
     const token = await Notifications.getExpoPushTokenAsync();
+    pushRemotoAtivo = Boolean(token.data);
     return token.data;
   } catch {
     return null;
   }
+}
+
+/**
+ * Leva a pessoa para onde a notificação aponta.
+ *
+ * Sem isto, tocar em "Chegou uma encomenda" abre o app na tela inicial e deixa
+ * a busca por conta dela — o aviso vira um beco. A rota vem em `data.rota`,
+ * montada pelos gatilhos do banco (ver migration 0009).
+ *
+ * Trata os dois casos: app já aberto (o listener) e app fechado, aberto pelo
+ * toque na notificação (`getLastNotificationResponseAsync`). O segundo é o mais
+ * comum e o que costuma ser esquecido.
+ */
+export function useRespostaNotificacao() {
+  const router = useRouter();
+
+  useEffect(() => {
+    let ativo = true;
+
+    function navegar(resposta: Notifications.NotificationResponse | null) {
+      const rota = (resposta?.notification.request.content.data as { rota?: string } | undefined)?.rota;
+      // A rota nasce no banco, então é string comum: o tipo de rota do
+      // expo-router não tem como ser verificado em tempo de compilação aqui.
+      if (rota && ativo) router.push(rota as never);
+    }
+
+    Notifications.getLastNotificationResponseAsync().then(navegar).catch(() => undefined);
+    const sub = Notifications.addNotificationResponseReceivedListener(navegar);
+
+    return () => {
+      ativo = false;
+      sub.remove();
+    };
+  }, [router]);
 }
 
 export async function salvarPushToken(userId: string, condominioId: string | null, token: string) {
@@ -139,6 +211,16 @@ export function useLembretesManutencao(condominioId: string | null, papel: Papel
   }, [condominioId, papel]);
 }
 
+/**
+ * Aviso local disparado pelo tempo real — só quando o push remoto NÃO está
+ * cobrindo este aparelho. Ver `pushRemotoAtivo`: com o push ligado, o servidor
+ * já avisa aqui também, e os dois juntos dariam notificação em dobro.
+ */
+function avisarSeNaoHouverPush(args: { titulo: string; corpo: string; dados?: Record<string, unknown> }) {
+  if (pushRemotoAtivo) return;
+  notificarLocal(args);
+}
+
 export function useNotificacoesRealtime(
   condominioId: string | null,
   userId: string | null,
@@ -169,7 +251,7 @@ export function useNotificacoesRealtime(
           if (prefsRef.current?.comunicados === false) return;
           const c = payload.new as { titulo?: string; autor_id?: string };
           if (c.autor_id === userId) return;
-          notificarLocal({ titulo: 'Novo comunicado', corpo: c.titulo ?? '' });
+          avisarSeNaoHouverPush({ titulo: 'Novo comunicado', corpo: c.titulo ?? '' });
         },
       )
       .on(
@@ -179,7 +261,7 @@ export function useNotificacoesRealtime(
           if (prefsRef.current?.chamados === false) return;
           const chamado = payload.new as { autor_id?: string; status?: string; titulo?: string };
           if (chamado.autor_id === userId) {
-            notificarLocal({ titulo: 'Seu chamado foi atualizado', corpo: `${chamado.titulo ?? 'Chamado'} · ${chamado.status}` });
+            avisarSeNaoHouverPush({ titulo: 'Seu chamado foi atualizado', corpo: `${chamado.titulo ?? 'Chamado'} · ${chamado.status}` });
           }
         },
       )
@@ -190,7 +272,7 @@ export function useNotificacoesRealtime(
           if (prefsRef.current?.encomendas === false) return;
           const encomenda = payload.new as { descricao?: string; unidade_id?: string };
           if (unidadeId && encomenda.unidade_id === unidadeId) {
-            notificarLocal({ titulo: 'Chegou uma encomenda', corpo: encomenda.descricao ?? '' });
+            avisarSeNaoHouverPush({ titulo: 'Chegou uma encomenda', corpo: encomenda.descricao ?? '' });
           }
         },
       )
@@ -201,7 +283,7 @@ export function useNotificacoesRealtime(
           if (prefsRef.current?.reservas === false) return;
           const reserva = payload.new as { morador_id?: string; status?: string };
           if (reserva.morador_id === userId) {
-            notificarLocal({ titulo: 'Sua reserva foi atualizada', corpo: `Status: ${reserva.status}` });
+            avisarSeNaoHouverPush({ titulo: 'Sua reserva foi atualizada', corpo: `Status: ${reserva.status}` });
           }
         },
       )

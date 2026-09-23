@@ -77,7 +77,22 @@ with checagem(migration, objeto, ok) as (
         where n.nspname = 'public' and p.proname = 'expurgar_dados_antigos')),
 
     ('0008', 'extensão pg_cron ativa',
-      (select count(*) > 0 from pg_extension where extname = 'pg_cron'))
+      (select count(*) > 0 from pg_extension where extname = 'pg_cron')),
+
+    ('0009', 'tabela push_fila',
+      to_regclass('public.push_fila') is not null),
+    ('0009', 'função reservar_push',
+      (select count(*) > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'reservar_push')),
+    ('0009', 'gatilhos de push nas 4 tabelas',
+      (select count(*) = 4 from pg_trigger
+        where tgname like 'trg_push_%' and not tgisinternal)),
+    ('0009', 'extensão pg_net ativa',
+      (select count(*) > 0 from pg_extension where extname = 'pg_net')),
+    ('0009', 'segredo zelo_functions_url no Vault',
+      (select to_regclass('vault.decrypted_secrets') is not null)),
+    ('0009', 'algum aparelho registrado para push',
+      (select count(*) > 0 from public.push_tokens where ativo))
 )
 select
   case when ok then 'ok' else 'FALTA' end as status,

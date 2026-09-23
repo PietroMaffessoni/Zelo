@@ -4,7 +4,7 @@ import { View } from 'react-native';
 import { Sidebar } from '@/components/Sidebar';
 import { Loading } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
-import { useLembretesManutencao, useNotificacoesRealtime } from '@/lib/notificacoes';
+import { useLembretesManutencao, useNotificacoesRealtime, useRespostaNotificacao } from '@/lib/notificacoes';
 import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 
@@ -19,6 +19,10 @@ export default function AppLayout() {
 
   useNotificacoesRealtime(condominioId, user?.id ?? null, membershipAtual?.unidade_id ?? null, profile?.preferencias_notificacao, papel);
   useLembretesManutencao(condominioId, papel);
+  // Aqui e nao no layout raiz: navegar exige que a pessoa ja esteja dentro do
+  // app. Tocar numa notificacao na tela de login levaria a uma rota protegida
+  // e o guarda devolveria para o login — parecendo que o toque nao funcionou.
+  useRespostaNotificacao();
 
   if (!ready) return <Loading />;
   if (!session) return <Redirect href="/(auth)/login" />;
