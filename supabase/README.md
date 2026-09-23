@@ -47,6 +47,21 @@ conteúdo de `setup.sql`. Ele já traz tudo, na ordem.
 supabase db push
 ```
 
+### Conferindo
+
+Depois de aplicar, cole `verificar.sql` no SQL Editor. Ele lista um objeto por
+linha com `ok` ou `FALTA`, o que falta primeiro, e não escreve nada. Reaplicar o
+`setup.sql` para corrigir uma falta é seguro: as migrations são idempotentes.
+
+### O passo que o SQL não faz sozinho
+
+A 0008 agenda o expurgo da LGPD, mas só se a extensão **pg_cron** já estiver
+ativa — ativar extensão pede superusuário e é decisão de projeto, não de
+esquema. Uma vez só, em **Database → Extensions**, procure `pg_cron` e ligue.
+Depois reaplique o `setup.sql` (ou só a 0008) para o agendamento pegar.
+
+Sem isso o resto do esquema entra normalmente: a 0008 avisa e segue.
+
 ## Fazendo uma mudança
 
 1. Crie `migrations/000N_descricao_curta.sql` com o próximo número.
