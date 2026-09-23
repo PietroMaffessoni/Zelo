@@ -24,7 +24,10 @@ type AuthState = {
 
   signIn: (email: string, senha: string) => Promise<{ error?: string }>;
   signUp: (nome: string, email: string, senha: string, telefone?: string) => Promise<{ error?: string }>;
+  /** Envia o código de recuperação por e-mail. */
   resetarSenha: (email: string) => Promise<{ error?: string }>;
+  /** Confere o código recebido e já grava a senha nova. Ver `definirNovaSenha`. */
+  definirNovaSenha: (email: string, codigo: string, senhaNova: string) => Promise<{ error?: string }>;
   /** Troca a senha exigindo a atual — ver `alterarSenha` para por que a reautenticação. */
   alterarSenha: (senhaAtual: string, senhaNova: string) => Promise<{ error?: string }>;
   /** Apaga a conta e os dados pessoais. Irreversível. */
@@ -149,11 +152,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setReady(true);
       return;
     }
-    supabase.auth.getSession().then(async ({ data }) => {
-      if (!ativo) return;
-      await inicializar(data.session);
-      setReady(true);
-    });
+    supabase.auth
+      .getSession()
+      .then(async ({ data }) => {
+        if (!ativo) return;
+        await inicializar(data.session);
+      })
+      .catch(() => {
+        // Sem sessão recuperável o app abre deslogado, que é recuperável com um
+        // login. O que não pode acontecer é esta promessa não resolver nunca:
+        // `ready` é o sinal que solta a splash, e sem ele o app fica preso na
+        // tela de abertura. Por isso `finally`, e não um `setReady` no `then`.
+      })
+      .finally(() => {
+        if (ativo) setReady(true);
+      });
     const { data: sub } = supabase.auth.onAuthStateChange(async (_event, sess) => {
       if (!ativo) return;
       await inicializar(sess);
@@ -180,6 +193,33 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const resetarSenha: AuthState['resetarSenha'] = useCallback(async (email) => {
     const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+    return { error: error ? traduzErro(error.message) : undefined };
+  }, []);
+
+  /**
+   * Recuperação de senha por código, não por link.
+   *
+   * O link do e-mail padrão do Supabase abre um NAVEGADOR. No celular isso é um
+   * beco sem saída: a pessoa sai do app, cai numa página que não sabe trocar a
+   * senha dela e volta para o login sem ter resolvido nada. Fazer o link voltar
+   * para o app exigiria registrar URL de retorno, atravessar o navegador e
+   * manter isso funcionando em iOS, Android e web — três caminhos diferentes
+   * para o mesmo objetivo. Um código de seis dígitos digitado na própria tela
+   * tem um caminho só e funciona igual nas três plataformas.
+   *
+   * As duas etapas andam juntas de propósito: `verifyOtp` já abre uma sessão
+   * válida, e se a tela parasse aí o guarda de rota levaria a pessoa para dentro
+   * do app ANTES de ela escolher a senha nova — que era justamente o que ela
+   * pediu para fazer.
+   */
+  const definirNovaSenha: AuthState['definirNovaSenha'] = useCallback(async (email, codigo, senhaNova) => {
+    const { error: erroCodigo } = await supabase.auth.verifyOtp({
+      email: email.trim(),
+      token: codigo.trim(),
+      type: 'recovery',
+    });
+    if (erroCodigo) return { error: traduzErro(erroCodigo.message) };
+    const { error } = await supabase.auth.updateUser({ password: senhaNova });
     return { error: error ? traduzErro(error.message) : undefined };
   }, []);
 
@@ -417,6 +457,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     verificarDesafioMFA,
     precisaSegundoFator,
     resetarSenha,
+    definirNovaSenha,
     signOut,
     selecionarCondominio,
     recarregar,
@@ -448,6 +489,9 @@ function traduzErro(msg: string): string {
   if (m.includes('user already registered')) return 'Este e-mail já está cadastrado.';
   if (m.includes('password should be at least')) return 'A senha deve ter no mínimo 8 caracteres.';
   if (m.includes('email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
+  if (m.includes('token has expired') || m.includes('otp') || m.includes('invalid token'))
+    return 'Código inválido ou expirado. Peça um novo.';
+  if (m.includes('should be different')) return 'A nova senha precisa ser diferente da atual.';
   if (m.includes('unable to validate email') || m.includes('invalid email')) return 'E-mail inválido.';
   if (m.includes('código') || m.includes('codigo')) return msg;
   if (m.includes('network')) return 'Sem conexão. Verifique sua internet.';

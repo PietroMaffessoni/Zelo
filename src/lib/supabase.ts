@@ -43,20 +43,49 @@ class LargeSecureStore {
     return aesjs.utils.utf8.fromBytes(bytesDecriptados);
   }
 
+  /**
+   * Nunca lança. Os dois lados desta gaveta podem sair de sincronia: o blob
+   * cifrado vive no AsyncStorage e a chave que o abre vive no Keychain/Keystore.
+   * O backup automático do Android restaura o primeiro e **não** o segundo, e
+   * depois de um "restaurar do backup" ou de certas reinstalações sobra um blob
+   * que nenhuma chave decifra.
+   *
+   * Deixar o erro subir daqui travava o app na tela de abertura para sempre:
+   * `getSession()` rejeitava, `ready` nunca virava true e a splash nunca saía —
+   * sem reinstalar, não tinha volta. Descartar a sessão ilegível custa um login;
+   * mantê-la custava o app.
+   */
   async getItem(chave: string) {
-    const encriptado = await AsyncStorage.getItem(chave);
-    if (!encriptado) return encriptado;
-    return this.decriptar(chave, encriptado);
+    try {
+      const encriptado = await AsyncStorage.getItem(chave);
+      if (!encriptado) return encriptado;
+      return await this.decriptar(chave, encriptado);
+    } catch {
+      await this.removeItem(chave);
+      return null;
+    }
   }
 
+  /** Falha em silêncio: sem persistir, a sessão dura enquanto o app estiver
+   *  aberto — degradação bem menor do que derrubar o login inteiro. */
   async setItem(chave: string, valor: string) {
-    const encriptado = await this.encriptar(chave, valor);
-    await AsyncStorage.setItem(chave, encriptado);
+    try {
+      const encriptado = await this.encriptar(chave, valor);
+      await AsyncStorage.setItem(chave, encriptado);
+    } catch {
+      // ver acima
+    }
   }
 
+  /** Idem: se apagar falhasse, `signOut()` rejeitaria e a pessoa ficaria presa
+   *  numa sessão que ela mandou encerrar. */
   async removeItem(chave: string) {
-    await AsyncStorage.removeItem(chave);
-    await SecureStore.deleteItemAsync(chave);
+    try {
+      await AsyncStorage.removeItem(chave);
+      await SecureStore.deleteItemAsync(chave);
+    } catch {
+      // ver acima
+    }
   }
 }
 

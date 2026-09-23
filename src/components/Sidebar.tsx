@@ -162,6 +162,19 @@ export function Sidebar() {
             </AppText>
           </View>
         </Pressable>
+        {/* No celular estes dois moram na aba "Mais"; aqui não existe aba "Mais",
+            e sem esta entrada a política de privacidade ficaria inalcançável na
+            versão de desktop — exigência das lojas e direito do titular na LGPD. */}
+        <NavLink
+          item={{ label: 'Termos de Uso', icon: 'document-text-outline', href: '/termos', match: 'termos' }}
+          pathname={pathname}
+          onPress={() => router.push('/termos')}
+        />
+        <NavLink
+          item={{ label: 'Privacidade', icon: 'shield-checkmark-outline', href: '/privacidade', match: 'privacidade' }}
+          pathname={pathname}
+          onPress={() => router.push('/privacidade')}
+        />
         <NavLink
           item={{ label: 'Sair', icon: 'log-out-outline', href: '/(app)/perfil', match: '__sair' }}
           pathname={pathname}

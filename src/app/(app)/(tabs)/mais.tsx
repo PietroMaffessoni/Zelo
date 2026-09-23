@@ -1,3 +1,4 @@
+import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
@@ -188,8 +189,29 @@ export default function Mais() {
         <ListItem icon="log-out-outline" iconTone="danger" title="Sair" chevron={false} onPress={sair} />
       </Panel>
 
+      {/* Jurídico. Estava alcançável só da tela de cadastro, ou seja: quem já tinha
+          conta não tinha como reler o que aceitou. Apple e Google exigem que a
+          política de privacidade esteja acessível DENTRO do app, não só na ficha da
+          loja, e a LGPD (art. 9º) dá ao titular o direito de consultar isso a
+          qualquer momento. */}
+      <SectionHeader title="Sobre" style={{ marginTop: spacing.xl }} />
+      <Panel style={{ paddingHorizontal: spacing.lg }}>
+        <ListItem
+          icon="document-text-outline"
+          iconTone="neutral"
+          title="Termos de Uso"
+          onPress={() => router.push('/termos')}
+        />
+        <ListItem
+          icon="shield-checkmark-outline"
+          iconTone="neutral"
+          title="Política de Privacidade"
+          onPress={() => router.push('/privacidade')}
+        />
+      </Panel>
+
       <AppText color="subtle" center variant="caption" style={{ marginTop: spacing.xxl }}>
-        Zelo · versão 1.0
+        Zelo · versão {Constants.expoConfig?.version ?? '—'}
       </AppText>
     </Screen>
   );

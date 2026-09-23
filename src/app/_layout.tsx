@@ -13,6 +13,7 @@ import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
+import { ErroFatal } from '@/components/ErroFatal';
 import { palette } from '@/constants/theme';
 import { AuthProvider, useAuth } from '@/lib/auth';
 import { ConfirmProvider } from '@/lib/confirm';
@@ -21,6 +22,10 @@ import { ThemeProvider, useAppTheme } from '@/lib/theme';
 import { ToastProvider } from '@/lib/toast';
 
 SplashScreen.preventAutoHideAsync();
+
+/** O expo-router procura por este nome exportado do layout raiz. Sem ele, um
+ *  erro de renderização em produção vira tela branca. */
+export { ErroFatal as ErrorBoundary };
 
 function EsconderSplash() {
   const { ready } = useAuth();
@@ -64,12 +69,16 @@ export default function RootLayout() {
   // Segura o app na splash até a fonte de títulos carregar (evita "flash" do tipo
   // do sistema trocando pela Plus Jakarta Sans). A splash já está travada por
   // SplashScreen.preventAutoHideAsync() no topo do módulo.
-  const [fontesCarregadas] = useFonts({
+  const [fontesCarregadas, erroFonte] = useFonts({
     PlusJakartaSans_600SemiBold,
     PlusJakartaSans_700Bold,
     PlusJakartaSans_800ExtraBold,
   });
-  if (!fontesCarregadas) return null;
+  // `erroFonte` entra na condição porque `fontesCarregadas` nunca vira true
+  // quando o carregamento falha — e este `return null`, somado à splash travada
+  // acima, deixaria o app parado na tela de abertura para sempre. Fonte é
+  // enfeite; sem ela o app abre no tipo do sistema, que é o certo a fazer.
+  if (!fontesCarregadas && !erroFonte) return null;
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
