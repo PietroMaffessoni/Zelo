@@ -3,7 +3,7 @@
 -- ============================================================================
 --
 -- Rode no SQL Editor depois de aplicar o setup.sql. Uma linha por objeto que
--- as migrations 0002–0010 deveriam ter criado, com o que falta no topo.
+-- as migrations 0002–0011 deveriam ter criado, com o que falta no topo.
 --
 -- Não altera nada: é só leitura de catálogo. Pode rodar quantas vezes quiser.
 --
@@ -99,7 +99,11 @@ with checagem(migration, objeto, ok) as (
         where n.nspname = 'public' and p.proname = 'recuperar_condominio')),
     ('0010', 'função condominios_recuperaveis',
       (select count(*) > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
-        where n.nspname = 'public' and p.proname = 'condominios_recuperaveis'))
+        where n.nspname = 'public' and p.proname = 'condominios_recuperaveis')),
+    ('0011', 'entrar_condominio reativa quem foi removido',
+      (select count(*) > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'entrar_condominio'
+          and p.prosrc like '%on conflict (condominio_id, user_id)%'))
 )
 select
   case when ok then 'ok' else 'FALTA' end as status,

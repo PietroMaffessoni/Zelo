@@ -531,7 +531,7 @@ function traduzErro(msg: string): string {
   if (m.includes('should be different')) return 'A nova senha precisa ser diferente da atual.';
   if (m.includes('unable to validate email') || m.includes('invalid email')) return 'E-mail inválido.';
   if (m.includes('código') || m.includes('codigo')) return msg;
-  if (m.includes('recuperar este condomínio')) return msg;
+  if (m.includes('recuperar este condomínio') || m.includes('você era síndico')) return msg;
   if (m.includes('network')) return 'Sem conexão. Verifique sua internet.';
   // Mensagens não mapeadas não são devolvidas cruas: podem vazar detalhe interno do
   // backend. Fica um erro genérico — quem quiser investigar o real motivo, olha os logs.
