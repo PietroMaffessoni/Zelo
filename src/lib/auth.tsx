@@ -72,6 +72,8 @@ type AuthState = {
   }) => Promise<{ error?: string; condominioId?: string }>;
   entrarComoPorteiro: (codigo: string) => Promise<{ error?: string; condominioId?: string }>;
   entrarComoZelador: (codigo: string) => Promise<{ error?: string; condominioId?: string }>;
+  /** Volta a ser síndico de um condomínio que ficou sem gestor. Ver migration 0010. */
+  recuperarCondominio: (id: string) => Promise<{ error?: string }>;
 };
 
 const AuthContext = createContext<AuthState | undefined>(undefined);
@@ -450,6 +452,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     [recarregar, selecionarCondominio],
   );
 
+  const recuperarCondominio: AuthState['recuperarCondominio'] = useCallback(
+    async (id) => {
+      const { error } = await supabase.rpc('recuperar_condominio', { p_cond: id });
+      if (error) return { error: traduzErro(error.message) };
+      await recarregar();
+      await selecionarCondominio(id);
+      return {};
+    },
+    [recarregar, selecionarCondominio],
+  );
+
   const membershipAtual = useMemo(
     () => memberships.find((m) => m.condominio_id === condominioId) ?? null,
     [memberships, condominioId],
@@ -488,6 +501,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     entrarCondominio,
     entrarComoPorteiro,
     entrarComoZelador,
+    recuperarCondominio,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
@@ -517,6 +531,7 @@ function traduzErro(msg: string): string {
   if (m.includes('should be different')) return 'A nova senha precisa ser diferente da atual.';
   if (m.includes('unable to validate email') || m.includes('invalid email')) return 'E-mail inválido.';
   if (m.includes('código') || m.includes('codigo')) return msg;
+  if (m.includes('recuperar este condomínio')) return msg;
   if (m.includes('network')) return 'Sem conexão. Verifique sua internet.';
   // Mensagens não mapeadas não são devolvidas cruas: podem vazar detalhe interno do
   // backend. Fica um erro genérico — quem quiser investigar o real motivo, olha os logs.

@@ -6,9 +6,11 @@ import { Pressable, View } from 'react-native';
 import { AppText, Button, Card, Chip, FormRow, Input, Loading, Panel, Row, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { listarCondominiosRecuperaveis } from '@/lib/db';
 import { useAppTheme } from '@/lib/theme';
 import { vinculoLabel } from '@/lib/labels';
 import type { Vinculo } from '@/lib/types';
+import { useFetch } from '@/lib/useFetch';
 
 type Modo = 'escolha' | 'criar' | 'entrar' | 'portaria' | 'zelador';
 
@@ -26,6 +28,7 @@ export default function Onboarding() {
     entrarComoPorteiro,
     entrarComoZelador,
     recarregar,
+    recuperarCondominio,
     signOut,
   } = useAuth();
   const [modo, setModo] = useState<Modo>('escolha');
@@ -45,6 +48,15 @@ export default function Onboarding() {
   // campo portaria / zelador
   const [codigoPortaria, setCodigoPortaria] = useState('');
   const [codigoZelador, setCodigoZelador] = useState('');
+
+  // Condomínios onde a pessoa era síndica e que ficaram sem gestor. Falhar aqui
+  // (ex.: migration 0010 ainda não aplicada) só esconde o atalho — o resto da
+  // tela continua funcionando, por isso o erro é ignorado.
+  const { data: recuperaveis } = useFetch(
+    () => (session ? listarCondominiosRecuperaveis() : Promise.resolve([])),
+    [session?.user?.id],
+  );
+  const [recuperando, setRecuperando] = useState<string | null>(null);
 
   if (!ready) return <Loading />;
   if (!session) return <Redirect href="/(auth)/login" />;
@@ -123,6 +135,15 @@ export default function Onboarding() {
     else router.replace('/(app)/(tabs)/inicio');
   }
 
+  async function recuperar(id: string) {
+    setRecuperando(id);
+    setErro(null);
+    const { error } = await recuperarCondominio(id);
+    setRecuperando(null);
+    if (error) setErro(error);
+    else router.replace('/(app)/(tabs)/inicio');
+  }
+
   async function verificar() {
     setVerificando(true);
     await recarregar();
@@ -140,6 +161,25 @@ export default function Onboarding() {
 
       {modo === 'escolha' ? (
         <View>
+          {recuperaveis?.length ? (
+            <View style={{ marginBottom: spacing.xl, gap: spacing.sm }}>
+              <AppText variant="label" color="muted">
+                Condomínios que você administra
+              </AppText>
+              {recuperaveis.map((c) => (
+                <Button
+                  key={c.id}
+                  title={`Entrar em ${c.nome}`}
+                  icon="business"
+                  size="lg"
+                  onPress={() => recuperar(c.id)}
+                  loading={recuperando === c.id}
+                  disabled={recuperando !== null}
+                />
+              ))}
+              {erro ? <AppText color="danger" variant="label">{erro}</AppText> : null}
+            </View>
+          ) : null}
           <Panel>
             <OpcaoCard
               icon="business"

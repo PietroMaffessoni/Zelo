@@ -19,6 +19,7 @@ export * from '@/lib/db/auditoria';
 export * from '@/lib/db/central';
 export * from '@/lib/db/chamados';
 export * from '@/lib/db/comunicados';
+export * from '@/lib/db/condominios';
 export * from '@/lib/db/documentos';
 export * from '@/lib/db/financeiro';
 export * from '@/lib/db/infracoes';

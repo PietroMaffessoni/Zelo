@@ -3,7 +3,7 @@
 -- ============================================================================
 --
 -- Rode no SQL Editor depois de aplicar o setup.sql. Uma linha por objeto que
--- as migrations 0002–0008 deveriam ter criado, com o que falta no topo.
+-- as migrations 0002–0010 deveriam ter criado, com o que falta no topo.
 --
 -- Não altera nada: é só leitura de catálogo. Pode rodar quantas vezes quiser.
 --
@@ -92,7 +92,14 @@ with checagem(migration, objeto, ok) as (
     ('0009', 'segredo zelo_functions_url no Vault',
       (select to_regclass('vault.decrypted_secrets') is not null)),
     ('0009', 'algum aparelho registrado para push',
-      (select count(*) > 0 from public.push_tokens where ativo))
+      (select count(*) > 0 from public.push_tokens where ativo)),
+
+    ('0010', 'função recuperar_condominio',
+      (select count(*) > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'recuperar_condominio')),
+    ('0010', 'função condominios_recuperaveis',
+      (select count(*) > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'condominios_recuperaveis'))
 )
 select
   case when ok then 'ok' else 'FALTA' end as status,
