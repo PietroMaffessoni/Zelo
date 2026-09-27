@@ -1,11 +1,13 @@
 import { Link, useRouter } from 'expo-router';
-import { useState } from 'react';
-import { View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
+import { Pressable, View } from 'react-native';
 
 import { Brand } from '@/components/Brand';
 import { AppText, Button, Input, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
+import { lerManterConectado } from '@/lib/supabase';
 import { useAppTheme } from '@/lib/theme';
 
 export default function Login() {
@@ -16,6 +18,19 @@ export default function Login() {
   const [senha, setSenha] = useState('');
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
+  const [manterConectado, setManterConectado] = useState(true);
+
+  // Abre com a última escolha: quem desmarcou num aparelho compartilhado não
+  // deveria ter que lembrar de desmarcar de novo a cada login.
+  useEffect(() => {
+    let ativo = true;
+    lerManterConectado().then((v) => {
+      if (ativo) setManterConectado(v);
+    });
+    return () => {
+      ativo = false;
+    };
+  }, []);
   /**
    * Segundo fator pendente.
    *
@@ -34,7 +49,7 @@ export default function Login() {
     }
     setCarregando(true);
     setErro(null);
-    const { error } = await signIn(email, senha);
+    const { error } = await signIn(email, senha, manterConectado);
     if (error) {
       setCarregando(false);
       setErro(error);
@@ -141,6 +156,22 @@ export default function Login() {
             </AppText>
           </Link>
         </View>
+
+        <Pressable
+          accessibilityRole="checkbox"
+          accessibilityState={{ checked: manterConectado }}
+          accessibilityHint="Desmarcado, a sessão termina quando o app for fechado."
+          onPress={() => setManterConectado((v) => !v)}
+          hitSlop={8}
+          style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.sm, alignSelf: 'flex-start' }}
+        >
+          <Ionicons
+            name={manterConectado ? 'checkbox' : 'square-outline'}
+            size={22}
+            color={manterConectado ? palette.primary : palette.borderStrong}
+          />
+          <AppText variant="label">Manter conectado</AppText>
+        </Pressable>
 
         {erro ? (
           <View

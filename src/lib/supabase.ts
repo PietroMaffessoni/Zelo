@@ -89,8 +89,96 @@ class LargeSecureStore {
   }
 }
 
-// SecureStore/Keychain não existem no web — lá o cliente usa o storage padrão (localStorage).
-const authStorage = Platform.OS === 'web' ? undefined : new LargeSecureStore();
+type Gaveta = {
+  getItem: (chave: string) => Promise<string | null>;
+  setItem: (chave: string, valor: string) => Promise<void>;
+  removeItem: (chave: string) => Promise<void>;
+};
+
+/** Embrulha o `Storage` do navegador na interface assíncrona. Se o acesso lançar
+ *  (aba anônima, dados do site bloqueados), a sessão só não é guardada. */
+function gavetaDoNavegador(qual: 'localStorage' | 'sessionStorage'): Gaveta {
+  const alvo = () => (typeof window === 'undefined' ? null : window[qual]);
+  return {
+    async getItem(chave) {
+      try { return alvo()?.getItem(chave) ?? null; } catch { return null; }
+    },
+    async setItem(chave, valor) {
+      try { alvo()?.setItem(chave, valor); } catch { /* sem onde guardar */ }
+    },
+    async removeItem(chave) {
+      try { alvo()?.removeItem(chave); } catch { /* idem */ }
+    },
+  };
+}
+
+/** Gaveta que some junto com o processo: fechar o app é sair. */
+function gavetaEmMemoria(): Gaveta {
+  const itens = new Map<string, string>();
+  return {
+    async getItem(chave) { return itens.get(chave) ?? null; },
+    async setItem(chave, valor) { itens.set(chave, valor); },
+    async removeItem(chave) { itens.delete(chave); },
+  };
+}
+
+// SecureStore/Keychain não existem no web — lá o persistente é o localStorage.
+const persistente: Gaveta = Platform.OS === 'web' ? gavetaDoNavegador('localStorage') : new LargeSecureStore();
+// No web, sessionStorage e não memória: recarregar a página não desloga, mas
+// fechar a aba sim — o mesmo que "fechar o app" no celular.
+const volatil: Gaveta = Platform.OS === 'web' ? gavetaDoNavegador('sessionStorage') : gavetaEmMemoria();
+
+/**
+ * "Manter conectado".
+ *
+ * A escolha decide ONDE a sessão mora, não se ela vale: marcada, o token vai
+ * para o disco e sobrevive ao app fechado; desmarcada, vai para uma gaveta
+ * volátil e a próxima abertura cai no login. A preferência em si não é segredo
+ * e fica em AsyncStorage para ser lida no boot, antes da sessão.
+ *
+ * Quem nunca escolheu (instalações anteriores a esta opção) continua conectado,
+ * que era o comportamento de antes.
+ */
+const CHAVE_MANTER_CONECTADO = 'zelo.manter_conectado';
+let manterConectado = true;
+const preferenciaCarregada: Promise<void> = AsyncStorage.getItem(CHAVE_MANTER_CONECTADO)
+  .then((v) => {
+    manterConectado = v !== '0';
+  })
+  .catch(() => undefined);
+
+export async function lerManterConectado(): Promise<boolean> {
+  await preferenciaCarregada;
+  return manterConectado;
+}
+
+/** Chamar ANTES do login: a sessão nova já é gravada na gaveta escolhida. */
+export async function definirManterConectado(valor: boolean): Promise<void> {
+  await preferenciaCarregada;
+  manterConectado = valor;
+  await AsyncStorage.setItem(CHAVE_MANTER_CONECTADO, valor ? '1' : '0').catch(() => undefined);
+}
+
+/**
+ * Toda escrita limpa a outra gaveta. Sem isso, trocar de "manter" para "não
+ * manter" deixaria um token antigo no disco, que voltaria a valer se a pessoa
+ * marcasse a opção de novo — ou que qualquer um com o aparelho recuperaria.
+ */
+const authStorage: Gaveta = {
+  async getItem(chave) {
+    await preferenciaCarregada;
+    return (manterConectado ? persistente : volatil).getItem(chave);
+  },
+  async setItem(chave, valor) {
+    await preferenciaCarregada;
+    const [destino, outra] = manterConectado ? [persistente, volatil] : [volatil, persistente];
+    await destino.setItem(chave, valor);
+    await outra.removeItem(chave);
+  },
+  async removeItem(chave) {
+    await Promise.all([persistente.removeItem(chave), volatil.removeItem(chave)]);
+  },
+};
 
 export const supabase = createClient(safeUrl, safeKey, {
   auth: {

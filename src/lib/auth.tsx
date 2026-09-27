@@ -3,7 +3,7 @@ import type { Session, User } from '@supabase/supabase-js';
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 
 import { limparCache } from '@/lib/cache';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { definirManterConectado, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Membership, Papel, PerfilContato, Profile, Vinculo } from '@/lib/types';
 
 const CHAVE_CONDOMINIO = 'zelo.condominio_atual';
@@ -22,7 +22,8 @@ type AuthState = {
   condominioId: string | null;
   papel: Papel | null;
 
-  signIn: (email: string, senha: string) => Promise<{ error?: string }>;
+  /** `manterConectado` falso: a sessão acaba quando o app (ou a aba) fecha. */
+  signIn: (email: string, senha: string, manterConectado?: boolean) => Promise<{ error?: string }>;
   signUp: (nome: string, email: string, senha: string, telefone?: string) => Promise<{ error?: string }>;
   /** Envia o código de recuperação por e-mail. */
   resetarSenha: (email: string) => Promise<{ error?: string }>;
@@ -177,7 +178,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
   }, [inicializar]);
 
-  const signIn: AuthState['signIn'] = useCallback(async (email, senha) => {
+  const signIn: AuthState['signIn'] = useCallback(async (email, senha, manterConectado = true) => {
+    await definirManterConectado(manterConectado);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
     return { error: error ? traduzErro(error.message) : undefined };
   }, []);
