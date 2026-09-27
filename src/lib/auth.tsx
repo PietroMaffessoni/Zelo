@@ -21,6 +21,13 @@ type AuthState = {
   membershipAtual: Membership | null;
   condominioId: string | null;
   papel: Papel | null;
+  /**
+   * Verdadeiro logo depois de um login por senha, até a pessoa escolher em qual
+   * condomínio entrar. Só vale na sessão aberta agora: reabrir o app com a sessão
+   * guardada vai direto para o último condomínio usado.
+   */
+  escolhendoCondominio: boolean;
+  concluirEscolhaCondominio: () => void;
 
   /** `manterConectado` falso: a sessão acaba quando o app (ou a aba) fecha. */
   signIn: (email: string, senha: string, manterConectado?: boolean) => Promise<{ error?: string }>;
@@ -77,6 +84,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [membershipsPendentes, setMembershipsPendentes] = useState<Membership[]>([]);
   const [condominioId, setCondominioId] = useState<string | null>(null);
+  const [escolhendoCondominio, setEscolhendoCondominio] = useState(false);
   const selecionadoRef = useRef<string | null>(null);
 
   const carregarDados = useCallback(async (uid: string) => {
@@ -98,6 +106,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const todas = (mbs as Membership[]) ?? [];
     const lista = todas.filter((m) => m.status === 'ativo');
     setMembershipsPendentes(todas.filter((m) => m.status === 'pendente'));
+    // Nada a escolher: desliga já, para não sobrar ligado e interromper a pessoa
+    // mais tarde, quando ela entrar num segundo condomínio no meio da sessão.
+    if (todas.length <= 1) setEscolhendoCondominio(false);
 
     const gestorEm = lista.filter((m) => m.papel === 'sindico' || m.papel === 'admin');
     if (gestorEm.length) {
@@ -180,7 +191,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const signIn: AuthState['signIn'] = useCallback(async (email, senha, manterConectado = true) => {
     await definirManterConectado(manterConectado);
+    // Liga ANTES do login: o `signInWithPassword` só resolve depois que o
+    // `onAuthStateChange` carregou os condomínios, e nesse intervalo o guarda do
+    // app já mandaria para o início sem passar pela escolha.
+    setEscolhendoCondominio(true);
     const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
+    if (error) setEscolhendoCondominio(false);
     return { error: error ? traduzErro(error.message) : undefined };
   }, []);
 
@@ -350,7 +366,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     return data?.nextLevel === 'aal2' && data?.currentLevel !== 'aal2';
   }, []);
 
+  const concluirEscolhaCondominio = useCallback(() => setEscolhendoCondominio(false), []);
+
   const signOut = useCallback(async () => {
+    setEscolhendoCondominio(false);
     await supabase.auth.signOut();
     await AsyncStorage.removeItem(CHAVE_CONDOMINIO);
     // O próximo usuário do aparelho não pode abrir o app e encontrar os
@@ -447,6 +466,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     membershipAtual,
     condominioId,
     papel: membershipAtual?.papel ?? null,
+    escolhendoCondominio,
+    concluirEscolhaCondominio,
     signIn,
     signUp,
     alterarSenha,

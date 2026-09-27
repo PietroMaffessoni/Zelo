@@ -9,7 +9,7 @@ import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 
 export default function AppLayout() {
-  const { ready, session, memberships, user, condominioId, membershipAtual, profile, papel } = useAuth();
+  const { ready, session, memberships, membershipsPendentes, user, condominioId, membershipAtual, profile, papel, escolhendoCondominio } = useAuth();
   const { palette } = useAppTheme();
   // A sidebar é a navegação global do app: vive aqui, no Stack que envolve TODAS
   // as telas, para ficar fixa em qualquer rota (não só nas abas). Quem decide se
@@ -27,6 +27,11 @@ export default function AppLayout() {
   if (!ready) return <Loading />;
   if (!session) return <Redirect href="/(auth)/login" />;
   if (memberships.length === 0) return <Redirect href="/onboarding" />;
+  // Recém-logado e com mais de um condomínio: mostra todos antes de escolher um
+  // por ele. Com um só, a lista seria um toque a mais sem decisão nenhuma.
+  if (escolhendoCondominio && memberships.length + membershipsPendentes.length > 1) {
+    return <Redirect href="/condominios" />;
+  }
 
   const stack = (
     <Stack
