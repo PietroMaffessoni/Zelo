@@ -7,6 +7,7 @@ import { Acoes, AppHeader, AppText, Avatar, Badge, Button, Card, Chip, Divider, 
 import { radius, spacing } from '@/constants/theme';
 import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
+import { useConfirm } from '@/lib/confirm';
 import { useAppTheme } from '@/lib/theme';
 import {
   atualizarDadosCadastrais,
@@ -31,6 +32,7 @@ export default function UnidadeDetalhe() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { condominioId, membershipAtual, papel, user } = useAuth();
   const acao = useAcao();
+  const confirmar = useConfirm();
   const gestor = isGestor(papel);
   const souDaUnidade = membershipAtual?.unidade_id === id;
   const podeGerenciar = gestor || souDaUnidade;
@@ -56,10 +58,25 @@ export default function UnidadeDetalhe() {
     if (ok) refetch();
   }
 
-  async function remover(membershipId: string) {
-    setRemovendoMorador(membershipId);
-    const ok = await acao(() => removerMoradorDaUnidade(membershipId), { sempre: () => setRemovendoMorador(null) });
-    if (ok) refetch();
+  /**
+   * Remover inativa o vínculo da pessoa com o CONDOMÍNIO inteiro, não só com a
+   * unidade — e é o mesmo registro que carrega o papel. Por isso o botão não
+   * aparece para quem administra (nem para si mesmo): um toque na própria linha
+   * tirava do síndico o acesso ao prédio, sem volta pelo app.
+   */
+  async function remover(m: Membership) {
+    const nome = m.profile?.nome_completo || 'este morador';
+    const ok = await confirmar({
+      titulo: `Remover ${nome}?`,
+      mensagem: 'A pessoa perde o acesso ao condomínio. Para voltar, precisa entrar de novo com o código de convite.',
+      confirmar: 'Remover',
+      cancelar: 'Cancelar',
+      destrutivo: true,
+    });
+    if (!ok) return;
+    setRemovendoMorador(m.id);
+    const feito = await acao(() => removerMoradorDaUnidade(m.id), { sempre: () => setRemovendoMorador(null) });
+    if (feito) refetch();
   }
 
   async function alternarConselheiro(membershipId: string, atual: 'morador' | 'conselheiro') {
@@ -149,11 +166,11 @@ export default function UnidadeDetalhe() {
                     {m.papel !== 'morador' ? <Badge label={papelLabel[m.papel]} tone="primary" /> : null}
                   </View>
                 </View>
-                {gestor ? (
+                {gestor && m.user_id !== user?.id && m.papel !== 'sindico' && m.papel !== 'admin' ? (
                   <IconButton
                     icon="close-circle-outline"
                     label={`Remover ${m.profile?.nome_completo || 'morador'}`}
-                    onPress={() => remover(m.id)}
+                    onPress={() => remover(m)}
                     disabled={removendoMorador === m.id}
                     size={19}
                   />
