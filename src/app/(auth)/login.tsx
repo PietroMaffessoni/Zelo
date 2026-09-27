@@ -77,8 +77,14 @@ export default function Login() {
   }
 
   return (
-    <Screen maxWidth={400}>
-      <View style={{ marginTop: spacing.xxxl, marginBottom: spacing.xxl }}>
+    // Centralizado na altura: numa tela alta o formulário pregado no topo deixava
+    // metade de baixo vazia. O `paddingTop` iguala a folga final que o `Screen`
+    // dá ao ScrollView — sem ele o centro ótico ficaria 36px acima do meio.
+    <Screen
+      maxWidth={400}
+      style={{ flexGrow: 1, justifyContent: 'center', paddingTop: spacing.xxxl + spacing.xl }}
+    >
+      <View style={{ marginBottom: spacing.xxl }}>
         <Brand size="lg" tagline />
       </View>
 
