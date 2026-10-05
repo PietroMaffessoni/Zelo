@@ -22,6 +22,7 @@ export default function Onboarding() {
     session,
     memberships,
     membershipsPendentes,
+    erroCarga,
     profile,
     criarCondominio,
     entrarCondominio,
@@ -158,6 +159,24 @@ export default function Onboarding() {
           Vamos conectar você a um condomínio para começar.
         </AppText>
       </View>
+
+      {/* A conta pode já ter condomínio: a consulta é que falhou. Sem este aviso,
+          a pessoa tentaria entrar de novo e nada mudaria na tela. */}
+      {erroCarga ? (
+        <Card style={{ gap: spacing.sm, marginBottom: spacing.lg }}>
+          <AppText weight="semibold">Não conseguimos carregar seus condomínios</AppText>
+          <AppText color="muted" variant="caption">
+            {erroCarga}
+          </AppText>
+          <Button
+            title="Tentar de novo"
+            variant="secondary"
+            icon="refresh-outline"
+            onPress={verificar}
+            loading={verificando}
+          />
+        </Card>
+      ) : null}
 
       {modo === 'escolha' ? (
         <View>

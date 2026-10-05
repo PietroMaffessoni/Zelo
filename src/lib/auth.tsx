@@ -18,6 +18,11 @@ type AuthState = {
   memberships: Membership[];
   /** Vínculos aguardando aprovação do síndico (entrar_condominio cria como 'pendente'). */
   membershipsPendentes: Membership[];
+  /**
+   * Preenchido quando a consulta dos vínculos falhou. Sem ele, a falha parecia
+   * "conta sem condomínio" e a pessoa caía no onboarding sem saber por quê.
+   */
+  erroCarga: string | null;
   membershipAtual: Membership | null;
   condominioId: string | null;
   papel: Papel | null;
@@ -85,12 +90,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [contato, setContato] = useState<PerfilContato | null>(null);
   const [memberships, setMemberships] = useState<Membership[]>([]);
   const [membershipsPendentes, setMembershipsPendentes] = useState<Membership[]>([]);
+  const [erroCarga, setErroCarga] = useState<string | null>(null);
   const [condominioId, setCondominioId] = useState<string | null>(null);
   const [escolhendoCondominio, setEscolhendoCondominio] = useState(false);
   const selecionadoRef = useRef<string | null>(null);
 
   const carregarDados = useCallback(async (uid: string) => {
-    const [{ data: prof }, { data: cont }, { data: mbs }] = await Promise.all([
+    const [{ data: prof }, { data: cont }, { data: mbs, error: erroMbs }] = await Promise.all([
       supabase.from('profiles').select('*').eq('id', uid).maybeSingle(),
       supabase.from('perfis_contato').select('*').eq('user_id', uid).maybeSingle(),
       supabase
@@ -102,6 +108,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .in('status', ['ativo', 'pendente'])
         .order('created_at', { ascending: true }),
     ]);
+    // Sem isto, uma consulta recusada (ex.: coluna sem grant, ver 0012) virava
+    // lista vazia — e a conta parecia não ter condomínio nenhum.
+    if (erroMbs) throw new Error(erroMbs.message);
 
     setProfile((prof as Profile) ?? null);
     setContato((cont as PerfilContato) ?? null);
@@ -140,19 +149,36 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     selecionadoRef.current = proximo;
   }, []);
 
+  /** Carrega e registra a falha em `erroCarga`. Devolve a mensagem, ou null se deu certo. */
+  const carregar = useCallback(
+    async (uid: string) => {
+      try {
+        await carregarDados(uid);
+        setErroCarga(null);
+        return null;
+      } catch (e) {
+        const msg = e instanceof Error ? traduzErro(e.message) : 'Não foi possível carregar seus condomínios.';
+        setErroCarga(msg);
+        return msg;
+      }
+    },
+    [carregarDados],
+  );
+
   const inicializar = useCallback(
     async (sess: Session | null) => {
       setSession(sess);
       if (sess?.user) {
-        await carregarDados(sess.user.id).catch(() => undefined);
+        await carregar(sess.user.id);
       } else {
+        setErroCarga(null);
         setProfile(null);
         setMemberships([]);
         setMembershipsPendentes([]);
         setCondominioId(null);
       }
     },
-    [carregarDados],
+    [carregar],
   );
 
   useEffect(() => {
@@ -388,8 +414,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const recarregar = useCallback(async () => {
     const uid = session?.user?.id;
-    if (uid) await carregarDados(uid);
-  }, [session, carregarDados]);
+    if (uid) await carregar(uid);
+  }, [session, carregar]);
 
   const criarCondominio: AuthState['criarCondominio'] = useCallback(
     async ({ nome, cidade, uf }) => {
@@ -417,11 +443,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       });
       if (error) return { error: traduzErro(error.message) };
       const cid = (data as { condominio_id: string } | null)?.condominio_id;
-      await recarregar();
+      const uid = session?.user?.id;
+      // O pedido já foi gravado; se a recarga falhar, a tela não muda sozinha e
+      // precisa dizer isso — senão parece que o código não funcionou.
+      const erroRecarga = uid ? await carregar(uid) : null;
+      if (erroRecarga)
+        return { error: `Seu pedido foi enviado, mas não conseguimos atualizar a tela. ${erroRecarga}` };
       if (cid) await selecionarCondominio(cid);
       return { condominioId: cid };
     },
-    [recarregar, selecionarCondominio],
+    [session, carregar, selecionarCondominio],
   );
 
   const entrarComoPorteiro: AuthState['entrarComoPorteiro'] = useCallback(
@@ -476,6 +507,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     contato,
     memberships,
     membershipsPendentes,
+    erroCarga,
     membershipAtual,
     condominioId,
     papel: membershipAtual?.papel ?? null,
