@@ -3,7 +3,7 @@
 -- ============================================================================
 --
 -- Rode no SQL Editor depois de aplicar o setup.sql. Uma linha por objeto que
--- as migrations 0002–0012 deveriam ter criado, com o que falta no topo.
+-- as migrations 0002–0013 deveriam ter criado, com o que falta no topo.
 --
 -- Não altera nada: é só leitura de catálogo. Pode rodar quantas vezes quiser.
 --
@@ -106,7 +106,11 @@ with checagem(migration, objeto, ok) as (
           and p.prosrc like '%on conflict (condominio_id, user_id)%')),
     ('0012', 'leitura das colunas de retenção de condominios',
       has_column_privilege('authenticated', 'public.condominios', 'retencao_visitantes_dias', 'select')
-      and has_column_privilege('authenticated', 'public.condominios', 'retencao_encomendas_dias', 'select'))
+      and has_column_privilege('authenticated', 'public.condominios', 'retencao_encomendas_dias', 'select')),
+
+    ('0013', 'política profiles_select_pedido',
+      (select count(*) > 0 from pg_policies
+        where schemaname = 'public' and policyname = 'profiles_select_pedido'))
 )
 select
   case when ok then 'ok' else 'FALTA' end as status,
