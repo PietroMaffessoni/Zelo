@@ -104,7 +104,7 @@ export function Sidebar() {
         <View style={{ height: 1, backgroundColor: palette.border, marginBottom: spacing.sm }} />
 
         <Pressable
-          onPress={() => router.push('/(app)/perfil')}
+          onPress={() => router.push('/(app)/(tabs)/configuracoes')}
           style={({ hovered, focused }: any) => [
             {
               flexDirection: 'row',
@@ -139,7 +139,7 @@ export function Sidebar() {
           onPress={() => router.push('/privacidade')}
         />
         <NavLink
-          item={{ label: 'Sair', icon: 'log-out-outline', href: '/(app)/perfil', match: '__sair' }}
+          item={{ label: 'Sair', icon: 'log-out-outline', href: '/(app)/(tabs)/configuracoes', match: '__sair' }}
           danger
           onPress={sair}
         />

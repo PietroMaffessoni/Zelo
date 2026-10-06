@@ -90,7 +90,6 @@ export function MenuLateral({ aberto, onFechar }: { aberto: boolean; onFechar: (
 
   const conta: ItemMenu[] = [
     { label: 'Configurações', icon: 'settings-outline', href: '/(app)/(tabs)/configuracoes', match: '/configuracoes' },
-    { label: 'Meu perfil', icon: 'person-outline', href: '/(app)/perfil', match: '/perfil' },
   ];
 
   return (
@@ -137,9 +136,9 @@ export function MenuLateral({ aberto, onFechar }: { aberto: boolean; onFechar: (
             {/* Nome e foto levam ao perfil — é onde a pessoa espera chegar ao
                 tocar na própria identificação, como em qualquer app. */}
             <Pressable
-              onPress={() => ir('/(app)/perfil')}
+              onPress={() => ir('/(app)/(tabs)/configuracoes')}
               accessibilityRole="button"
-              accessibilityLabel="Abrir meu perfil"
+              accessibilityLabel="Abrir configurações da conta"
               style={({ pressed }) => ({
                 flex: 1,
                 minWidth: 0,
@@ -208,16 +207,36 @@ export function MenuLateral({ aberto, onFechar }: { aberto: boolean; onFechar: (
             ))}
             {memberships.length > 1 ? (
               <ItemLinha
-                item={{ label: 'Trocar de condomínio', icon: 'swap-horizontal-outline', href: '/(app)/perfil', match: '__trocar' }}
+                item={{
+                  label: 'Trocar de condomínio',
+                  icon: 'swap-horizontal-outline',
+                  href: '/(app)/(tabs)/configuracoes',
+                  match: '__trocar',
+                }}
                 ativo={false}
-                onPress={() => ir('/(app)/perfil')}
+                onPress={() => ir('/(app)/(tabs)/configuracoes')}
               />
             ) : null}
             <ItemLinha
-              item={{ label: 'Sair', icon: 'log-out-outline', href: '/(app)/perfil', match: '__sair' }}
+              item={{ label: 'Sair', icon: 'log-out-outline', href: '/(app)/(tabs)/configuracoes', match: '__sair' }}
               ativo={false}
               perigo
               onPress={sair}
+            />
+
+            {/* No fim do menu: documentos que a pessoa aceitou ao criar a conta e
+                tem direito de reler a qualquer momento (LGPD art. 9º; Apple e
+                Google exigem a política acessível dentro do app). */}
+            <Rotulo>Sobre</Rotulo>
+            <ItemLinha
+              item={{ label: 'Termos de Uso', icon: 'document-text-outline', href: '/termos', match: '/termos' }}
+              ativo={false}
+              onPress={() => ir('/termos')}
+            />
+            <ItemLinha
+              item={{ label: 'Política de Privacidade', icon: 'lock-closed-outline', href: '/privacidade', match: '/privacidade' }}
+              ativo={false}
+              onPress={() => ir('/privacidade')}
             />
           </ScrollView>
         </Animated.View>
