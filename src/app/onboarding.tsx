@@ -7,6 +7,7 @@ import { AppText, Button, Card, Chip, FormRow, Input, Loading, Panel, Row, Scree
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { listarCondominiosRecuperaveis } from '@/lib/db';
+import { primeiroNome } from '@/lib/format';
 import { useAppTheme } from '@/lib/theme';
 import { vinculoLabel } from '@/lib/labels';
 import type { Vinculo } from '@/lib/types';
@@ -154,7 +155,11 @@ export default function Onboarding() {
   return (
     <Screen>
       <View style={{ marginTop: spacing.xxl, marginBottom: spacing.lg }}>
-        <AppText variant="title">Bem-vindo, {profile?.nome_completo || ''}</AppText>
+        {/* "Olá" em vez de "Bem-vindo": o app não sabe o gênero de quem entra, e
+            "Bem-vindo, Maria" soava errado. Só o primeiro nome, como no início. */}
+        <AppText variant="title">
+          {primeiroNome(profile?.nome_completo) ? `Olá, ${primeiroNome(profile?.nome_completo)}!` : 'Olá!'}
+        </AppText>
         <AppText color="muted" style={{ marginTop: spacing.xs }}>
           Vamos conectar você a um condomínio para começar.
         </AppText>

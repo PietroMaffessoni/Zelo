@@ -84,7 +84,7 @@ export default function Inicio() {
         <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={40} />
         <View style={{ flex: 1 }}>
           <AppText variant="overline" color="subtle">
-            {gestor ? 'Painel do síndico' : porteiro ? 'Painel da portaria' : zelador ? 'Painel do zelador' : 'Bem-vindo(a)'}
+            {gestor ? 'Painel do síndico' : porteiro ? 'Painel da portaria' : zelador ? 'Painel do zelador' : 'Olá'}
           </AppText>
           <AppText variant="heading" numberOfLines={1} style={{ marginTop: 3 }}>
             {primeiroNome(profile?.nome_completo) || 'Morador'}
