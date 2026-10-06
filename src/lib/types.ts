@@ -193,6 +193,19 @@ export type Pet = {
   created_at: string;
 };
 
+/** Aviso da caixa de notificações (migration 0014). Escrito pelo banco, nunca pelo app. */
+export type Notificacao = {
+  id: number;
+  user_id: string;
+  condominio_id: string | null;
+  titulo: string;
+  corpo: string;
+  /** `rota` é para onde o toque leva — o mesmo destino do push. */
+  dados: { rota?: string } & Record<string, unknown>;
+  lida_em: string | null;
+  criado_em: string;
+};
+
 export type Comunicado = {
   id: string;
   condominio_id: string;

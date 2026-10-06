@@ -24,6 +24,7 @@ export * from '@/lib/db/documentos';
 export * from '@/lib/db/financeiro';
 export * from '@/lib/db/infracoes';
 export * from '@/lib/db/manutencao';
+export * from '@/lib/db/notificacoes';
 export * from '@/lib/db/painel';
 export * from '@/lib/db/perfil';
 export * from '@/lib/db/portaria';

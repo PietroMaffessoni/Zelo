@@ -3,7 +3,7 @@
 -- ============================================================================
 --
 -- Rode no SQL Editor depois de aplicar o setup.sql. Uma linha por objeto que
--- as migrations 0002–0013 deveriam ter criado, com o que falta no topo.
+-- as migrations 0002–0014 deveriam ter criado, com o que falta no topo.
 --
 -- Não altera nada: é só leitura de catálogo. Pode rodar quantas vezes quiser.
 --
@@ -110,7 +110,14 @@ with checagem(migration, objeto, ok) as (
 
     ('0013', 'política profiles_select_pedido',
       (select count(*) > 0 from pg_policies
-        where schemaname = 'public' and policyname = 'profiles_select_pedido'))
+        where schemaname = 'public' and policyname = 'profiles_select_pedido')),
+
+    ('0014', 'tabela notificacoes',
+      to_regclass('public.notificacoes') is not null),
+    ('0014', 'enfileirar_push grava na caixa',
+      (select count(*) > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'enfileirar_push'
+          and p.prosrc like '%public.notificacoes%'))
 )
 select
   case when ok then 'ok' else 'FALTA' end as status,
