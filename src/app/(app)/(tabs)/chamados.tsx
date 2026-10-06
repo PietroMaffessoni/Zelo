@@ -112,7 +112,8 @@ export default function ChamadosTab() {
         ) : lista.length === 0 ? (
           <EmptyState
             icon="construct-outline"
-            title="Nenhum chamado"
+            literal={!!buscaAtrasada}
+            title={buscaAtrasada ? 'Nada encontrado' : 'Nenhum chamado'}
             description={
               buscaAtrasada
                 ? `Nenhum chamado encontrado para "${buscaAtrasada}".`

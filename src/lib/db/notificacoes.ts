@@ -5,21 +5,22 @@
  * dividido por domínio. A escrita não passa por aqui: quem cria cada linha é o
  * `enfileirar_push` no banco (migration 0014), junto com o push.
  */
-import { unwrap } from '@/lib/db/_comum';
+import { recursoAusente, unwrap } from '@/lib/db/_comum';
 import { faixaDaPagina } from '@/lib/consulta';
 import { supabase } from '@/lib/supabase';
 import type { Notificacao } from '@/lib/types';
 
 export async function listarNotificacoes(condominioId: string, userId: string, pagina = 0): Promise<Notificacao[]> {
-  return unwrap(
-    await supabase
-      .from('notificacoes')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('condominio_id', condominioId)
-      .order('criado_em', { ascending: false })
-      .range(...faixaDaPagina(pagina)),
-  ) as Notificacao[];
+  const resposta = await supabase
+    .from('notificacoes')
+    .select('*')
+    .eq('user_id', userId)
+    .eq('condominio_id', condominioId)
+    .order('criado_em', { ascending: false })
+    .range(...faixaDaPagina(pagina));
+  // Sem a migration 0014 a tabela não existe: a caixa está vazia, não quebrada.
+  if (recursoAusente(resposta.error)) return [];
+  return unwrap(resposta) as Notificacao[];
 }
 
 /** Quantas não lidas — `head: true` conta no servidor sem trazer as linhas. */

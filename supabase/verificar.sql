@@ -3,7 +3,7 @@
 -- ============================================================================
 --
 -- Rode no SQL Editor depois de aplicar o setup.sql. Uma linha por objeto que
--- as migrations 0002–0014 deveriam ter criado, com o que falta no topo.
+-- as migrations 0002–0015 deveriam ter criado, com o que falta no topo.
 --
 -- Não altera nada: é só leitura de catálogo. Pode rodar quantas vezes quiser.
 --
@@ -117,7 +117,11 @@ with checagem(migration, objeto, ok) as (
     ('0014', 'enfileirar_push grava na caixa',
       (select count(*) > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
         where n.nspname = 'public' and p.proname = 'enfileirar_push'
-          and p.prosrc like '%public.notificacoes%'))
+          and p.prosrc like '%public.notificacoes%')),
+
+    ('0015', 'função gerar_codigo_convite',
+      (select count(*) > 0 from pg_proc p join pg_namespace n on n.oid = p.pronamespace
+        where n.nspname = 'public' and p.proname = 'gerar_codigo_convite'))
 )
 select
   case when ok then 'ok' else 'FALTA' end as status,

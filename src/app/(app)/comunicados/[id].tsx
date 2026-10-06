@@ -2,7 +2,7 @@ import { useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { Switch, View } from 'react-native';
 
-import { AppHeader, AppText, Avatar, Badge, Card, EmptyState, Loading, Screen } from '@/components/ui';
+import { AppHeader, AppText, Avatar, Badge, Card, EmptyState, ErrorState, Loading, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { fixarComunicado, getComunicado, marcarComunicadoLido } from '@/lib/db';
@@ -19,7 +19,7 @@ export default function ComunicadoDetalhe() {
   const gestor = isGestor(papel);
   const { palette } = useAppTheme();
   const toast = useToast();
-  const { data: c, loading, error } = useFetch(() => getComunicado(id), [id]);
+  const { data: c, loading, error, refetch } = useFetch(() => getComunicado(id), [id]);
 
   /**
    * Estado otimista do "fixado".
@@ -59,7 +59,11 @@ export default function ComunicadoDetalhe() {
     return (
       <Screen>
         <AppHeader title="Comunicado" back />
-        <EmptyState icon="alert-circle-outline" title="Não encontrado" description={error ?? undefined} />
+        {error ? (
+          <ErrorState onRetry={refetch} />
+        ) : (
+          <EmptyState literal icon="alert-circle-outline" title="Comunicado não encontrado" description="Ele pode ter sido removido." />
+        )}
       </Screen>
     );
 

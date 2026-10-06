@@ -250,22 +250,36 @@ export function Loading({ label }: { label?: string }) {
  * dá a uma tela SEM conteúdo mais presença visual do que ela tem quando está
  * cheia, o que é exatamente o contrário do que se quer. Aqui o vazio é uma área
  * delimitada e discreta: diz o que falta, por quê, e oferece a saída em escala
- * proporcional. Toda a informação e a ação continuam as mesmas.
+ * proporcional.
+ *
+ * O título é sempre "Tudo em dia" (pedido de 2026-10-06): lista vazia não é
+ * problema, e a tela não deve soar como se fosse. O `title` de cada tela desce
+ * para a linha de baixo e continua dizendo O QUE está vazio. A exceção é
+ * `literal`, para busca sem resultado e registro não encontrado — ali "tudo em
+ * dia" mentiria, porque a pessoa procurou algo e não achou.
+ *
+ * Erro de verdade é outro componente (`ErrorState`): vazio nunca diz "não foi
+ * possível carregar".
  */
 export function EmptyState({
-  icon = 'file-tray-outline',
+  icon = 'checkmark-circle-outline',
   title,
   description,
   actionLabel,
   onAction,
+  literal = false,
 }: {
   icon?: keyof typeof Ionicons.glyphMap;
-  title: string;
+  title?: string;
   description?: string;
   actionLabel?: string;
   onAction?: () => void;
+  /** Usa `title` como título, sem o "Tudo em dia" — para busca sem resultado. */
+  literal?: boolean;
 }) {
   const { palette } = useAppTheme();
+  const titulo = literal && title ? title : 'Tudo em dia';
+  const detalhe = literal ? description : [title, description].filter(Boolean).join(' · ');
   return (
     <View
       style={{
@@ -282,11 +296,11 @@ export function EmptyState({
     >
       <Ionicons name={icon} size={20} color={palette.textSubtle} style={{ marginBottom: spacing.sm }} />
       <AppText variant="subtitle" center>
-        {title}
+        {titulo}
       </AppText>
-      {description ? (
+      {detalhe ? (
         <AppText variant="caption" color="muted" center style={{ maxWidth: 330 }}>
-          {description}
+          {detalhe}
         </AppText>
       ) : null}
       {actionLabel && onAction ? (

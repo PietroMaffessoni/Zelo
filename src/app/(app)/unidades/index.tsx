@@ -161,7 +161,7 @@ export default function UnidadesLista() {
             onAction={() => router.push('/(app)/unidades/novo')}
           />
         ) : unidadesFiltradas.length === 0 ? (
-          <EmptyState icon="search-outline" title="Nada encontrado" description={`Nenhuma unidade ou morador corresponde a "${busca}".`} />
+          <EmptyState literal icon="search-outline" title="Nada encontrado" description={`Nenhuma unidade ou morador corresponde a "${busca}".`} />
         ) : (
           <Panel>
             {unidadesFiltradas.map((u) => (

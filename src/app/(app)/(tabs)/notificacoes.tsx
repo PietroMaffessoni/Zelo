@@ -99,7 +99,7 @@ export default function Notificacoes() {
     <Screen refreshing={refreshing} onRefresh={refetch}>
       <AppHeader
         title="Notificações"
-        subtitle={naoLidas > 0 ? `${naoLidas} não ${naoLidas === 1 ? 'lida' : 'lidas'}` : 'Tudo em dia'}
+        subtitle={naoLidas > 0 ? `${naoLidas} não ${naoLidas === 1 ? 'lida' : 'lidas'}` : undefined}
         onRefresh={refetch}
       />
 
@@ -124,7 +124,7 @@ export default function Notificacoes() {
       ) : itens.length === 0 ? (
         <EmptyState
           icon="notifications-outline"
-          title="Nenhuma notificação"
+          title="Nenhuma notificação nova"
           description="Comunicados, encomendas e atualizações dos seus chamados e reservas aparecem aqui."
         />
       ) : (

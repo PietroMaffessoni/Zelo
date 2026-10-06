@@ -18,3 +18,15 @@ export function unwrap<T>({ data, error }: { data: T | null; error: any }): T {
   if (error) throw new Error(error.message);
   return data as T;
 }
+
+/**
+ * A consulta falhou porque a tabela ou função ainda não existe no banco — uma
+ * migration nova que não foi aplicada. Para quem usa, isso não é falha: o
+ * recurso só ainda não tem nada a mostrar. Use apenas em recursos novos e
+ * opcionais (a caixa de notificações), nunca para esconder erro de tela que
+ * sempre existiu.
+ */
+export function recursoAusente(error: { code?: string; message?: string } | null): boolean {
+  if (!error) return false;
+  return ['PGRST205', 'PGRST202', '42P01', '42883'].includes(error.code ?? '');
+}

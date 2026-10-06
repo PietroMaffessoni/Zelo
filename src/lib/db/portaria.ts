@@ -150,6 +150,13 @@ export async function removerVeiculo(id: string) {
   await supabase.from('veiculos').delete().eq('id', id);
 }
 
+/** Troca o código de convite de moradores (migration 0015). O antigo para de valer na hora. */
+export async function gerarCodigoConvite(condominioId: string): Promise<string> {
+  const { data, error } = await supabase.rpc('gerar_codigo_convite', { p_cond: condominioId });
+  if (error) throw new Error(error.message);
+  return data as string;
+}
+
 export async function gerarCodigoPortaria(condominioId: string): Promise<string> {
   const { data, error } = await supabase.rpc('gerar_codigo_portaria', { p_cond: condominioId });
   if (error) throw new Error(error.message);

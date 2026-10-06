@@ -37,8 +37,9 @@ export async function listarComunicados(
   return comunicados.map((c) => ({ ...c, lido: lidos.has(c.id) }));
 }
 
-export async function getComunicado(id: string): Promise<Comunicado> {
-  return unwrap(await supabase.from('comunicados').select('*, autor:profiles!autor_id(*)').eq('id', id).single());
+/** `null` quando não existe (ou foi apagado) — isso é "não encontrado", não erro. */
+export async function getComunicado(id: string): Promise<Comunicado | null> {
+  return unwrap(await supabase.from('comunicados').select('*, autor:profiles!autor_id(*)').eq('id', id).maybeSingle());
 }
 
 export async function marcarComunicadoLido(comunicadoId: string, userId: string) {

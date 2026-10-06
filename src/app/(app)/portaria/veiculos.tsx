@@ -40,7 +40,7 @@ export default function PortariaVeiculos() {
         {loading ? (
           <Loading />
         ) : filtrados.length === 0 ? (
-          <EmptyState icon="car-outline" title="Nenhum veículo encontrado" />
+          <EmptyState icon="car-outline" literal={!!busca.trim()} title={busca.trim() ? "Nada encontrado" : "Nenhum veículo cadastrado"} description={busca.trim() ? `Nenhum veículo corresponde a "${busca.trim()}".` : undefined} />
         ) : (
           <Panel>
             {filtrados.map((v) => {

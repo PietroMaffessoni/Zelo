@@ -13,7 +13,7 @@ import { radius, SIDEBAR_LARGURA, SIDEBAR_LARGURA_TABLET, spacing } from '@/cons
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
 import { useCopiar } from '@/lib/copiar';
-import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
+import { gerarCodigoConvite, gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
 import { validadeCodigo } from '@/lib/format';
 import { papelLabel } from '@/lib/labels';
 import { useLayout } from '@/lib/responsivo';
@@ -158,7 +158,12 @@ function CodigosAcesso() {
   return (
     <>
       <SectionLabel>CÓDIGOS DE ACESSO</SectionLabel>
-      <CodigoLinha icon="key-outline" label="Convite (morador)" codigo={condominio?.codigo_convite} />
+      <CodigoLinha
+        icon="key-outline"
+        label="Convite (morador)"
+        codigo={condominio?.codigo_convite}
+        gerar={condominioId ? () => gerarCodigoConvite(condominioId) : undefined}
+      />
       <CodigoLinha
         icon="shield-checkmark-outline"
         label="Portaria"
@@ -194,7 +199,7 @@ function CodigoLinha({
   codigo?: string | null;
   /** Só os códigos de equipe expiram; o de convite não tem prazo. */
   expiraEm?: string | null;
-  /** Ausente no código de convite, que nasce junto com o condomínio. */
+  /** Troca o código. O de convite também pode ser trocado desde a migration 0015. */
   gerar?: () => Promise<string>;
 }) {
   const { palette } = useAppTheme();
