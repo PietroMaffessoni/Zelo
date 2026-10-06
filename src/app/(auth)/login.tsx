@@ -8,7 +8,9 @@ import { AppText, Button, Input, Screen } from '@/components/ui';
 import { radius, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { lerManterConectado } from '@/lib/supabase';
+import { lerBloqueio, limparFalhas, registrarFalha } from '@/lib/tentativas';
 import { useAppTheme } from '@/lib/theme';
+import { erroEmail, formatarEspera } from '@/lib/validacao';
 
 export default function Login() {
   const router = useRouter();
@@ -19,6 +21,12 @@ export default function Login() {
   const [erro, setErro] = useState<string | null>(null);
   const [carregando, setCarregando] = useState(false);
   const [manterConectado, setManterConectado] = useState(true);
+  // Limite de tentativas: depois de alguns erros seguidos o login pede espera,
+  // que dobra a cada nova falha. `restante` é a contagem em segundos, avançada
+  // pelo intervalo abaixo — o relógio não é lido durante a renderização.
+  const [bloqueadoAte, setBloqueadoAte] = useState(0);
+  const [restante, setRestante] = useState(0);
+  const bloqueado = restante > 0;
 
   // Abre com a última escolha: quem desmarcou num aparelho compartilhado não
   // deveria ter que lembrar de desmarcar de novo a cada login.
@@ -27,10 +35,36 @@ export default function Login() {
     lerManterConectado().then((v) => {
       if (ativo) setManterConectado(v);
     });
+    // Um bloqueio anterior continua valendo ao reabrir o app.
+    lerBloqueio().then((ate) => {
+      if (ativo && ate) setBloqueadoAte(ate);
+    });
     return () => {
       ativo = false;
     };
   }, []);
+
+  useEffect(() => {
+    if (!bloqueadoAte) return;
+    const tick = () => {
+      const s = Math.max(0, Math.ceil((bloqueadoAte - Date.now()) / 1000));
+      setRestante(s);
+      if (!s) setBloqueadoAte(0);
+    };
+    const id = setInterval(tick, 1000);
+    // Primeira atualização já no próximo quadro, sem esperar um segundo inteiro.
+    const primeiro = setTimeout(tick, 0);
+    return () => {
+      clearInterval(id);
+      clearTimeout(primeiro);
+    };
+  }, [bloqueadoAte]);
+
+  /** Conta a falha e, se passou do tolerado, liga a espera. */
+  async function falhou() {
+    const ate = await registrarFalha();
+    if (ate) setBloqueadoAte(ate);
+  }
   /**
    * Segundo fator pendente.
    *
@@ -43,18 +77,32 @@ export default function Login() {
   const [codigo, setCodigo] = useState('');
 
   async function entrar() {
+    if (bloqueado || carregando) return;
     if (!email || !senha) {
       setErro('Preencha e-mail e senha.');
       return;
     }
+    // Formato inválido nem chega ao servidor — e não conta como tentativa.
+    const invalido = erroEmail(email);
+    if (invalido) {
+      setErro(invalido);
+      return;
+    }
     setCarregando(true);
     setErro(null);
-    const { error } = await signIn(email, senha, manterConectado);
+    const { error, credencialInvalida } = await signIn(email, senha, manterConectado);
     if (error) {
       setCarregando(false);
       setErro(error);
+      if (credencialInvalida) {
+        // A senha errada sai do campo: deixá-la lá convida a reenviar a mesma
+        // coisa, e ela fica legível para quem pegar o aparelho e tocar no olho.
+        setSenha('');
+        await falhou();
+      }
       return;
     }
+    await limparFalhas();
 
     const exige = await precisaSegundoFator();
     setCarregando(false);
@@ -67,14 +115,28 @@ export default function Login() {
   }
 
   async function confirmarCodigo() {
+    if (bloqueado || carregando) return;
     if (codigo.trim().length < 6) return setErro('Digite os 6 dígitos do aplicativo.');
     setCarregando(true);
     setErro(null);
     const { error } = await verificarDesafioMFA(codigo);
     setCarregando(false);
-    if (error) return setErro(error);
+    if (error) {
+      setErro(error);
+      setCodigo('');
+      // Código de 6 dígitos é adivinhável por força bruta: entra no mesmo limite.
+      if (!error.startsWith('Sem conexão')) await falhou();
+      return;
+    }
+    await limparFalhas();
     router.replace('/');
   }
+
+  const avisoBloqueio = bloqueado ? (
+    <AppText variant="caption" color="muted" center>
+      Muitas tentativas seguidas. Por segurança, aguarde {formatarEspera(restante)} para tentar de novo.
+    </AppText>
+  ) : null;
 
   return (
     // Centralizado na altura: numa tela alta o formulário pregado no topo deixava
@@ -101,6 +163,8 @@ export default function Login() {
             label="Código"
             placeholder="000000"
             keyboardType="number-pad"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
             maxLength={6}
             autoFocus
             value={codigo}
@@ -123,7 +187,14 @@ export default function Login() {
             </View>
           ) : null}
 
-          <Button title="Confirmar" onPress={confirmarCodigo} loading={carregando} size="lg" />
+          {avisoBloqueio}
+          <Button
+            title={bloqueado ? `Aguarde ${formatarEspera(restante)}` : 'Confirmar'}
+            onPress={confirmarCodigo}
+            loading={carregando}
+            disabled={bloqueado}
+            size="lg"
+          />
           <Button
             title="Voltar"
             variant="ghost"
@@ -142,7 +213,11 @@ export default function Login() {
           placeholder="voce@email.com"
           icon="mail-outline"
           autoCapitalize="none"
+          autoCorrect={false}
+          autoComplete="email"
+          textContentType="username"
           keyboardType="email-address"
+          maxLength={254}
           value={email}
           onChangeText={setEmail}
         />
@@ -152,6 +227,9 @@ export default function Login() {
             placeholder="Sua senha"
             icon="lock-closed-outline"
             senha
+            autoComplete="current-password"
+            textContentType="password"
+            maxLength={72}
             value={senha}
             onChangeText={setSenha}
             onSubmitEditing={entrar}
@@ -194,7 +272,14 @@ export default function Login() {
           </View>
         ) : null}
 
-        <Button title="Entrar" onPress={entrar} loading={carregando} size="lg" />
+        {avisoBloqueio}
+        <Button
+          title={bloqueado ? `Aguarde ${formatarEspera(restante)}` : 'Entrar'}
+          onPress={entrar}
+          loading={carregando}
+          disabled={bloqueado}
+          size="lg"
+        />
 
         <View style={{ flexDirection: 'row', justifyContent: 'center', gap: spacing.xs, marginTop: spacing.sm }}>
           <AppText color="muted" variant="caption">

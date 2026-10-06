@@ -5,6 +5,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import { limparCache } from '@/lib/cache';
 import { definirManterConectado, isSupabaseConfigured, supabase } from '@/lib/supabase';
 import type { Membership, Papel, PerfilContato, Profile, Vinculo } from '@/lib/types';
+import { erroSenha, normalizarEmail } from '@/lib/validacao';
 
 const CHAVE_CONDOMINIO = 'zelo.condominio_atual';
 
@@ -35,7 +36,12 @@ type AuthState = {
   concluirEscolhaCondominio: () => void;
 
   /** `manterConectado` falso: a sessão acaba quando o app (ou a aba) fecha. */
-  signIn: (email: string, senha: string, manterConectado?: boolean) => Promise<{ error?: string }>;
+  /** `credencialInvalida`: errou e-mail ou senha — é o que conta para o limite de tentativas. */
+  signIn: (
+    email: string,
+    senha: string,
+    manterConectado?: boolean,
+  ) => Promise<{ error?: string; credencialInvalida?: boolean }>;
   signUp: (nome: string, email: string, senha: string, telefone?: string) => Promise<{ error?: string }>;
   /** Envia o código de recuperação por e-mail. */
   resetarSenha: (email: string) => Promise<{ error?: string }>;
@@ -223,14 +229,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     // `onAuthStateChange` carregou os condomínios, e nesse intervalo o guarda do
     // app já mandaria para o início sem passar pela escolha.
     setEscolhendoCondominio(true);
-    const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: senha });
+    const { error } = await supabase.auth.signInWithPassword({ email: normalizarEmail(email), password: senha });
     if (error) setEscolhendoCondominio(false);
-    return { error: error ? traduzErro(error.message) : undefined };
+    return {
+      error: error ? traduzErro(error.message) : undefined,
+      credencialInvalida: !!error && error.message.toLowerCase().includes('invalid login credentials'),
+    };
   }, []);
 
   const signUp: AuthState['signUp'] = useCallback(async (nome, email, senha, telefone) => {
     const { error } = await supabase.auth.signUp({
-      email: email.trim(),
+      email: normalizarEmail(email),
       password: senha,
       options: { data: { nome_completo: nome.trim(), telefone: telefone?.trim() || null } },
     });
@@ -238,7 +247,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const resetarSenha: AuthState['resetarSenha'] = useCallback(async (email) => {
-    const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
+    const { error } = await supabase.auth.resetPasswordForEmail(normalizarEmail(email));
     return { error: error ? traduzErro(error.message) : undefined };
   }, []);
 
@@ -260,7 +269,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
    */
   const definirNovaSenha: AuthState['definirNovaSenha'] = useCallback(async (email, codigo, senhaNova) => {
     const { error: erroCodigo } = await supabase.auth.verifyOtp({
-      email: email.trim(),
+      email: normalizarEmail(email),
       token: codigo.trim(),
       type: 'recovery',
     });
@@ -285,7 +294,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const { data: atual } = await supabase.auth.getUser();
     const email = atual.user?.email;
     if (!email) return { error: 'Sessão expirada. Entre novamente.' };
-    if (senhaNova.length < 8) return { error: 'A nova senha deve ter no mínimo 8 caracteres.' };
+    const fraca = erroSenha(senhaNova, { email });
+    if (fraca) return { error: fraca };
     if (senhaNova === senhaAtual) return { error: 'A nova senha precisa ser diferente da atual.' };
 
     const { error: erroLogin } = await supabase.auth.signInWithPassword({ email, password: senhaAtual });
@@ -556,11 +566,21 @@ function traduzErro(msg: string): string {
   const m = msg.toLowerCase();
   if (m.includes('invalid login credentials')) return 'E-mail ou senha incorretos.';
   if (m.includes('user already registered')) return 'Este e-mail já está cadastrado.';
-  if (m.includes('password should be at least')) return 'A senha deve ter no mínimo 8 caracteres.';
+  if (m.includes('should be different')) return 'A nova senha precisa ser diferente da atual.';
+  // Política de senha do Supabase recusou: a local deixou passar, então o painel
+  // está mais rígido que o app (ou foi alterado). A mensagem não diz qual regra.
+  if (m.includes('password should') || m.includes('weak_password') || m.includes('weak password'))
+    return 'Senha fraca. Use letras maiúsculas e minúsculas, números e símbolos.';
+  // Senha encontrada em vazamentos públicos (proteção do Supabase, plano Pro).
+  if (m.includes('known to be weak') || m.includes('pwned') || m.includes('leaked'))
+    return 'Esta senha apareceu em vazamentos de dados. Escolha outra.';
+  // Limite de tentativas do servidor — é ele que barra quem tenta senhas em série.
+  if (m.includes('rate limit') || m.includes('too many') || m.includes('for security purposes'))
+    return 'Muitas tentativas. Aguarde alguns minutos e tente de novo.';
+  if (m.includes('captcha')) return 'Não foi possível confirmar que você não é um robô. Tente novamente.';
   if (m.includes('email not confirmed')) return 'Confirme seu e-mail antes de entrar.';
   if (m.includes('token has expired') || m.includes('otp') || m.includes('invalid token'))
     return 'Código inválido ou expirado. Peça um novo.';
-  if (m.includes('should be different')) return 'A nova senha precisa ser diferente da atual.';
   if (m.includes('unable to validate email') || m.includes('invalid email')) return 'E-mail inválido.';
   if (m.includes('código') || m.includes('codigo')) return msg;
   if (m.includes('recuperar este condomínio') || m.includes('você era síndico')) return msg;
