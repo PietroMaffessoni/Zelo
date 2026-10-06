@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import { View } from 'react-native';
 
 import { ZeloMark } from '@/components/Brand';
-import { ActionRow, ActionTile, AppText, Avatar, Badge, Card, ErrorState, Grade, MetaLine, Panel, Row, Screen, Section, SectionHeader, SkeletonList } from '@/components/ui';
+import { ActionRow, ActionTile, AppText, Badge, Card, ErrorState, Grade, MetaLine, Panel, Row, Screen, Section, SectionHeader, SkeletonList } from '@/components/ui';
 import { radius, spacing, type Tone } from '@/constants/theme';
 import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
@@ -18,7 +18,7 @@ import {
   type ResumoGestor,
   type ResumoPortaria,
 } from '@/lib/db';
-import { formatDataHora, primeiroNome, tempoRelativo } from '@/lib/format';
+import { formatDataHora, tempoRelativo } from '@/lib/format';
 import { useFetch } from '@/lib/useFetch';
 import { isGestor, type Comunicado } from '@/lib/types';
 
@@ -26,7 +26,7 @@ export default function Inicio() {
   const router = useRouter();
   const { palette } = useAppTheme();
   const { estreito } = useLayout();
-  const { profile, membershipAtual, condominioId, user, papel } = useAuth();
+  const { membershipAtual, condominioId, user, papel } = useAuth();
   const gestor = isGestor(papel);
   const porteiro = papel === 'porteiro';
   const zelador = papel === 'zelador';
@@ -71,27 +71,6 @@ export default function Inicio() {
 
   return (
     <Screen refreshing={dados.refreshing} onRefresh={dados.refetch}>
-      {/* Identificação: quem está usando e em que papel. */}
-      <View
-        style={{
-          flexDirection: 'row',
-          alignItems: 'center',
-          gap: spacing.md,
-          paddingTop: spacing.lg,
-          paddingBottom: spacing.lg,
-        }}
-      >
-        <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={40} />
-        <View style={{ flex: 1 }}>
-          <AppText variant="overline" color="subtle">
-            {gestor ? 'Painel do síndico' : porteiro ? 'Painel da portaria' : zelador ? 'Painel do zelador' : 'Olá'}
-          </AppText>
-          <AppText variant="heading" numberOfLines={1} style={{ marginTop: 3 }}>
-            {primeiroNome(profile?.nome_completo) || 'Morador'}
-          </AppText>
-        </View>
-      </View>
-
       {/*
         Barra de contexto: em que condomínio o usuário está operando. Era um card
         com o símbolo dentro de um bloco colorido; virou uma faixa delimitada por
@@ -99,9 +78,14 @@ export default function Inicio() {
         sem disputar atenção. O contador de moradores mora aqui porque é informação
         de contexto, não uma pendência: no lugar antigo ele competia em tamanho com
         "boletos atrasados", que é o oposto da prioridade real.
+
+        É a primeira coisa da tela: a saudação com o nome da pessoa saiu — ela
+        sabe quem é, e o cabeçalho e o menu já mostram a conta. O que muda de uma
+        visita para outra, e por isso merece o topo, é o condomínio.
       */}
       <View
         style={{
+          marginTop: spacing.lg,
           paddingVertical: spacing.md,
           borderTopWidth: 1,
           borderBottomWidth: 1,
@@ -270,6 +254,9 @@ export default function Inicio() {
             <ActionTile icon="build-outline" label="Manutenção" tone="primary" onPress={() => router.push('/(app)/manutencao')} />
           </Grade>
         ) : (
+          // Reservas e Financeiro saíram daqui: Reservas já é aba da barra de
+          // baixo, e o boleto em aberto aparece em "Precisa de atenção" quando
+          // existe — repetir os dois só empurrava o resto para fora da tela.
           <Panel>
             <ActionRow
               icon="construct-outline"
@@ -278,19 +265,35 @@ export default function Inicio() {
               tone="warning"
               onPress={() => router.push('/(app)/(tabs)/chamados')}
             />
+            {unidadeId ? (
+              <ActionRow
+                icon="id-card-outline"
+                label="Cadastros"
+                descricao="Moradores, visitantes e veículos"
+                tone="primary"
+                onPress={() => router.push('/(app)/cadastros')}
+              />
+            ) : null}
             <ActionRow
-              icon="calendar-outline"
-              label="Reservas"
-              descricao="Reservar áreas comuns"
-              tone="info"
-              onPress={() => router.push('/(app)/(tabs)/reservas')}
+              icon="alert-circle-outline"
+              label="Advertências e multas"
+              descricao="Infrações da sua unidade"
+              tone="danger"
+              onPress={() => router.push('/(app)/infracoes')}
             />
             <ActionRow
-              icon="cash-outline"
-              label="Financeiro"
-              descricao="2ª via de boleto e despesas"
-              tone="success"
-              onPress={() => router.push('/(app)/financeiro')}
+              icon="calendar-number-outline"
+              label="Agenda"
+              descricao="Eventos e datas do condomínio"
+              tone="info"
+              onPress={() => router.push('/(app)/agenda')}
+            />
+            <ActionRow
+              icon="book-outline"
+              label="Documentos"
+              descricao="Regimento, convenção, atas e editais"
+              tone="info"
+              onPress={() => router.push('/(app)/documentos')}
             />
           </Panel>
         )}

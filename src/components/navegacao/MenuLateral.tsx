@@ -91,16 +91,6 @@ export function MenuLateral({ aberto, onFechar }: { aberto: boolean; onFechar: (
   const conta: ItemMenu[] = [
     { label: 'Configurações', icon: 'settings-outline', href: '/(app)/(tabs)/configuracoes', match: '/configuracoes' },
     { label: 'Meu perfil', icon: 'person-outline', href: '/(app)/perfil', match: '/perfil' },
-    ...(membershipAtual?.unidade_id
-      ? [
-          {
-            label: 'Minha unidade',
-            icon: 'home-outline',
-            href: `/(app)/unidades/${membershipAtual.unidade_id}`,
-            match: `/unidades/${membershipAtual.unidade_id}`,
-          } as ItemMenu,
-        ]
-      : []),
   ];
 
   return (

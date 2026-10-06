@@ -115,11 +115,11 @@ export default function Configuracoes() {
         />
         {membershipAtual?.unidade_id ? (
           <ListItem
-            icon="home-outline"
+            icon="id-card-outline"
             iconTone="neutral"
-            title="Minha unidade"
-            subtitle="Moradores, dependentes e pets"
-            onPress={() => router.push(`/(app)/unidades/${membershipAtual.unidade_id}`)}
+            title="Cadastros da unidade"
+            subtitle="Moradores, visitantes e veículos"
+            onPress={() => router.push('/(app)/cadastros')}
           />
         ) : null}
         {memberships.length > 1 ? (

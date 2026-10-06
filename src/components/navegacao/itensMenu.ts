@@ -64,10 +64,10 @@ export function montarMenu(papel: Papel | null, unidadeId: string | null): Secao
           { label: 'Advertências e multas', icon: 'alert-circle-outline', href: '/(app)/infracoes', match: '/infracoes' } as ItemMenu,
         ]),
         { label: 'Achados e perdidos', icon: 'cube-outline', href: '/(app)/achados', match: '/achados' },
+        // Moradores, visitantes e veículos da unidade numa entrada só.
         ...se(!!unidadeId, [
-          { label: 'Visitantes', icon: 'people-outline', href: '/(app)/visitantes', match: '/visitantes' },
-          { label: 'Veículos', icon: 'car-outline', href: '/(app)/veiculos', match: '/veiculos' },
-        ] as ItemMenu[]),
+          { label: 'Cadastros', icon: 'id-card-outline', href: '/(app)/cadastros', match: '/cadastros' } as ItemMenu,
+        ]),
       ],
     },
     {
