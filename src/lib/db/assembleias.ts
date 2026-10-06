@@ -80,6 +80,46 @@ export async function criarAssembleia(input: {
   return unwrap(await supabase.from('assembleias').insert(input).select('*').single());
 }
 
+/** Campos que o síndico pode corrigir depois de convocar. Status tem função própria. */
+export type CamposAssembleia = {
+  titulo: string;
+  descricao: string | null;
+  data_hora: string;
+  local: string | null;
+  link_online: string | null;
+  quorum_minimo_unidades: number | null;
+};
+
+export async function atualizarAssembleia(id: string, campos: CamposAssembleia): Promise<Assembleia> {
+  return unwrap(
+    await supabase
+      .from('assembleias')
+      .update({ ...campos, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select('*')
+      .single(),
+  );
+}
+
+export async function cancelarAssembleia(id: string) {
+  unwrap(
+    await supabase.from('assembleias').update({ status: 'cancelada', updated_at: new Date().toISOString() }).eq('id', id),
+  );
+}
+
+export async function atualizarPauta(id: string, campos: { titulo: string; descricao: string | null }) {
+  unwrap(await supabase.from('assembleia_pautas').update(campos).eq('id', id));
+}
+
+/**
+ * Remove a pauta com as opções dela. A tela só oferece isto enquanto ninguém
+ * votou: os votos caem em cascada junto, e apagar voto já dado mudaria o
+ * resultado de uma deliberação sem deixar rastro.
+ */
+export async function removerPauta(id: string) {
+  unwrap(await supabase.from('assembleia_pautas').delete().eq('id', id));
+}
+
 export async function adicionarPauta(input: {
   assembleia_id: string;
   condominio_id: string;

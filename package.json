@@ -11,6 +11,7 @@
     "aes-js": "^3.1.2",
     "dayjs": "^1.11.21",
     "expo": "^57.0.9",
+    "expo-clipboard": "~57.0.2",
     "expo-constants": "~57.0.3",
     "expo-device": "~57.0.2",
     "expo-document-picker": "~57.0.2",

@@ -12,6 +12,7 @@ import { AppText } from '@/components/ui/Text';
 import { radius, SIDEBAR_LARGURA, SIDEBAR_LARGURA_TABLET, spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
+import { useCopiar } from '@/lib/copiar';
 import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
 import { validadeCodigo } from '@/lib/format';
 import { papelLabel } from '@/lib/labels';
@@ -200,6 +201,7 @@ function CodigoLinha({
   const { recarregar } = useAuth();
   const confirmar = useConfirm();
   const toast = useToast();
+  const copiar = useCopiar();
   const [ocupado, setOcupado] = useState(false);
 
   async function executarGeracao() {
@@ -233,17 +235,7 @@ function CodigoLinha({
   async function aoTocar() {
     if (ocupado) return;
     if (!codigo) return executarGeracao();
-    // A sidebar só roda no web, então a Clipboard API do navegador resolve —
-    // não compensa trazer expo-clipboard só por isso. Sem permissão, o toast
-    // mostra o código por mais tempo para copiar à mão.
-    const clipboard = (globalThis as any)?.navigator?.clipboard;
-    try {
-      if (!clipboard?.writeText) throw new Error('sem clipboard');
-      await clipboard.writeText(codigo);
-      toast.sucesso('Código copiado.');
-    } catch {
-      toast.show(codigo, { duracao: 6000 });
-    }
+    await copiar(codigo, `Código de ${label.toLowerCase()}`);
   }
 
   const interativo = !!codigo || !!gerar;

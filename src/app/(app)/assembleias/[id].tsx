@@ -6,9 +6,12 @@ import { Acoes, AppHeader, AppText, Badge, Button, Card, Divider, IconButton, In
 import { radius, spacing } from '@/constants/theme';
 import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
+import { useConfirm } from '@/lib/confirm';
 import { useAppTheme } from '@/lib/theme';
 import {
   adicionarPauta,
+  atualizarPauta,
+  removerPauta,
   encerrarAssembleia,
   encerrarPauta,
   getAssembleia,
@@ -27,6 +30,7 @@ export default function AssembleiaDetalhe() {
   const router = useRouter();
   const { user, papel, condominioId, membershipAtual } = useAuth();
   const acao = useAcao();
+  const confirmar = useConfirm();
   const gestor = isGestor(papel);
   const unidadeId = membershipAtual?.unidade_id ?? null;
 
@@ -37,6 +41,11 @@ export default function AssembleiaDetalhe() {
   const [salvandoPauta, setSalvandoPauta] = useState(false);
   const [votando, setVotando] = useState<string | null>(null);
   const [encerrando, setEncerrando] = useState(false);
+  // Edição de pauta, uma por vez, no próprio card.
+  const [editandoPauta, setEditandoPauta] = useState<string | null>(null);
+  const [tituloEdicao, setTituloEdicao] = useState('');
+  const [descricaoEdicao, setDescricaoEdicao] = useState('');
+  const [salvandoEdicao, setSalvandoEdicao] = useState(false);
 
   const { data, loading, refetch } = useFetch(async () => {
     const [assembleia, pautas] = await Promise.all([getAssembleia(id), listarPautas(id)]);
@@ -91,6 +100,37 @@ export default function AssembleiaDetalhe() {
     refetch();
   }
 
+  function editarPauta(p: AssembleiaPauta) {
+    setEditandoPauta(p.id);
+    setTituloEdicao(p.titulo);
+    setDescricaoEdicao(p.descricao ?? '');
+  }
+
+  async function salvarEdicaoPauta() {
+    if (!editandoPauta || !tituloEdicao.trim()) return;
+    setSalvandoEdicao(true);
+    const ok = await acao(
+      () => atualizarPauta(editandoPauta, { titulo: tituloEdicao.trim(), descricao: descricaoEdicao.trim() || null }),
+      { sucesso: 'Pauta atualizada.', sempre: () => setSalvandoEdicao(false) },
+    );
+    if (!ok) return;
+    setEditandoPauta(null);
+    refetch();
+  }
+
+  async function excluirPauta(p: AssembleiaPauta) {
+    const ok = await confirmar({
+      titulo: 'Remover esta pauta?',
+      mensagem: `"${p.titulo}" e as opções de voto dela saem da assembleia.`,
+      confirmar: 'Remover',
+      cancelar: 'Cancelar',
+      destrutivo: true,
+    });
+    if (!ok) return;
+    const feito = await acao(() => removerPauta(p.id), { sucesso: 'Pauta removida.' });
+    if (feito) refetch();
+  }
+
   async function encerrar() {
     setEncerrando(true);
     const ok = await acao(() => encerrarAssembleia(id), {
@@ -114,7 +154,22 @@ export default function AssembleiaDetalhe() {
 
   return (
     <Screen>
-      <AppHeader title="Assembleia" back />
+      <AppHeader
+        title="Assembleia"
+        back
+        right={
+          gestor && !encerradaOuCancelada ? (
+            <Button
+              title="Editar"
+              variant="secondary"
+              size="sm"
+              icon="create-outline"
+              fullWidth={false}
+              onPress={() => router.push(`/(app)/assembleias/editar/${id}`)}
+            />
+          ) : undefined
+        }
+      />
 
       <View style={{ flexDirection: 'row', marginBottom: spacing.sm }}>
         <Badge label={st.label} tone={st.tone} />
@@ -197,13 +252,41 @@ export default function AssembleiaDetalhe() {
             const meuVotoOpcaoId = meusVotos[p.id];
             return (
               <Card key={p.id}>
-                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-                  <AppText variant="subtitle" style={{ flex: 1 }}>{p.titulo}</AppText>
-                  {p.encerrada ? <Badge label="Encerrada" tone="neutral" /> : null}
-                </View>
-                {p.descricao ? (
-                  <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>{p.descricao}</AppText>
-                ) : null}
+                {editandoPauta === p.id ? (
+                  <View style={{ gap: spacing.md, marginBottom: spacing.sm }}>
+                    <Input label="Título da pauta" value={tituloEdicao} onChangeText={setTituloEdicao} />
+                    <Input label="Descrição (opcional)" value={descricaoEdicao} onChangeText={setDescricaoEdicao} multiline />
+                    <Acoes minimo={130}>
+                      <Button title="Cancelar" variant="secondary" size="sm" onPress={() => setEditandoPauta(null)} />
+                      <Button
+                        title="Salvar pauta"
+                        size="sm"
+                        icon="checkmark"
+                        loading={salvandoEdicao}
+                        onPress={salvarEdicaoPauta}
+                      />
+                    </Acoes>
+                  </View>
+                ) : (
+                  <>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.xs }}>
+                      <AppText variant="subtitle" style={{ flex: 1 }}>{p.titulo}</AppText>
+                      {p.encerrada ? <Badge label="Encerrada" tone="neutral" /> : null}
+                      {/* Texto da pauta pode ser corrigido enquanto ela está aberta;
+                          remover, só antes do primeiro voto — depois disso apagar
+                          a pauta apagaria votos já dados. */}
+                      {gestor && !p.encerrada && !encerradaOuCancelada ? (
+                        <IconButton icon="create-outline" label={`Editar pauta ${p.titulo}`} onPress={() => editarPauta(p)} />
+                      ) : null}
+                      {gestor && !encerradaOuCancelada && totalVotos === 0 ? (
+                        <IconButton icon="trash-outline" label={`Remover pauta ${p.titulo}`} onPress={() => excluirPauta(p)} />
+                      ) : null}
+                    </View>
+                    {p.descricao ? (
+                      <AppText color="muted" variant="caption" style={{ marginTop: 2 }}>{p.descricao}</AppText>
+                    ) : null}
+                  </>
+                )}
                 <AppText color="subtle" variant="caption" style={{ marginTop: 4 }}>
                   {totalVotos} unidade{totalVotos === 1 ? '' : 's'} votou/votaram
                 </AppText>

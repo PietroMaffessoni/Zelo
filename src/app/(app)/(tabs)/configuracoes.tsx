@@ -1,3 +1,4 @@
+import { Ionicons } from '@expo/vector-icons';
 import Constants from 'expo-constants';
 import { useRouter } from 'expo-router';
 import { useState } from 'react';
@@ -8,6 +9,7 @@ import { spacing } from '@/constants/theme';
 import { useAcao } from '@/lib/acao';
 import { useAuth } from '@/lib/auth';
 import { useConfirm } from '@/lib/confirm';
+import { useCopiar } from '@/lib/copiar';
 import { gerarCodigoPortaria, gerarCodigoZelador } from '@/lib/db';
 import { validadeCodigo } from '@/lib/format';
 import { papelLabel } from '@/lib/labels';
@@ -29,6 +31,7 @@ export default function Configuracoes() {
   const { palette, escuro, alternar } = useAppTheme();
   const { profile, papel, membershipAtual, memberships, condominioId, recarregar, signOut } = useAuth();
   const acao = useAcao();
+  const copiar = useCopiar();
   const gestor = ehGestor(papel);
   const [gerandoPortaria, setGerandoPortaria] = useState(false);
   const [gerandoZelador, setGerandoZelador] = useState(false);
@@ -155,8 +158,10 @@ export default function Configuracoes() {
               icon="key-outline"
               iconTone="neutral"
               title="Convite (moradores)"
-              subtitle={condominio?.codigo_convite ?? '—'}
+              subtitle={condominio?.codigo_convite ? `${condominio.codigo_convite} · toque para copiar` : '—'}
               chevron={false}
+              onPress={condominio?.codigo_convite ? () => copiar(condominio.codigo_convite!, 'Código de convite') : undefined}
+              right={condominio?.codigo_convite ? <Ionicons name="copy-outline" size={16} color={palette.textSubtle} /> : undefined}
             />
             <ListItem
               icon="shield-outline"

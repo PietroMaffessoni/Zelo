@@ -134,15 +134,31 @@ export function MenuLateral({ aberto, onFechar }: { aberto: boolean; onFechar: (
               borderBottomColor: palette.border,
             }}
           >
-            <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={40} />
-            <View style={{ flex: 1, minWidth: 0 }}>
-              <AppText variant="subtitle" numberOfLines={1}>
-                {profile?.nome_completo || 'Meu perfil'}
-              </AppText>
-              <AppText variant="caption" color="muted" numberOfLines={1}>
-                {[papel ? papelLabel[papel] : 'Morador', membershipAtual?.condominio?.nome].filter(Boolean).join(' · ')}
-              </AppText>
-            </View>
+            {/* Nome e foto levam ao perfil — é onde a pessoa espera chegar ao
+                tocar na própria identificação, como em qualquer app. */}
+            <Pressable
+              onPress={() => ir('/(app)/perfil')}
+              accessibilityRole="button"
+              accessibilityLabel="Abrir meu perfil"
+              style={({ pressed }) => ({
+                flex: 1,
+                minWidth: 0,
+                flexDirection: 'row',
+                alignItems: 'center',
+                gap: spacing.md,
+                opacity: pressed ? 0.6 : 1,
+              })}
+            >
+              <Avatar nome={profile?.nome_completo} url={profile?.avatar_url} size={40} />
+              <View style={{ flex: 1, minWidth: 0 }}>
+                <AppText variant="subtitle" numberOfLines={1}>
+                  {profile?.nome_completo || 'Meu perfil'}
+                </AppText>
+                <AppText variant="caption" color="muted" numberOfLines={1}>
+                  {[papel ? papelLabel[papel] : 'Morador', membershipAtual?.condominio?.nome].filter(Boolean).join(' · ')}
+                </AppText>
+              </View>
+            </Pressable>
             <Pressable
               onPress={onFechar}
               accessibilityRole="button"

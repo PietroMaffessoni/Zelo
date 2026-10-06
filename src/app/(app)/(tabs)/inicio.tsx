@@ -1,6 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import { View } from 'react-native';
+import { Pressable, View } from 'react-native';
 
 import { ZeloMark } from '@/components/Brand';
 import { ActionRow, ActionTile, AppText, Badge, Card, ErrorState, Grade, MetaLine, Panel, Row, Screen, Section, SectionHeader, SkeletonList } from '@/components/ui';
@@ -8,6 +8,7 @@ import { radius, spacing, type Tone } from '@/constants/theme';
 import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 import { useAuth } from '@/lib/auth';
+import { useCopiar } from '@/lib/copiar';
 import {
   listarAssembleias,
   listarComunicados,
@@ -345,17 +346,31 @@ export default function Inicio() {
   );
 }
 
-/** Código de convite do condomínio, para o síndico ditar a quem vai entrar. */
+/**
+ * Código de convite do condomínio. Tocar copia: o síndico quase sempre manda o
+ * código por mensagem, e ditar seis caracteres no grupo do prédio é onde nascem
+ * os "não funciona" de quem digitou errado.
+ */
 function CodigoConvite({ codigo, alinhar = 'flex-end' }: { codigo: string; alinhar?: 'flex-start' | 'flex-end' }) {
   const { palette } = useAppTheme();
+  const copiar = useCopiar();
   return (
-    <View style={{ alignItems: alinhar, flexShrink: 0 }}>
+    <Pressable
+      onPress={() => copiar(codigo, 'Código de convite')}
+      accessibilityRole="button"
+      accessibilityLabel={`Código de convite ${codigo}. Toque para copiar.`}
+      hitSlop={6}
+      style={({ pressed }) => ({ alignItems: alinhar, flexShrink: 0, opacity: pressed ? 0.6 : 1 })}
+    >
       <AppText variant="caption" color="subtle">
-        Código de convite
+        Código de convite · toque para copiar
       </AppText>
       <View
         style={{
           marginTop: 3,
+          flexDirection: 'row',
+          alignItems: 'center',
+          gap: 6,
           backgroundColor: palette.surfaceAlt,
           borderWidth: 1,
           borderColor: palette.border,
@@ -367,8 +382,9 @@ function CodigoConvite({ codigo, alinhar = 'flex-end' }: { codigo: string; alinh
         <AppText variant="label" style={{ color: palette.text, letterSpacing: 1.5 }}>
           {codigo}
         </AppText>
+        <Ionicons name="copy-outline" size={13} color={palette.textSubtle} />
       </View>
-    </View>
+    </Pressable>
   );
 }
 
