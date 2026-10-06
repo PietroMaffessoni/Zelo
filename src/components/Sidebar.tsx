@@ -5,6 +5,7 @@ import { Pressable, ScrollView, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { ZeloWordmark } from '@/components/Brand';
+import { itemAtivo, montarMenu } from '@/components/navegacao/itensMenu';
 import { Avatar } from '@/components/ui/Avatar';
 import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
@@ -17,7 +18,7 @@ import { papelLabel } from '@/lib/labels';
 import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
 import { useToast } from '@/lib/toast';
-import { isGestor as ehGestor, veManutencao } from '@/lib/types';
+import { isGestor as ehGestor } from '@/lib/types';
 
 type Item = { label: string; icon: keyof typeof Ionicons.glyphMap; href: Href; match: string };
 
@@ -36,51 +37,9 @@ export function Sidebar() {
   const insets = useSafeAreaInsets();
   const { profile, papel, membershipAtual, signOut } = useAuth();
   const gestor = ehGestor(papel);
-  const porteiro = papel === 'porteiro';
-  const zelador = papel === 'zelador';
-  const morador = !gestor && !porteiro && !zelador;
-  const equipe = porteiro || zelador;
-  const unidadeId = membershipAtual?.unidade_id ?? null;
-
-  const principais: Item[] = [
-    { label: gestor ? 'Painel' : 'Início', icon: gestor ? 'grid-outline' : 'home-outline', href: '/(app)/(tabs)/inicio', match: 'inicio' },
-    ...(morador || gestor || zelador ? [{ label: 'Chamados', icon: 'construct-outline', href: '/(app)/(tabs)/chamados', match: 'chamados' } as Item] : []),
-    ...(morador ? [{ label: 'Reservas', icon: 'calendar-outline', href: '/(app)/(tabs)/reservas', match: 'reservas' } as Item] : []),
-    ...(gestor || porteiro ? [{ label: 'Portaria', icon: 'people-circle-outline', href: '/(app)/(tabs)/portaria', match: 'portaria' } as Item] : []),
-  ];
-
-  const secundarios: Item[] = [
-    { label: 'Comunicados', icon: 'megaphone-outline', href: '/(app)/comunicados', match: 'comunicados' },
-    ...(!equipe
-      ? ([
-          { label: 'Central do morador', icon: 'documents-outline', href: '/(app)/central', match: 'central' },
-          { label: 'Financeiro', icon: 'cash-outline', href: '/(app)/financeiro', match: 'financeiro' },
-          { label: 'Assembleias', icon: 'podium-outline', href: '/(app)/assembleias', match: 'assembleias' },
-          { label: 'Advertências e multas', icon: 'alert-circle-outline', href: '/(app)/infracoes', match: 'infracoes' },
-        ] as Item[])
-      : []),
-    ...(veManutencao(papel) ? [{ label: 'Manutenção', icon: 'build-outline', href: '/(app)/manutencao', match: 'manutencao' } as Item] : []),
-    { label: 'Documentos', icon: 'book-outline', href: '/(app)/documentos', match: 'documentos' },
-    { label: 'Agenda', icon: 'calendar-number-outline', href: '/(app)/agenda', match: 'agenda' },
-    { label: 'Achados e perdidos', icon: 'cube-outline', href: '/(app)/achados', match: 'achados' },
-    ...(unidadeId
-      ? ([
-          { label: 'Visitantes', icon: 'people-outline', href: '/(app)/visitantes', match: 'visitantes' },
-          { label: 'Veículos', icon: 'car-outline', href: '/(app)/veiculos', match: 'veiculos' },
-        ] as Item[])
-      : []),
-  ];
-
-  const admin: Item[] = gestor
-    ? [
-        { label: 'Moradores e unidades', icon: 'people-outline', href: '/(app)/unidades', match: 'unidades' },
-        { label: 'Áreas comuns', icon: 'business-outline', href: '/(app)/areas', match: 'areas' },
-        { label: 'Inadimplência', icon: 'trending-down-outline', href: '/(app)/financeiro/inadimplencia', match: 'inadimplencia' },
-        { label: 'Contas a pagar', icon: 'briefcase-outline', href: '/(app)/financeiro/administradora', match: 'administradora' },
-        { label: 'Registro de atividades', icon: 'receipt-outline', href: '/(app)/auditoria', match: 'auditoria' },
-        { label: 'Privacidade e retenção', icon: 'lock-closed-outline', href: '/(app)/privacidade-dados', match: 'privacidade-dados' },
-      ]
-    : [];
+  // Mesma lista do menu lateral do celular — ver `montarMenu`.
+  const secoes = montarMenu(papel, membershipAtual?.unidade_id ?? null);
+  const todos = secoes.flatMap((sec) => sec.itens);
 
   async function sair() {
     const ok = await confirmar({
@@ -122,23 +81,19 @@ export function Sidebar() {
         showsVerticalScrollIndicator={false}
       >
 
-        {principais.map((it) => (
-          <NavLink key={it.match} item={it} pathname={pathname} onPress={() => router.push(it.href)} />
-        ))}
-
-        <SectionLabel>MENU</SectionLabel>
-        {secundarios.map((it) => (
-          <NavLink key={it.match} item={it} pathname={pathname} onPress={() => router.push(it.href)} />
-        ))}
-
-        {admin.length > 0 ? (
-          <>
-            <SectionLabel>ADMINISTRAÇÃO</SectionLabel>
-            {admin.map((it) => (
-              <NavLink key={it.match} item={it} pathname={pathname} onPress={() => router.push(it.href)} />
+        {secoes.map((secao) => (
+          <View key={secao.titulo ?? 'principal'} style={{ gap: 1 }}>
+            {secao.titulo ? <SectionLabel>{secao.titulo.toUpperCase()}</SectionLabel> : null}
+            {secao.itens.map((it) => (
+              <NavLink
+                key={it.match}
+                item={it}
+                ativo={itemAtivo(it, pathname, todos)}
+                onPress={() => router.push(it.href)}
+              />
             ))}
-          </>
-        ) : null}
+          </View>
+        ))}
 
         {gestor ? <CodigosAcesso /> : null}
 
@@ -171,22 +126,19 @@ export function Sidebar() {
             </AppText>
           </View>
         </Pressable>
-        {/* No celular estes dois moram na aba "Mais"; aqui não existe aba "Mais",
+        {/* No celular estes dois moram na aba "Configurações"; aqui não existe aba "Mais",
             e sem esta entrada a política de privacidade ficaria inalcançável na
             versão de desktop — exigência das lojas e direito do titular na LGPD. */}
         <NavLink
           item={{ label: 'Termos de Uso', icon: 'document-text-outline', href: '/termos', match: 'termos' }}
-          pathname={pathname}
           onPress={() => router.push('/termos')}
         />
         <NavLink
           item={{ label: 'Privacidade', icon: 'shield-checkmark-outline', href: '/privacidade', match: 'privacidade' }}
-          pathname={pathname}
           onPress={() => router.push('/privacidade')}
         />
         <NavLink
           item={{ label: 'Sair', icon: 'log-out-outline', href: '/(app)/perfil', match: '__sair' }}
-          pathname={pathname}
           danger
           onPress={sair}
         />
@@ -195,7 +147,7 @@ export function Sidebar() {
   );
 }
 
-/** Códigos de acesso do condomínio. No mobile eles moram na aba "Mais"; como no
+/** Códigos de acesso do condomínio. No celular eles moram na aba "Configurações"; como no
  *  desktop essa aba não existe, a sidebar precisa expô-los — sem isso o síndico
  *  não tem por onde gerar o código da portaria nem o da zeladoria. */
 function CodigosAcesso() {
@@ -382,17 +334,16 @@ function SectionLabel({ children }: { children: string }) {
  */
 function NavLink({
   item,
-  pathname,
+  ativo = false,
   onPress,
   danger,
 }: {
   item: Item;
-  pathname: string;
+  ativo?: boolean;
   onPress: () => void;
   danger?: boolean;
 }) {
   const { palette } = useAppTheme();
-  const ativo = item.match !== '__sair' && pathname.includes(item.match);
   return (
     <Pressable
       onPress={onPress}

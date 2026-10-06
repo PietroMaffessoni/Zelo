@@ -3,10 +3,9 @@ import { Tabs } from 'expo-router';
 import { PixelRatio, StyleSheet } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-import { useAuth } from '@/lib/auth';
+import { useCaixaEntrada } from '@/lib/caixaEntrada';
 import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
-import { isGestor } from '@/lib/types';
 
 /**
  * Altura da barra de abas, montada a partir do que ela precisa conter.
@@ -47,29 +46,26 @@ const PADDING_BASE = 8;
 const FATOR_FONTE_MAX = 1.4;
 
 export default function TabsLayout() {
-  const { papel } = useAuth();
   const { palette } = useAppTheme();
   const insets = useSafeAreaInsets();
   const { navegacaoLateral } = useLayout();
+  const { naoLidas } = useCaixaEntrada();
   // `getFontScale` reflete o ajuste de tamanho de fonte do sistema operacional.
   const fatorFonte = Math.min(PixelRatio.getFontScale(), FATOR_FONTE_MAX);
   const alturaConteudo = RESPIRO_ITEM + ALTURA_ICONE + Math.ceil(LINHA_ROTULO * fatorFonte);
-  const gestor = isGestor(papel);
-  const porteiro = papel === 'porteiro';
-  const zelador = papel === 'zelador';
-  const morador = !gestor && !porteiro && !zelador;
 
-  // Exibe 3–4 destinos de alto tráfego por papel; os demais ficam ocultos
-  // (href: null) mas continuam navegáveis por links/ações rápidas.
-  const mostrar = {
-    chamados: morador || gestor || zelador,
-    reservas: morador,
-    portaria: gestor || porteiro,
-  };
-
+  // Quatro abas fixas, iguais para todos os papéis: Início, Notificações,
+  // Reservas e Configurações. O resto do app mora no menu lateral (ícone do
+  // cabeçalho). Chamados e Portaria continuam sendo rotas deste navegador, só
+  // sem botão na barra (`href: null`) — assim os links que já apontam para elas
+  // seguem valendo.
   return (
     <Tabs
       tabBar={navegacaoLateral ? () => null : undefined}
+      // "Voltar" refaz o caminho que a pessoa fez entre as abas. O padrão do
+      // react-navigation pularia sempre para Início — e quem abriu Chamados pelo
+      // menu estando em Reservas voltaria para o lugar errado.
+      backBehavior="history"
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: palette.primary,
@@ -109,43 +105,43 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="inicio"
         options={{
-          title: gestor ? 'Painel' : porteiro ? 'Início' : 'Início',
-          tabBarIcon: ({ color, size }) => (
-            <Ionicons name={gestor ? 'grid-outline' : 'home-outline'} size={size} color={color} />
+          title: 'Início',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={size} color={color} />
           ),
         }}
       />
       <Tabs.Screen
-        name="chamados"
+        name="notificacoes"
         options={{
-          title: 'Chamados',
-          href: mostrar.chamados ? undefined : null,
-          tabBarIcon: ({ color, size }) => <Ionicons name="construct-outline" size={size} color={color} />,
+          title: 'Notificações',
+          tabBarBadge: naoLidas > 0 ? (naoLidas > 99 ? '99+' : naoLidas) : undefined,
+          tabBarBadgeStyle: { backgroundColor: palette.danger, color: palette.white, fontSize: 10, fontWeight: '700' },
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'notifications' : 'notifications-outline'} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="reservas"
         options={{
           title: 'Reservas',
-          href: mostrar.reservas ? undefined : null,
-          tabBarIcon: ({ color, size }) => <Ionicons name="calendar-outline" size={size} color={color} />,
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={size} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
-        name="portaria"
+        name="configuracoes"
         options={{
-          title: 'Portaria',
-          href: mostrar.portaria ? undefined : null,
-          tabBarIcon: ({ color, size }) => <Ionicons name="people-circle-outline" size={size} color={color} />,
+          title: 'Configurações',
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons name={focused ? 'settings' : 'settings-outline'} size={size} color={color} />
+          ),
         }}
       />
-      <Tabs.Screen
-        name="mais"
-        options={{
-          title: 'Mais',
-          tabBarIcon: ({ color, size }) => <Ionicons name="ellipsis-horizontal" size={size} color={color} />,
-        }}
-      />
+      <Tabs.Screen name="chamados" options={{ title: 'Chamados', href: null }} />
+      <Tabs.Screen name="portaria" options={{ title: 'Portaria', href: null }} />
     </Tabs>
   );
 }

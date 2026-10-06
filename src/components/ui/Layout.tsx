@@ -16,6 +16,7 @@ import { radius, spacing } from '@/constants/theme';
 import { Button } from '@/components/ui/Button';
 import { focusRing } from '@/components/ui/controls';
 import { AppText } from '@/components/ui/Text';
+import { useCabecalhoGlobal } from '@/lib/cabecalho';
 import { useVoltar } from '@/lib/navegacao';
 import { useLayout, TOQUE_MINIMO } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
@@ -54,10 +55,15 @@ export function Screen({
 }) {
   const { palette } = useAppTheme();
   const { gutter, alturaCurta } = useLayout();
+  const cabecalhoGlobal = useCabecalhoGlobal();
 
   // `left`/`right` sempre entram: protegem o recorte de tela em paisagem sem
-  // afetar nada em retrato, onde os insets laterais são zero.
-  const bordas = Array.from(new Set([...edges, 'left', 'right'])) as typeof edges;
+  // afetar nada em retrato, onde os insets laterais são zero. O `top` sai sob o
+  // cabeçalho fixo do celular — ele já ocupa a barra de status, e somar o
+  // recuo de novo deixaria uma faixa vazia entre o cabeçalho e a tela.
+  const bordas = Array.from(new Set([...edges, 'left', 'right'])).filter(
+    (b) => !(cabecalhoGlobal && b === 'top'),
+  ) as typeof edges;
 
   const conteudo = (
     <View
@@ -132,6 +138,10 @@ export function AppHeader({
   const voltar = useVoltar();
   const { palette } = useAppTheme();
   const { alturaCurta } = useLayout();
+  // Sob o cabeçalho fixo do celular a seta de voltar já está lá em cima; uma
+  // segunda aqui embaixo seria o mesmo botão duas vezes.
+  const cabecalhoGlobal = useCabecalhoGlobal();
+  const mostrarVoltar = back && !cabecalhoGlobal;
 
   // Web: título da aba do navegador por rota (antes toda página ficava "Zelo").
   useEffect(() => {
@@ -155,7 +165,7 @@ export function AppHeader({
         minHeight: alturaCurta ? 44 : 56,
       }}
     >
-      {back ? (
+      {mostrarVoltar ? (
         <Pressable
           onPress={() => (onBack ? onBack() : voltar())}
           hitSlop={8}

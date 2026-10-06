@@ -1,9 +1,14 @@
 import { Redirect, Stack } from 'expo-router';
+import { useState } from 'react';
 import { View } from 'react-native';
 
+import { CabecalhoApp } from '@/components/navegacao/CabecalhoApp';
+import { MenuLateral } from '@/components/navegacao/MenuLateral';
 import { Sidebar } from '@/components/Sidebar';
 import { Loading } from '@/components/ui';
 import { useAuth } from '@/lib/auth';
+import { CabecalhoGlobalContext } from '@/lib/cabecalho';
+import { CaixaEntradaProvider } from '@/lib/caixaEntrada';
 import { useLembretesManutencao, useNotificacoesRealtime, useRespostaNotificacao } from '@/lib/notificacoes';
 import { useLayout } from '@/lib/responsivo';
 import { useAppTheme } from '@/lib/theme';
@@ -16,6 +21,7 @@ export default function AppLayout() {
   // ela entra é `useLayout`, que cruza largura, altura e plataforma — ver
   // `navegacaoLateral`.
   const { navegacaoLateral } = useLayout();
+  const [menuAberto, setMenuAberto] = useState(false);
 
   useNotificacoesRealtime(condominioId, user?.id ?? null, membershipAtual?.unidade_id ?? null, profile?.preferencias_notificacao, papel);
   useLembretesManutencao(condominioId, papel);
@@ -47,12 +53,27 @@ export default function AppLayout() {
 
   if (navegacaoLateral) {
     return (
-      <View style={{ flex: 1, flexDirection: 'row', backgroundColor: palette.background }}>
-        <Sidebar />
-        <View style={{ flex: 1 }}>{stack}</View>
-      </View>
+      <CaixaEntradaProvider>
+        <View style={{ flex: 1, flexDirection: 'row', backgroundColor: palette.background }}>
+          <Sidebar />
+          <View style={{ flex: 1 }}>{stack}</View>
+        </View>
+      </CaixaEntradaProvider>
     );
   }
 
-  return stack;
+  // Celular: cabeçalho fixo em cima (voltar · Zelo · menu), as telas no meio e
+  // o menu lateral por cima de tudo quando aberto. O contexto avisa as telas de
+  // que o topo e a seta de voltar já estão resolvidos — ver `useCabecalhoGlobal`.
+  return (
+    <CaixaEntradaProvider>
+      <CabecalhoGlobalContext.Provider value>
+        <View style={{ flex: 1, backgroundColor: palette.background }}>
+          <CabecalhoApp onMenu={() => setMenuAberto(true)} />
+          <View style={{ flex: 1 }}>{stack}</View>
+          <MenuLateral aberto={menuAberto} onFechar={() => setMenuAberto(false)} />
+        </View>
+      </CabecalhoGlobalContext.Provider>
+    </CaixaEntradaProvider>
+  );
 }
