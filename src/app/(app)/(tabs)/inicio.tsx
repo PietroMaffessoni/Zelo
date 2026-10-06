@@ -94,7 +94,7 @@ export default function Inicio() {
         }}
       >
         <View style={{ flexDirection: 'row', alignItems: 'center', gap: spacing.md }}>
-          <ZeloMark height={24} color={palette.primary} windowColor={palette.background} />
+          <ZeloMark height={24} color={palette.brand} windowColor={palette.background} />
           <View style={{ flex: 1, minWidth: 0 }}>
             <AppText variant="subtitle" numberOfLines={1}>
               {cond?.nome ?? 'Meu condomínio'}

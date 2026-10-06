@@ -20,7 +20,7 @@ export function ZeloMark({
   windowColor?: string;
 }) {
   const { palette } = useAppTheme();
-  const corPredio = color ?? palette.primary;
+  const corPredio = color ?? palette.brand;
   const corJanela = windowColor ?? palette.background;
   const w = Math.round(height * 0.42);
   const win = Math.max(2, Math.round(w * 0.2));
@@ -68,7 +68,7 @@ export function ZeloWordmark({
   windowColor?: string;
 }) {
   const { palette } = useAppTheme();
-  const cor = color ?? palette.primary;
+  const cor = color ?? palette.brand;
   const letra = {
     fontSize: size,
     fontFamily: fonts.display,

@@ -5,6 +5,11 @@
  */
 
 export type Palette = {
+  /**
+   * Cor da LOGO, e só dela. No tema claro a interface passou a ser preta e a
+   * marca continuou azul — por isso a logo não pode mais herdar `primary`.
+   */
+  brand: string;
   primary: string;
   primaryDark: string;
   primarySoft: string;
@@ -68,18 +73,23 @@ type Acentos = Pick<
 
 const acentosClaro: Record<IntensidadeCor, Acentos> = {
   vivida: {
-    // Marca — Zelo: azul-marinho profundo (confiança & instituição). Não é o índigo.
-    primary: '#12568F',
-    primaryDark: '#0E4373',
-    primarySoft: '#E2ECF6',
+    // Interface em PRETO desde 2026-10-06: o azul-marinho como cor de ação não
+    // combinava com o modo claro. O azul (#12568F) ficou só na logo — ver
+    // `brand`. Ação, item ativo e seleção agora são grafite quase preto; a
+    // seleção se distingue pelo fundo cinza (`primarySoft`), não por matiz.
+    primary: '#111111',
+    primaryDark: '#000000',
+    primarySoft: '#ECECEC',
     success: '#2E7D46',
     successSoft: '#DCF0E1',
     warning: '#B45309',
     warningSoft: '#FBEBCB',
     danger: '#C0392B',
     dangerSoft: '#F7E1DD',
-    info: '#0E7490',
-    infoSoft: '#DEF0F3',
+    // Era um azul-petróleo (#0E7490). Informativo não é alerta: vira grafite,
+    // para não sobrar azul na interface fora da logo.
+    info: '#3F3F46',
+    infoSoft: '#EDEDEF',
   },
   suave: {
     // Mesmo marinho, um passo atrás na saturação — segue reconhecível como Zelo.
@@ -145,14 +155,16 @@ export const coresAvatar: Record<IntensidadeCor, readonly string[]> = {
 
 const paletteLight: Palette = {
   ...acentosClaro[INTENSIDADE],
+  brand: '#12568F',
   onPrimary: '#FFFFFF',
 
-  // Neutros frios e limpos (papel levemente azulado)
-  background: '#F3F5F9',
+  // Neutros puros. Eram levemente azulados (#F3F5F9), o que combinava com a
+  // primária azul; ao lado do preto, o fundo azulado parecia sujo.
+  background: '#F5F5F5',
   surface: '#FFFFFF',
-  surfaceAlt: '#EBEFF6',
-  border: '#E0E5EE',
-  borderStrong: '#C8D0DE',
+  surfaceAlt: '#EEEEEE',
+  border: '#E4E4E4',
+  borderStrong: '#CCCCCC',
 
   // Texto (quase-preto anavajado)
   //
@@ -162,18 +174,23 @@ const paletteLight: Palette = {
   // o contrário do seu uso: ele veste metadado, legenda e placeholder, que são
   // os menores tipos do app. O matiz e a saturação são os mesmos; só a
   // luminosidade cedeu o necessário para chegar a 4,53:1.
-  text: '#111C2B',
-  textMuted: '#516175',
-  textSubtle: '#667182',
+  //
+  // Em 2026-10-06 os três perderam o tom azulado junto com o resto do tema.
+  // `textSubtle` #6B6B6B mantém 4,9:1 sobre o fundo (#F5F5F5), acima da AA.
+  text: '#111111',
+  textMuted: '#525252',
+  textSubtle: '#6B6B6B',
 
   // Utilitárias
-  overlay: 'rgba(12, 22, 36, 0.45)',
+  overlay: 'rgba(0, 0, 0, 0.45)',
   white: '#FFFFFF',
-  black: '#0C1626',
+  black: '#111111',
 };
 
 const paletteDark: Palette = {
   ...acentosEscuro[INTENSIDADE],
+  // O escuro não mudou: a logo segue o mesmo azul clareado da interface.
+  brand: '#5AA6E8',
   onPrimary: '#08121E',
 
   // Neutros escuros frios (azul-carvão)
