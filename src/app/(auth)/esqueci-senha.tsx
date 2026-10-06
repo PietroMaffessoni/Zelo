@@ -14,13 +14,13 @@ import { useRouter } from 'expo-router';
 import { useState } from 'react';
 import { View } from 'react-native';
 
+import { RequisitosSenha } from '@/components/RequisitosSenha';
 import { AppHeader, AppText, Button, Card, Input, Screen } from '@/components/ui';
 import { spacing } from '@/constants/theme';
 import { useAuth } from '@/lib/auth';
 import { hapticSuccess } from '@/lib/haptics';
 import { useToast } from '@/lib/toast';
-
-const MINIMO_SENHA = 8;
+import { erroEmail, erroSenha } from '@/lib/validacao';
 
 export default function EsqueciSenha() {
   const router = useRouter();
@@ -35,8 +35,9 @@ export default function EsqueciSenha() {
   const [carregando, setCarregando] = useState(false);
 
   async function enviar() {
-    if (!email.trim()) {
-      setErro('Informe seu e-mail.');
+    const invalido = erroEmail(email);
+    if (invalido) {
+      setErro(invalido);
       return;
     }
     setCarregando(true);
@@ -57,8 +58,9 @@ export default function EsqueciSenha() {
       setErro('Digite o código de 6 dígitos que enviamos.');
       return;
     }
-    if (senha.length < MINIMO_SENHA) {
-      setErro(`A nova senha deve ter no mínimo ${MINIMO_SENHA} caracteres.`);
+    const fraca = erroSenha(senha, { email });
+    if (fraca) {
+      setErro(fraca);
       return;
     }
     setCarregando(true);
@@ -96,6 +98,8 @@ export default function EsqueciSenha() {
             icon="keypad-outline"
             keyboardType="number-pad"
             autoCapitalize="none"
+            autoComplete="one-time-code"
+            textContentType="oneTimeCode"
             maxLength={6}
             value={codigo}
             onChangeText={(t) => {
@@ -105,9 +109,13 @@ export default function EsqueciSenha() {
           />
           <Input
             label="Nova senha"
-            placeholder="Mínimo de 8 caracteres"
+            placeholder="Crie uma senha forte"
             icon="lock-closed-outline"
             senha
+            autoComplete="new-password"
+            textContentType="newPassword"
+            passwordRules="minlength: 10; required: lower; required: upper; required: digit; required: special;"
+            maxLength={72}
             value={senha}
             onChangeText={(t) => {
               setSenha(t);
@@ -116,6 +124,7 @@ export default function EsqueciSenha() {
             error={erro ?? undefined}
             onSubmitEditing={confirmar}
           />
+          <RequisitosSenha senha={senha} />
 
           <Button title="Salvar nova senha" onPress={confirmar} loading={carregando} size="lg" />
           <Button
@@ -138,6 +147,9 @@ export default function EsqueciSenha() {
             placeholder="voce@email.com"
             icon="mail-outline"
             autoCapitalize="none"
+            autoCorrect={false}
+            autoComplete="email"
+            textContentType="emailAddress"
             keyboardType="email-address"
             value={email}
             onChangeText={(t) => {

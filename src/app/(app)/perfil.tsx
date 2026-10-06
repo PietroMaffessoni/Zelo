@@ -14,6 +14,8 @@ import { atualizarPreferenciasNotificacao } from '@/lib/db';
 import { enviarImagem, escolherImagem } from '@/lib/storage';
 import { papelLabel } from '@/lib/labels';
 import { useAppTheme } from '@/lib/theme';
+import { erroSenha as validarSenha, erroTelefone, mascaraTelefone } from '@/lib/validacao';
+import { RequisitosSenha } from '@/components/RequisitosSenha';
 import { isGestor, type PreferenciasNotificacao } from '@/lib/types';
 
 const CATEGORIAS_NOTIFICACAO: { chave: keyof PreferenciasNotificacao; label: string }[] = [
@@ -47,7 +49,7 @@ export default function Perfil() {
   } = useAuth();
   const { escuro, alternar, palette } = useAppTheme();
   const [nome, setNome] = useState(profile?.nome_completo ?? '');
-  const [telefone, setTelefone] = useState(contato?.telefone ?? '');
+  const [telefone, setTelefone] = useState(mascaraTelefone(contato?.telefone ?? ''));
   const [avatar, setAvatar] = useState(profile?.avatar_url ?? null);
   const [salvando, setSalvando] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
@@ -150,6 +152,8 @@ export default function Perfil() {
   async function confirmarTrocaSenha() {
     setErroSenha(null);
     if (!senhaAtual || !senhaNova) return setErroSenha('Preencha a senha atual e a nova.');
+    const fraca = validarSenha(senhaNova, { nome: profile?.nome_completo, email: user?.email });
+    if (fraca) return setErroSenha(fraca);
     if (senhaNova !== senhaConfirma) return setErroSenha('A confirmação não confere com a nova senha.');
 
     setTrocandoSenha(true);
@@ -214,6 +218,11 @@ export default function Perfil() {
 
   async function salvar() {
     if (!user) return;
+    // Telefone é opcional aqui, mas se vier tem que ser um número que dá para ligar.
+    if (telefone.trim()) {
+      const invalido = erroTelefone(telefone);
+      if (invalido) return setMsg(invalido);
+    }
     setSalvando(true);
     setMsg(null);
     // Nome e telefone vivem em tabelas diferentes desde que o contato saiu do
@@ -265,7 +274,15 @@ export default function Perfil() {
 
       <View style={{ gap: spacing.lg }}>
         <Input label="Nome completo" value={nome} onChangeText={setNome} icon="person-outline" />
-        <Input label="Telefone" value={telefone} onChangeText={setTelefone} icon="call-outline" keyboardType="phone-pad" />
+        <Input
+          label="Telefone"
+          placeholder="(00) 00000-0000"
+          value={telefone}
+          onChangeText={(v) => setTelefone(mascaraTelefone(v))}
+          icon="call-outline"
+          keyboardType="phone-pad"
+          maxLength={15}
+        />
         {msg ? (
           <AppText color={msg.includes('atualiz') ? 'success' : 'danger'} variant="label">
             {msg}
@@ -394,12 +411,13 @@ export default function Perfil() {
               <Input
                 label="Nova senha"
                 senha
-                hint="Mínimo de 8 caracteres"
                 value={senhaNova}
                 onChangeText={setSenhaNova}
                 autoComplete="new-password"
                 textContentType="newPassword"
+                maxLength={72}
               />
+              <RequisitosSenha senha={senhaNova} />
               <Input
                 label="Repita a nova senha"
                 senha
